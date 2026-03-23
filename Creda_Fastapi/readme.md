@@ -1,308 +1,346 @@
-# CREDA: Multilingual Finance Voice Assistant
-
-**CREDA** is an AI-powered, voice-first financial literacy and guidance platform designed for India's diverse population. Supporting 11+ Indian languages, CREDA leverages advanced Retrieval-Augmented Generation (RAG), real-time market data (yfinance), and machine learning to provide personalized financial advice, portfolio management, expense tracking, and regulatory guidance (RBI, SEBI, IRDAI). Unlike brokerage apps like Zerodha or Groww, CREDA is the on-ramp to financial inclusion, empowering underserved users—rural households, non-English speakers, and low-literacy individuals—with accessible, compliant, and actionable financial insights.
-
-## 🚀 Features
-
-### Multilingual Voice Service (FastAPI, Port 8000)
-
-- **Speech Recognition**: AI4Bharat IndicConformer for <3s processing in 11+ Indian languages (Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu, English)
-- **Translation**: Hierarchical system (IndicTrans2 → NLLB → Google Translate) for accurate financial term translation
-- **Intent Analysis**: Hybrid LLM (Gemini Pro, Groq, Ollama) ensures 99% uptime and context-aware responses
-- **Text-to-Speech (TTS)**: AI4Bharat IndicTTS + edge-tts for natural, multilingual voice responses
-- **Audio Preprocessing**: Noise reduction, 16kHz mono conversion for robust voice input handling
-
-### Finance Processing Service (FastAPI, Port 8001)
-
-- **Portfolio Optimization**: Markowitz model tailored for Indian markets, with 5% drift detection and tax-efficient rebalancing
-- **Budget Optimization**: Multi-Armed Bandit (ε=0.1) adapts 50/30/20 rule based on user spending patterns
-- **User Clustering**: K-Means generates 5 investment personas (e.g., "Young Aggressive Saver") for personalized advice
-- **RAG System**: ChromaDB with AI4Bharat embeddings queries 50+ regulatory documents (RBI, SEBI, IRDAI) for compliant advice
-- **Anomaly Detection**: ML-powered analysis flags unusual spending (e.g., ₹15,000 vs. usual ₹8,000 on groceries)
-- **Financial Health Scoring**: Multi-factor assessment (savings, diversification, emergency fund) with actionable recommendations
-- **Performance**: <0.1s portfolio calculations, <0.5s RAG queries, <0.2s budget optimization
-
-### API Gateway (Port 8080)
-
-- Single entry point for seamless routing to Multilingual and Finance services
-- Supports health checks, CORS, HTTPS, and scalable Docker deployment
-
-## 🏗️ Architecture
-
-```
-User (Voice/Text) → API Gateway (8080) → Multilingual Service (8000) → Translation → Intent Analysis
-                                     ↘ Finance Service (8001) → RAG Query → ML Analytics → Response → TTS → User
-```
-
-- **Data Flow**: User inputs (voice/text) are processed for language and intent, routed to finance analytics, validated via RAG, and returned as text/audio
-- **Storage**: ChromaDB for persistent vectors, SQLite for web cache, logs in financial_agent.log
-- **Future Integration**: Account Aggregator (AA) framework for secure access to real bank, mutual fund, and insurance data via user consent (OTP-based)
-
-## 📦 Installation
-
-### Prerequisites
-
-- Python 3.9+
-- Docker (recommended for production)
-- API Keys: Gemini, Groq, HuggingFace (for AI4Bharat models)
-- Optional: CUDA-enabled GPU for faster ML processing
-
-### Quick Start
-
-#### 1. Clone Repository
-```bash
-git clone <repository-url>
-cd creda-finance-assistant
-pip install -r requirements.txt
-```
-
-#### 2. Set Environment Variables
-Create a `.env` file:
-```bash
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-HF_TOKEN=your_huggingface_token
-FASTAPI2_URL=http://localhost:8001
-CHROMA_DB_PATH=./chroma_financial_db
-LOG_LEVEL=INFO
-WORKERS=1
-```
-
-#### 3. Run Services Locally
-```bash
-# Terminal 1: Finance Service
-cd fastapi2
-python fastapi2_finance.py
-
-# Terminal 2: Multilingual Service
-cd fastapi1
-python fastapi1_multilingual.py
-```
-
-#### 4. Docker Deployment (Recommended)
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Scale finance service
-docker-compose up -d --scale finance-service=3
-
-# Stop services
-docker-compose down
-```
-
-#### 5. Verify Setup
-```bash
-curl http://localhost:8080/health
-# Expected: {"gateway": "healthy", "multilingual_service": "healthy", "finance_service": "healthy"}
-```
-
-## 🔧 API Endpoints
-
-### API Gateway (Port 8080)
-
-- **Base URL**: `http://localhost:8080` (dev) | `https://your-ngrok-url.ngrok.io` (prod)
-- **Health Check**: `GET /health` → System status
-- **Services List**: `GET /services` → Available services and URLs
-
-### Multilingual Service (Port 8000)
-
-#### POST /process_voice
-Process audio input (WAV/MP3/M4A/OGG, max 10MB)
-```json
-{
-  "file": "<audio_file>",
-  "language": "hindi" // optional
-}
-```
-**Response**: Transcription, translation, intent, response text/audio
-
-#### POST /translate
-Translate text (e.g., "Portfolio optimization" → "पोर्टफोलियो अनुकूलन")
-
-#### POST /understand_intent
-Extract intent/entities (e.g., "Log ₹500 for groceries" → `{"intent": "expense_logging", "entities": {"amount": 500, "category": "groceries"}}`)
-
-#### POST /get_audio_response
-Convert text to audio (e.g., "आपका पोर्टफोलियो तैयार है" → WAV stream)
-
-### Finance Service (Port 8001)
-
-#### POST /portfolio_optimization
-Generate optimal portfolio
-```json
-{
-  "investment_amount": 100000,
-  "risk_tolerance": "moderate",
-  "investment_horizon": 10,
-  "preferences": {"sector_preference": "diversified", "age": 35}
-}
-```
-**Response**: Allocation (e.g., 40% large-cap, 35% bonds), expected return, risk score
-
-#### POST /get_portfolio_allocation
-Detailed portfolio based on user profile
-
-#### POST /optimize_budget
-Adaptive budget using Multi-Armed Bandit
-```json
-{
-  "profile": {"age": 28, "income": 600000, "savings": 150000},
-  "spending_data": [{"category": "food", "amount": 15000}],
-  "feedback": {"needs_satisfaction": 0.8}
-}
-```
-
-#### POST /rag_query
-Answer financial queries (e.g., "What are SEBI mutual fund guidelines?") with RAG-backed sources
-
-#### POST /calculate_health_score
-Financial health score (0-100) with recommendations
-
-#### POST /detect_anomalies
-Flag unusual spending patterns
-
-### Universal Query
-
-#### POST /process_request
-Route any text/voice query to appropriate service
-```json
-{
-  "text": "I want retirement advice",
-  "user_language": "english"
-}
-```
-
-## 🧠 AI/ML Models
-
-- **Speech & Language**: AI4Bharat IndicConformer (ASR), IndicTrans2 (translation), IndicTTS (TTS), Gemini Pro/Groq/Ollama for intent
-- **Finance**: K-Means clustering (5 personas), Multi-Armed Bandit (budget), Isolation Forest (anomaly detection), Markowitz optimization (portfolio)
-- **RAG**: ChromaDB with AI4Bharat Sentence-BERT embeddings, 50+ Indian regulatory documents
-
-## 📊 Supported Financial Features
-
-- **Expense Management**: Voice-log expenses, auto-categorize, detect anomalies (e.g., ₹15,000 grocery spike)
-- **Portfolio Management**: Risk profiling, asset allocation, rebalancing alerts, P&L tracking
-- **Goal Planning**: SIP calculations, Monte Carlo simulations for retirement/child education
-- **Insurance Advisory**: Coverage recommendations, claim guidance (e.g., PMJJBY steps), policy comparisons
-- **Budget Optimization**: Adaptive 50/30/20 rule with user feedback
-- **Regulatory Guidance**: RAG-based answers on RBI/SEBI/IRDAI laws (e.g., ELSS tax benefits under Section 80C)
-
-## 🔒 Security & Compliance
-
-- **Data Privacy**: No persistent user data storage; session data clears after 1 hour
-- **Compliance**: RAG validates all advice against RBI, SEBI, IRDAI guidelines
-- **Fraud Detection**: Real-time anomaly alerts for spending patterns
-
-## 🌐 Frontend Integration
-
-### Voice Upload
-```javascript
-const formData = new FormData();
-formData.append('audio', audioBlob, 'recording.wav');
-fetch('http://localhost:8080/process_voice', { method: 'POST', body: formData });
-```
-
-### User Profile
-```javascript
-const userProfile = {
-  age: 35,
-  income: 800000,
-  savings: 200000,
-  dependents: 2,
-  risk_tolerance: 3,
-  goal_type: "retirement",
-  time_horizon: 25
-};
-```
-
-**Formats**: Audio (WAV/MP3, <10MB), JSON for profiles/expenses
-
-## 🚀 Deployment
-
-### Production (Docker)
-```bash
-# Build and start
-docker-compose up -d --build
-
-# Scale finance service
-docker-compose up -d --scale finance-service=3
-
-# Check container status
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-```
-
-- **Volumes**: `./chroma_financial_db:/app/chroma_db`, `./models:/app/models`, `./logs:/app/logs`
-- **Caching**: Multi-stage Docker builds for dependency/model caching
-- **Resources**: Multilingual (4GB RAM, 2 cores), Finance (2GB RAM, 1 core)
-
-### Environment Configuration
-```bash
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-HF_TOKEN=your_huggingface_token
-FASTAPI2_URL=http://finance-service:8001
-```
-
-## 🧪 Testing
-
-### Postman Collection
-
-- **Health Check**: `GET /health` (validate system status)
-- **Voice Processing**: `POST /process_voice` (test Hindi audio: "मुझे निवेश की सलाह चाहिए")
-- **Portfolio**: `POST /get_portfolio_allocation` (test with user profile)
-- **RAG Query**: `POST /rag_query` (test: "What are RBI emergency fund guidelines?")
-
-### Curl Examples
-```bash
-# Health check
-curl http://localhost:8080/health
-
-# Portfolio optimization
-curl -X POST "http://localhost:8001/portfolio_optimization" \
-  -H "Content-Type: application/json" \
-  -d '{"investment_amount": 100000, "risk_tolerance": "moderate", "investment_horizon": 10}'
-
-# RAG query
-curl -X POST "http://localhost:8001/rag_query" \
-  -H "Content-Type: application/json" \
-  -d '"What are SEBI mutual fund guidelines?"'
-```
-
-### Python Requests
-```python
-import requests
-
-response = requests.post('http://localhost:8001/optimize_budget', json={
-    "profile": {"age": 28, "income": 600000, "savings": 150000},
-    "spending_data": [{"category": "food", "amount": 15000}]
-})
-print(response.json())
-```
-
-## 🌟 Unique Innovations
-
-- **Multilingual Pipeline**: First financial assistant with AI4Bharat integration for Indian languages
-- **Indian Market AI**: Markowitz optimization and Multi-Armed Bandit tailored for RBI/SEBI-compliant markets
-- **RAG for Compliance**: Ensures all advice is backed by 50+ authoritative documents
-- **Accessibility**: Voice-first UI for low-literacy, non-English users
-- **Future-Ready**: Planned Account Aggregator integration for real bank/portfolio data
-
-## 🙏 Acknowledgments
-
-- AI4Bharat for multilingual models
-- ChromaDB for vector storage
-- FastAPI and Docker communities
-- Indian regulatory bodies (RBI, SEBI, IRDAI)
-
-## 📜 License
-
-MIT License
+# Creda Backend — FastAPI Services
+
+Backend for the CREDA platform. Three FastAPI services behind an API gateway:
+
+| Service | File | Port | Purpose |
+|---------|------|------|---------|
+| **Gateway** | `app.py` | 8080 | Routes requests to downstream services |
+| **Multilingual** | `fastapi1_multilingual.py` | 8000 | ASR, TTS, translation, voice pipeline |
+| **Finance** | `fastapi2_finance.py` | 8001 | LangGraph agents, portfolio analysis, planning |
 
 ---
 
-**CREDA: Finance ka dost, har bhasha mein.**  
-*Ready to empower 300M+ underserved Indians with financial literacy and guidance!*
+## Prerequisites
+
+- **Python 3.12+** (tested with 3.12.12)
+- **uv** (recommended) or pip
+- Groq API key (free at https://console.groq.com)
+- HuggingFace token (for ASR/TTS models)
+
+---
+
+## Setup
+
+### 1. Create virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux/Mac
+.venv\Scripts\Activate      # Windows
+```
+
+### 2. Install dependencies
+
+```bash
+# Core (Finance + Gateway) — fast, no heavy ML models
+uv pip install -e .
+
+# Full (includes Multilingual ASR/TTS/Translation — downloads ~8GB of models)
+uv pip install -e ".[multilingual]"
+
+# Dev tools (pytest, ruff)
+uv pip install -e ".[dev]"
+```
+
+Or with the lock file for exact reproducibility:
+
+```bash
+uv pip install -r requirements-lock.txt
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+GROQ_API_KEY=gsk_your_key_here
+HF_TOKEN=hf_your_token_here
+FASTAPI1_URL=http://localhost:8000
+FASTAPI2_URL=http://localhost:8001
+GATEWAY_PORT=8080
+DATABASE_URL=sqlite:///./creda.db
+CHROMA_DB_PATH=./chroma_financial_db
+LOG_LEVEL=INFO
+```
+
+### 4. Start services
+
+Start each in a separate terminal:
+
+```bash
+# Terminal 1 — Gateway
+python app.py
+
+# Terminal 2 — Finance Service
+python fastapi2_finance.py
+
+# Terminal 3 — Multilingual Service (optional, needs .[multilingual])
+python fastapi1_multilingual.py
+```
+
+Gateway auto-detects which downstream services are available. If Multilingual isn't running, voice features are unavailable but all finance APIs still work.
+
+---
+
+## Project Structure
+
+```
+Creda_Fastapi/
+├── app.py                       # API Gateway (port 8080)
+├── fastapi1_multilingual.py     # Multilingual service (port 8000)
+├── fastapi2_finance.py          # Finance service (port 8001)
+├── models.py                    # SQLModel database tables
+├── agents/                      # LangGraph agent modules
+│   ├── state.py                 # Shared FinancialState TypedDict
+│   ├── intent_router.py         # 12-intent LLM classifier
+│   ├── portfolio_xray_agent.py  # CAMS PDF → XIRR + overlap + rebalancing
+│   ├── stress_test_agent.py     # Monte Carlo life event simulation
+│   ├── fire_planner_agent.py    # FIRE number + SIP roadmap
+│   ├── tax_wizard_agent.py      # Old vs New regime FY2024-25
+│   ├── money_health_agent.py    # 6-dimension health score
+│   ├── rag_agent.py             # ChromaDB knowledge base (52 docs)
+│   └── graph.py                 # StateGraph compilation & routing
+├── pyproject.toml               # Dependency management
+├── requirements-lock.txt        # Frozen (185 packages)
+├── docker-compose.yml           # Multi-service Docker setup
+├── Dockerfile                   # Multilingual service container
+├── Dockerfile.finance           # Finance service container
+└── .env.example                 # Environment template
+```
+
+---
+
+## Finance Service — API Reference (Port 8001)
+
+### Core
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Service info |
+| `/health` | GET | Health check + RAG + DB status |
+
+### Chat (LangGraph)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | Conversational AI — routes to specialist agent via intent detection |
+| `/twilio/voice` | POST | **NEW:** Incoming Twilio voice call handler — returns TwiML (Say + Gather) |
+| `/twilio/process_speech` | POST | **NEW:** Twilio Gather continuation — multi-turn voice conversation |
+| `/twilio/brain` | POST | *(Legacy)* Old Twilio endpoint — returns JSON text |
+
+### Portfolio
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/portfolio/xray` | POST | Upload CAMS/KFintech PDF → XIRR, overlap, expense drag, benchmark comparison (yfinance), rebalancing |
+| `/portfolio/stress-test` | POST | Simulate life events (market crash, baby, home purchase, etc.) |
+| `/portfolio/history/{user_id}` | GET | Historical portfolio snapshots |
+
+### Planning
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/fire-planner` | POST | FIRE number, year-by-year roadmap, insurance gaps, tax savings |
+| `/money-health-score` | POST | 6-dimension score: emergency, insurance, diversification, debt, tax, retirement |
+| `/tax-wizard` | POST | Old vs New regime comparison, missed deductions, recoverable tax |
+| `/sip-calculator` | POST | SIP growth projection with step-up (pure math, no LLM) |
+| `/couples-planner` | POST | Joint plan — loads both partners' profiles, optimises HRA/NPS/SIP splits |
+
+### Profile
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/profile/upsert` | POST | Create or update user financial profile |
+| `/profile/{user_id}` | GET | Retrieve stored profile |
+
+### Backward Compatible
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/rag_query` | POST | Direct RAG search |
+| `/process_request` | POST | Generic request processing |
+| `/get_portfolio_allocation` | GET | Default allocation |
+| `/knowledge_base_stats` | GET | ChromaDB collection stats |
+| `/supported_features` | GET | Feature list with descriptions |
+
+---
+
+## Multilingual Service — API Reference (Port 8000)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/process_voice` | POST | Full pipeline: audio → ASR → LLM → TTS → audio |
+| `/process_text` | POST | Text → LLM → translated response |
+| `/transcribe` | POST | Audio → text (ASR only) |
+| `/translate` | POST | Text translation between Indian languages |
+| `/tts/synthesize` | POST | Text → audio (TTS only) |
+| `/supported_languages` | GET | List of supported languages |
+
+---
+
+## LangGraph Agent Architecture
+
+```
+User Message
+     │
+     ▼
+┌──────────────┐
+│ Intent Router │  ← LLM classifies into 1 of 12 intents
+└──────┬───────┘
+       │
+       ▼ (conditional edge)
+┌──────────────────────────────────────────┐
+│  portfolio_xray  │  stress_test          │
+│  fire_planner    │  money_health_score   │
+│  tax_wizard      │  rag_query            │
+│  sip_calculator  │  budget_coach         │
+│  insurance_check │  goal_planner         │
+│  couples_planner │  general_chat         │
+└──────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────┐
+│ Response Synth.  │  ← Merges agent output into ≤150-word voice-friendly answer
+└──────────────────┘
+       │
+       ▼
+   Final Response
+```
+
+---
+
+## Database (SQLite)
+
+Four tables managed by SQLModel:
+
+| Table | Purpose |
+|-------|---------|
+| `UserProfile` | Financial profile — income, expenses, 80C/80CCD/NPS deductions, dependents |
+| `PortfolioSnapshot` | XIRR results, fund holdings JSON, parsed from CAMS PDFs |
+| `ConversationMessage` | Chat history per session (role + content + intent) — **NEW:** `call_sid` (Twilio), `content_type` (text/voice_metadata) |
+| `LifeEvent` | Stress test results and life event records |
+
+DB file: `creda.db` (auto-created on first run).
+
+### Twilio Voice — Database Schema
+
+When a user calls your Twilio number, all interactions are stored:
+
+```sql
+SELECT * FROM conversation_messages 
+WHERE call_sid = 'CA_...' 
+ORDER BY timestamp;
+```
+
+Columns:
+- `session_id`: set to `call_sid`
+- `user_id`: `voice_{call_sid}`
+- `call_sid`: Twilio's unique call identifier
+- `role`: "user" | "assistant" | "system"
+- `content`: Message text
+- `content_type`: "text" (default) | "voice_metadata"
+- `timestamp`: When recorded
+
+---
+
+## Twilio Voice Integration
+
+### Setup
+
+1. **Get a Twilio phone number** at https://console.twilio.com
+2. **Set webhook** in Twilio Console:
+   ```
+   Phone Number → Voice → Call Comes In
+   Webhook URL: https://your-domain/twilio/voice
+   HTTP Method: POST
+   ```
+3. **Verify endpoint** is accessible (use ngrok for local testing)
+
+### Call Flow
+
+```
+User calls your number
+         ↓
+Twilio → POST /twilio/voice (CallSid, no speech_result)
+         ↓
+Finance Service → Returns TwiML: "Welcome to CREDA..." + Gather
+         ↓
+Twilio → Plays greeting, waits for speech
+         ↓
+User speaks
+         ↓
+Twilio → POST /twilio/process_speech (speech_result captured)
+         ↓
+Finance Service → Routes through LangGraph agents
+         ↓
+Database → Stores user message + AI response (indexed by call_sid)
+         ↓
+Returns TwiML: AI response + Gather for next turn
+         ↓
+User can speak again or say "goodbye" to hangup
+```
+
+### Features
+
+- ✅ Multi-turn conversations (user asks multiple questions)
+- ✅ Full session persistence (queryable by call_sid)
+- ✅ Voice-optimized responses (truncated to 300 chars ~ 30s audio)
+- ✅ Indian English voice (Polly.Aditi)
+- ✅ Hangup detection ("bye", "goodbye", "exit")
+- ✅ LangGraph agent routing (all 6 specialists available)
+- ✅ Error handling + TwiML fallback
+
+### Example Query
+
+```bash
+# Simulate incoming Twilio call
+curl -X POST http://localhost:8080/twilio/voice \
+  -d "call_sid=CA_TEST_12345" \
+  -d "speech_result=Tell me about taxes"
+```
+
+### Audit Trail
+
+```bash
+sqlite3 creda.db << EOF
+SELECT timestamp, role, content FROM conversation_messages 
+WHERE call_sid LIKE 'CA%' 
+ORDER BY timestamp;
+EOF
+```
+
+---
+
+## Testing
+
+```bash
+# Quick health check
+curl http://localhost:8080/health
+
+# Chat
+curl -X POST http://localhost:8080/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test", "message": "What is my money health score?", "language": "en"}'
+
+# SIP calculator (no LLM needed)
+curl -X POST http://localhost:8001/sip-calculator \
+  -H "Content-Type: application/json" \
+  -d '{"monthly_amount": 10000, "expected_return": 12, "years": 15}'
+
+# Run test suite
+pytest test_gateway.py -v
+```
+
+---
+
+## Docker
+
+```bash
+docker-compose up --build
+```
+
+Spins up all three services with the same port mapping.
