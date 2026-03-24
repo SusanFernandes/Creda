@@ -1,10 +1,11 @@
-# FinVoice API Gateway
+# CREDA API Gateway
 # Intelligent routing layer for FastAPI microservices
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Depends
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Request, Depends
+from fastapi.responses import StreamingResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from twilio.twiml.voice_response import VoiceResponse
 import httpx
 import asyncio
 import json
@@ -27,9 +28,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="FinVoice API Gateway",
-    description="Intelligent routing layer for multilingual finance services",
-    version="1.0.0",
+    title="CREDA API Gateway",
+    description="Intelligent routing layer for CREDA multilingual finance services",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -185,15 +186,19 @@ def determine_service_route(endpoint: str, request_data: Any = None) -> tuple:
     """Intelligent routing logic"""
     # Voice and language processing routes -> FastAPI 1
     voice_routes = [
-        "/process_voice", "/get_audio_response", "/translate", 
-        "/understand_intent", "/process_multilingual_query", "/test_asr"
+        "/process_voice", "/get_audio_response", "/translate",
+        "/understand_intent", "/process_multilingual_query", "/test_asr",
+        "/voice/command", "/tts_only", "/transcribe_only",
+        "/pipecat/offer",
     ]
     
     # Finance and portfolio routes -> FastAPI 2
     finance_routes = [
-        "/process_request", "/get_portfolio_allocation", "/check_rebalancing",
-        "/calculate_health_score", "/detect_anomalies", "/rag_query",
-        "/knowledge_base_stats", "/portfolio_optimization", "/optimize_budget"
+        "/process_request", "/get_portfolio_allocation", "/rag_query",
+        "/knowledge_base_stats", "/chat", "/profile/upsert",
+        "/portfolio/xray", "/portfolio/stress-test", "/fire-planner",
+        "/money-health-score", "/tax-wizard", "/sip-calculator",
+        "/couples-planner", "/twilio/brain", "/supported_features",
     ]
     
     if endpoint in voice_routes:
@@ -220,9 +225,9 @@ def determine_service_route(endpoint: str, request_data: Any = None) -> tuple:
 async def gateway_home():
     """Gateway home endpoint"""
     return {
-        "service": "FinVoice API Gateway",
-        "version": "1.0.0",
-        "description": "Intelligent routing for multilingual finance services",
+        "service": "CREDA API Gateway",
+        "version": "2.0.0",
+        "description": "AI-powered multilingual financial advisory platform",
         "services": {
             "multilingual": FASTAPI1_URL,
             "finance": FASTAPI2_URL
@@ -253,16 +258,22 @@ async def list_services():
         "multilingual_service": {
             "url": FASTAPI1_URL,
             "endpoints": [
-                "/process_voice", "/get_audio_response", "/translate",
-                "/understand_intent", "/process_multilingual_query", "/test_asr"
+                "/process_voice", "/process_text", "/translate",
+                "/tts_only", "/transcribe_only",
+                "/health", "/supported_languages",
+                "/get_audio_response", "/understand_intent",
+                "/process_multilingual_query", "/test_asr"
             ]
         },
         "finance_service": {
             "url": FASTAPI2_URL,
             "endpoints": [
-                "/process_request", "/get_portfolio_allocation", "/check_rebalancing",
-                "/calculate_health_score", "/detect_anomalies", "/rag_query",
-                "/knowledge_base_stats", "/portfolio_optimization", "/optimize_budget"
+                "/chat", "/profile/upsert", "/profile/{user_id}",
+                "/portfolio/xray", "/portfolio/stress-test", "/portfolio/history/{user_id}",
+                "/fire-planner", "/money-health-score", "/tax-wizard",
+                "/sip-calculator", "/couples-planner", "/twilio/brain",
+                "/rag_query", "/knowledge_base_stats", "/supported_features",
+                "/process_request", "/get_portfolio_allocation",
             ]
         }
     }
@@ -297,17 +308,69 @@ async def process_voice_request(audio: UploadFile = File(...), language: str = "
             processing_time=time.time() - start_time
         )
     except HTTPException:
-        # Re-raise HTTP exceptions from route_request so FastAPI returns proper status codes
         raise
     except Exception as e:
         logger.error(f"Error in /process_voice proxy: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+@app.post("/voice/command")
+async def voice_command_proxy(
+    audio: UploadFile = File(...),
+    language_code: str = Form(default="en"),
+    current_screen: str = Form(default="dashboard"),
+    user_id: str = Form(default="anonymous"),
+):
+    """
+    Push-to-talk command endpoint.
+    Proxies to multilingual service /voice/command.
+    Returns structured JSON: {transcript, type, function?, args?, response?}
+    """
+    try:
+        content = await audio.read()
+        files = {
+            "audio": (audio.filename or "audio.wav", content, audio.content_type or "audio/wav")
+        }
+        data = {
+            "language_code": language_code,
+            "current_screen": current_screen,
+            "user_id": user_id,
+        }
+        return await route_request(FASTAPI1_URL, "/voice/command", "POST", data=data, files=files)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /voice/command proxy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pipecat/offer")
+async def pipecat_offer_proxy(request: Request):
+    """
+    WebRTC signaling: proxy the browser SDP offer to the multilingual service.
+    The multilingual service returns a SDP answer and starts a Pipecat pipeline.
+    Requires pipecat-ai[webrtc,silero] installed on the backend.
+
+    Request body (JSON):
+      { sdp, type, language_code?, user_id?, current_screen? }
+    Response (JSON):
+      { sdp, type, pc_id }
+    """
+    try:
+        body = await request.json()
+        return await route_request(FASTAPI1_URL, "/pipecat/offer", "POST", data=body)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /pipecat/offer proxy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/get_audio_response")
 async def get_audio_response(request_data: dict):
     """Route audio response generation to multilingual service"""
     start_time = time.time()
-    
+
     result = await route_request(FASTAPI1_URL, "/get_audio_response", "POST", data=request_data)
     
     return GatewayResponse(
@@ -380,49 +443,30 @@ async def process_multilingual_query(request: QueryRequest):
 
 @app.post("/process_request")
 async def process_finance_request(request: QueryRequest):
-    """Enhanced finance request processing with Indian context"""
+    """Enhanced finance request — routes to v2.0 /chat or /process_request"""
     start_time = time.time()
     
     try:
-        # Get or create user context
-        user_context = conversation_states.get(request.user_id, IndianFinancialContext(request.user_id))
-        conversation_states[request.user_id] = user_context
-        
-        # Enhanced finance data with Indian context
-        finance_data = {
-            "text": request.query,  # Change from "query" to "text"
-            "intent": "general_query",
-            "entities": {},
-            "user_language": request.language or "hindi",
-            "user_id": request.user_id,
-            "indian_context": {
-                "region": user_context.region,
-                "recent_queries": user_context.recent_queries,
-                "scheme_interests": user_context.scheme_interests
-            }
+        # Route to v2 chat API
+        chat_data = {
+            "message": request.query,
+            "user_id": request.user_id or "anonymous",
+            "language": request.language or "en",
         }
-        
-        # Try finance service with enhanced context
-        result = await route_request(FASTAPI2_URL, "/process_request", "POST", data=finance_data)
-        
-        # Update user context
-        user_context.update_context(request.query, result)
-        
-        service_used = "finance-enhanced"
-        
+        result = await route_request(FASTAPI2_URL, "/chat", "POST", data=chat_data)
+        service_used = "finance"
     except HTTPException as e:
-        logger.warning(f"Enhanced finance service failed: {e}")
-        # Fallback to basic processing
+        logger.warning(f"Finance v2 chat failed: {e}")
+        # Fallback to multilingual
         try:
             basic_data = {
                 "text": request.query,
                 "auto_detect": True,
-                "language": request.language
+                "language": request.language,
             }
             result = await route_request(FASTAPI1_URL, "/process_multilingual_query", "POST", data=basic_data)
             service_used = "multilingual (fallback)"
-        except HTTPException as fallback_error:
-            logger.error(f"Both services failed: {fallback_error}")
+        except HTTPException:
             raise e
     
     return GatewayResponse(
@@ -435,49 +479,36 @@ async def process_finance_request(request: QueryRequest):
     
 @app.post("/portfolio_optimization")
 async def portfolio_optimization(request: PortfolioRequest):
-    """Route portfolio optimization to finance service"""
+    """Route portfolio optimization to finance service v2.0 /chat endpoint."""
     start_time = time.time()
     
-    # Ensure preferences is not None
-    preferences = request.preferences or {}
-    
-    # Convert risk tolerance string to integer (1-5 scale)
+    # Map old-style request to v2.0 chat API
     risk_tolerance_map = {
-        "conservative": 2,
-        "moderate": 3,
-        "balanced": 3,
-        "aggressive": 4,
-        "high": 5,
-        "low": 1
+        "conservative": 2, "moderate": 3, "balanced": 3,
+        "aggressive": 4, "high": 5, "low": 1,
     }
-    risk_tolerance_int = risk_tolerance_map.get(request.risk_tolerance.lower(), 3)  # Default to moderate (3)
-    
-    # Create proper UserProfile structure for FastAPI2
-    user_profile = {
-        "age": preferences.get("age", 30),
-        "income": preferences.get("income", max(request.investment_amount * 2, 50000)),  # Ensure reasonable income
-        "savings": request.investment_amount,
-        "dependents": preferences.get("dependents", 1),
-        "risk_tolerance": risk_tolerance_int,  # Convert to integer as expected by the service
-        "goal_type": preferences.get("goal_type", "investment"),
-        "time_horizon": request.investment_horizon,
-        "esg_preference": preferences.get("esg_preference", "moderate")
+    risk_int = risk_tolerance_map.get(request.risk_tolerance.lower(), 3)
+    preferences = request.preferences or {}
+
+    chat_data = {
+        "message": (
+            f"Optimise my portfolio: ₹{request.investment_amount:,.0f} to invest, "
+            f"{request.risk_tolerance} risk, {request.investment_horizon} year horizon."
+        ),
+        "user_id": preferences.get("user_id", "anonymous"),
+        "language": "en",
+        "user_profile": {
+            "age": preferences.get("age", 30),
+            "income": preferences.get("income", max(request.investment_amount * 2, 50000)),
+            "savings": request.investment_amount,
+            "dependents": preferences.get("dependents", 1),
+            "risk_tolerance": risk_int,
+            "goal_type": preferences.get("goal_type", "growth"),
+            "time_horizon": request.investment_horizon,
+        },
     }
-    
-    # Debug logging
-    logger.info(f"Original request: {request.dict()}")
-    logger.info(f"Mapped user profile: {user_profile}")
-    
-    # Wrap user profile in the expected format for the finance service
-    request_data = {
-        "profile": user_profile,
-        "goals": ["investment"],
-        "time_horizon_years": request.investment_horizon
-    }
-    
-    logger.info(f"Final request data: {request_data}")
-    
-    result = await route_request(FASTAPI2_URL, "/portfolio_optimization", "POST", data=request_data)
+
+    result = await route_request(FASTAPI2_URL, "/chat", "POST", data=chat_data)
     
     return GatewayResponse(
         success=True,
@@ -638,6 +669,201 @@ async def get_portfolio_allocation(user_profile: dict):
         processing_time=time.time() - start_time
     )
 
+# ─────────────────────────────────────────────────────────────────────
+# NEW v2.0 GATEWAY ROUTES — Finance Service (LangGraph-powered)
+# ─────────────────────────────────────────────────────────────────────
+
+@app.post("/chat")
+async def gateway_chat(request_data: dict):
+    """Main chat endpoint — routes to finance service LangGraph."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/chat", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/portfolio/xray")
+async def gateway_portfolio_xray(
+    file: UploadFile = File(...),
+    password: str = Form(...),
+    user_id: str = Form(...),
+    language: str = Form(default="en"),
+):
+    """CAMS PDF X-Ray — streams to finance service."""
+    start_time = time.time()
+    content = await file.read()
+    files = {"file": (file.filename, content, "application/pdf")}
+    data = {"password": password, "user_id": user_id, "language": language}
+    result = await route_request(FASTAPI2_URL, "/portfolio/xray", "POST", data=data, files=files)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/portfolio/stress-test")
+async def gateway_stress_test(request_data: dict):
+    """Life event stress test."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/portfolio/stress-test", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/fire-planner")
+async def gateway_fire_planner(request_data: dict):
+    """FIRE path planner."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/fire-planner", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/money-health-score")
+async def gateway_money_health(request_data: dict):
+    """6-dimension financial health score."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/money-health-score", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/tax-wizard")
+async def gateway_tax_wizard(request_data: dict):
+    """Tax regime comparison."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/tax-wizard", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/sip-calculator")
+async def gateway_sip(request_data: dict):
+    """SIP growth calculator."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/sip-calculator", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/couples-planner")
+async def gateway_couples(request_data: dict):
+    """Joint financial planning for couples — both partners' data."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/couples-planner", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/twilio/brain")
+async def gateway_twilio_brain(request: Request):
+    """Brain endpoint for Twilio calling agent."""
+    start_time = time.time()
+    form_data = await request.form()
+    result = await route_request(FASTAPI2_URL, "/twilio/brain", "POST", data=dict(form_data))
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/twilio/voice")
+async def gateway_twilio_voice(request: Request):
+    """Incoming Twilio voice call handler — routes to finance service.
+    
+    Returns raw TwiML XML (not wrapped in GatewayResponse).
+    """
+    form_data = await request.form()
+    
+    # Route to finance service
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{FASTAPI2_URL}/twilio/voice",
+                data=dict(form_data),
+                timeout=10
+            )
+            # Return raw TwiML response (not JSON wrapped)
+            return Response(content=response.text, media_type="application/xml")
+        except Exception as e:
+            logger.error(f"Twilio voice gateway error: {e}")
+            # Return error TwiML
+            error_response = VoiceResponse()
+            error_response.say("Sorry, we're experiencing technical difficulties. Please try again.", voice="Polly.Aditi", language="en-IN")
+            error_response.hangup()
+            return Response(content=str(error_response), media_type="application/xml")
+
+@app.post("/twilio/process_speech")
+async def gateway_twilio_process_speech(request: Request):
+    """Process user speech from Twilio Gather — routes to finance service.
+    
+    Returns raw TwiML XML (not wrapped in GatewayResponse).
+    """
+    form_data = await request.form()
+    
+    # Route to finance service
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{FASTAPI2_URL}/twilio/process_speech",
+                data=dict(form_data),
+                timeout=10
+            )
+            # Return raw TwiML response (not JSON wrapped)
+            return Response(content=response.text, media_type="application/xml")
+        except Exception as e:
+            logger.error(f"Twilio process_speech gateway error: {e}")
+            # Return error TwiML
+            error_response = VoiceResponse()
+            error_response.say("Sorry, I didn't understand that. Please try again.", voice="Polly.Aditi", language="en-IN")
+            error_response.hangup()
+            return Response(content=str(error_response), media_type="application/xml")
+
+@app.post("/profile/upsert")
+async def gateway_profile_upsert(request_data: dict):
+    """Create or update user profile."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/profile/upsert", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.get("/profile/{user_id}")
+async def gateway_profile_get(user_id: str):
+    """Get user profile."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, f"/profile/{user_id}", "GET")
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.get("/portfolio/history/{user_id}")
+async def gateway_portfolio_history(user_id: str):
+    """Portfolio net worth timeline."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, f"/portfolio/history/{user_id}", "GET")
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.get("/supported_features")
+async def gateway_supported_features():
+    """Feature list for both products."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/supported_features", "GET")
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
 # Dynamic routing for any endpoint
 
 @app.api_route("/{endpoint:path}", methods=["GET", "POST", "PUT", "DELETE"])
@@ -678,7 +904,7 @@ async def dynamic_route(endpoint: str, request: Request):
 @app.on_event("startup")
 async def startup_event():
     """Initialize gateway on startup"""
-    logger.info("🚀 FinVoice API Gateway starting up...")
+    logger.info("🚀 CREDA API Gateway starting up...")
     
     # Initial health checks
     await check_service_health(FASTAPI1_URL, "multilingual")
@@ -691,7 +917,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    logger.info("🛑 FinVoice API Gateway shutting down...")
+    logger.info("🛑 CREDA API Gateway shutting down...")
 
 # Error handlers
 

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useGroqNLP } from './useGroqNLP';
 import { VoiceUtils } from '@/utils/voiceUtils';
 import { LocalVoiceService } from '@/services/localVoiceService';
+import { ApiService } from '@/services/api';
 
 interface VoiceOptions {
   onWakeWordDetected?: () => void;
@@ -187,51 +188,28 @@ export const useReliableVoice = (options: VoiceOptions = {}) => {
     }
 
     try {
-      // Try local processing first for speed
-      const localResult = LocalVoiceService.processCommand(command);
+      // Use backend-powered NLP (keyword match first, then /chat)
+      const nlpResult = await processCommand(command, 'english', 'web_user');
 
-      // If local processing gives a good result, use it immediately
-      if (localResult.confidence > 0.5) {
-        const responseText = LocalVoiceService.generateResponse(localResult);
-        await executeCommand(localResult.action, command, responseText);
-        options.onCommandProcessed?.(command, responseText);
-        finishProcessing();
-        return;
+      const responseText =
+        nlpResult.response_text ||
+        (nlpResult.intent === 'navigation'
+          ? `Navigating to ${nlpResult.action}`
+          : 'I can help you with that.');
+
+      // Navigate if this is a navigation intent
+      if (nlpResult.intent === 'navigation' && nlpResult.parameters?.path) {
+        executeCommand(nlpResult.action, command, responseText, nlpResult.parameters?.language);
+      } else {
+        // Financial answer — speak it
+        executeCommand('answer', command, responseText, nlpResult.parameters?.language);
       }
 
-      // Fallback to Groq NLP for complex commands
-      try {
-        const groqResult = await processCommand(command);
-        if (groqResult.confidence > localResult.confidence) {
-          const responseText = LocalVoiceService.generateResponse({
-            action: groqResult.action,
-            intent: groqResult.intent,
-            parameters: groqResult.parameters,
-            confidence: groqResult.confidence
-          });
-          await executeCommand(groqResult.action, command, responseText);
-          options.onCommandProcessed?.(command, responseText);
-        } else {
-          // Use local result if better
-          const responseText = LocalVoiceService.generateResponse(localResult);
-          await executeCommand(localResult.action, command, responseText);
-          options.onCommandProcessed?.(command, responseText);
-        }
-      } catch (groqError) {
-        console.warn('Groq processing failed, using local fallback:', groqError);
-        // Use local result
-        const responseText = LocalVoiceService.generateResponse(localResult);
-        await executeCommand(localResult.action, command, responseText);
-        options.onCommandProcessed?.(command, responseText);
-      }
-
+      options.onCommandProcessed?.(command, responseText);
       finishProcessing();
     } catch (error) {
       console.error('Voice command processing error:', error);
-      const fallbackResult = LocalVoiceService.processCommand(command);
-      const responseText = LocalVoiceService.generateResponse(fallbackResult);
-      await executeCommand(fallbackResult.action, command, responseText);
-      options.onCommandProcessed?.(command, responseText);
+      executeCommand('answer', command, 'Sorry, I had trouble processing that. Please try again.');
       finishProcessing();
     }
   }, [options, processCommand]);
@@ -268,7 +246,12 @@ export const useReliableVoice = (options: VoiceOptions = {}) => {
     recognition.start();
   }, [currentTranscript, processVoiceCommand]);
 
-  const executeCommand = useCallback(async (action: string, command: string, responseText?: string): Promise<void> => {
+  const executeCommand = useCallback(async (
+    action: string,
+    command: string,
+    responseText?: string,
+    detectedLang?: string,
+  ): Promise<void> => {
     // Navigate based on action - ensure navigation works
     const navigateToPage = (path: string) => {
       if (location.pathname !== path) {
@@ -277,59 +260,61 @@ export const useReliableVoice = (options: VoiceOptions = {}) => {
     };
 
     switch (action) {
-      case 'dashboard':
-        navigateToPage('/dashboard');
-        break;
-      case 'portfolio':
-        navigateToPage('/portfolio');
-        break;
-      case 'budget':
-        navigateToPage('/budget');
-        break;
-      case 'voice':
-        navigateToPage('/voice');
-        break;
-      case 'settings':
-        navigateToPage('/settings');
-        break;
-      case 'goals':
-        navigateToPage('/goals');
-        break;
-      case 'expense_analysis':
-        navigateToPage('/expense-analytics');
-        break;
-      case 'health':
-        navigateToPage('/health');
-        break;
-      case 'help':
+      case 'dashboard':           navigateToPage('/dashboard');          break;
+      case 'portfolio':           navigateToPage('/portfolio');           break;
+      case 'budget':              navigateToPage('/budget');              break;
+      case 'voice':               navigateToPage('/voice');               break;
+      case 'settings':            navigateToPage('/settings');            break;
+      case 'goals':               navigateToPage('/goals');               break;
+      case 'expense_analysis':    navigateToPage('/expense-analytics');   break;
+      case 'health':              navigateToPage('/health');              break;
+      case 'advisory':            navigateToPage('/advisory');            break;
+      case 'knowledge':           navigateToPage('/knowledge');           break;
+      // ── New planning tools ─────────────────────────────────────────────
+      case 'fire':                navigateToPage('/fire-planner');        break;
+      case 'sip':                 navigateToPage('/sip-calculator');      break;
+      case 'tax':                 navigateToPage('/tax-wizard');          break;
+      case 'couples':             navigateToPage('/couples-planner');     break;
+      case 'security':            navigateToPage('/security');            break;
+      case 'help':                navigateToPage('/help');                break;
+      // ── Non-navigation intents ─────────────────────────────────────────
+      case 'answer':
       case 'check_balance':
       case 'get_advice':
       case 'unknown':
-        // These don't require navigation
         break;
     }
 
-    // Use provided response text or generate a default
     const finalResponseText = responseText || `Executed command: ${action}`;
 
-    // Show toast immediately for visual feedback
     toast({
-      title: "✅ Command Executed",
+      title: '✅ Command Executed',
       description: finalResponseText,
     });
 
-    // Delay speech synthesis to avoid interference with recognition
-    if (options.enableAudioResponse && VoiceUtils.isSpeechSynthesisSupported()) {
-      // only speak if user clicked / tapped recently
-      if (navigator.userActivation?.hasBeenActive) {
+    if (options.enableAudioResponse) {
+      const langCode = detectedLang || 'en';
+      // Use multilingual TTS for non-English responses
+      if (langCode !== 'en' && langCode !== 'en-US') {
         setTimeout(async () => {
           try {
-            await VoiceUtils.speakText(finalResponseText, {
-              rate: 1.1,
-              volume: 0.6,
-              lang: 'en-US',
-            });
+            const audioBlob = await ApiService.ttsOnly(finalResponseText, langCode);
+            if (audioBlob) {
+              const url = URL.createObjectURL(audioBlob);
+              const audio = new Audio(url);
+              audio.play().catch(() => {});
+              audio.onended = () => URL.revokeObjectURL(url);
+              return;
+            }
           } catch {}
+          // Fallback to browser TTS
+          if (VoiceUtils.isSpeechSynthesisSupported() && navigator.userActivation?.hasBeenActive) {
+            await VoiceUtils.speakText(finalResponseText, { rate: 1.1, volume: 0.6, lang: langCode }).catch(() => {});
+          }
+        }, 800);
+      } else if (VoiceUtils.isSpeechSynthesisSupported() && navigator.userActivation?.hasBeenActive) {
+        setTimeout(async () => {
+          await VoiceUtils.speakText(finalResponseText, { rate: 1.1, volume: 0.6, lang: 'en-US' }).catch(() => {});
         }, 800);
       }
     }

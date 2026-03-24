@@ -3,6 +3,7 @@ import { ScrollView, TouchableOpacity, View, TextInput } from 'react-native';
 import { H4, P, Small, Title } from '~/components/ui/typography';
 import { Container } from '~/components/Container';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { ApiService } from '~/services/api';
 import {
   Search,
   BookOpen,
@@ -61,60 +62,37 @@ export default function Knowledge() {
   const [queryHistory, setQueryHistory] = useState(mockQueries);
 
   const handleSearch = async () => {
-    console.log('Searching for:', searchQuery);
     if (!searchQuery.trim()) return;
-
     setIsSearching(true);
 
     try {
-      const response = await fetch('https://fafe2d2eb319.ngrok-free.app/rag_query', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning
-        },
-        body: JSON.stringify({
-          query: searchQuery,
-          top_k: 5 // number of relevant documents to consider
-        })
-      });
+      const result = await ApiService.ragQuery(searchQuery, 'app_user');
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const newQuery = {
+        id: Date.now(),
+        query: searchQuery,
+        answer: result?.answer ?? result?.response ?? 'No answer available.',
+        confidence_score: result?.confidence_score ?? result?.confidence ?? 0.8,
+        timestamp: new Date(),
+        relevant_documents: (result?.relevant_documents ?? result?.sources ?? []).map((d: any) => ({
+          content: d.content ?? d.text ?? '',
+          source: d.source ?? d.filename ?? 'document',
+          relevance_score: d.relevance_score ?? d.score ?? 0.8,
+        })),
+      };
 
-      const result = await response.json();
-
-      if (result.success) {
-        const newQuery = {
-          id: Date.now(),
-          query: searchQuery,
-          answer: result.data.answer,
-          confidence_score: result.data.confidence_score,
-          timestamp: new Date(),
-          relevant_documents: result.data.relevant_documents || []
-        };
-
-        setQueryHistory([newQuery, ...queryHistory]);
-        setSearchQuery('');
-      } else {
-        // Handle API error
-        console.error('API returned error:', result);
-        // You might want to show an error message to the user here
-      }
+      setQueryHistory([newQuery, ...queryHistory]);
+      setSearchQuery('');
     } catch (error) {
       console.error('Error calling RAG API:', error);
-
-      // Fallback to simulated response in case of error
       const fallbackQuery = {
         id: Date.now(),
         query: searchQuery,
-        answer: "Sorry, there was an error processing your query. Please try again later.",
+        answer: 'Sorry, there was an error. Please ensure the backend is running at http://localhost:8080.',
         confidence_score: 0.0,
         timestamp: new Date(),
-        relevant_documents: []
+        relevant_documents: [],
       };
-
       setQueryHistory([fallbackQuery, ...queryHistory]);
       setSearchQuery('');
     } finally {

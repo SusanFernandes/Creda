@@ -23,7 +23,10 @@ import Security from "./pages/Security";
 import Help from "./pages/Help";
 import Auth from "./pages/Auth";
 import Voice from "./pages/Voice";
-import ReliableVoiceAssistant from "./components/ReliableVoiceAssistant";
+import FIREPlanner from "./pages/FIREPlanner";
+import SIPCalculator from "./pages/SIPCalculator";
+import TaxWizard from "./pages/TaxWizard";
+import CouplesPlanner from "./pages/CouplesPlanner";
 import NotFound from "./pages/NotFound";
 import { AlwaysOnVoice } from "./components/AlwaysOnVoice";
 
@@ -62,6 +65,10 @@ const App = () => (
                             <Route path="/knowledge" element={<Knowledge />} />
                             <Route path="/advisory" element={<Advisory />} />
                             <Route path="/voice" element={<Voice />} />
+                            <Route path="/fire-planner" element={<FIREPlanner />} />
+                            <Route path="/sip-calculator" element={<SIPCalculator />} />
+                            <Route path="/tax-wizard" element={<TaxWizard />} />
+                            <Route path="/couples-planner" element={<CouplesPlanner />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/security" element={<Security />} />
                             <Route path="/help" element={<Help />} />
@@ -70,11 +77,6 @@ const App = () => (
                         </main>
                       </div>
                     </div>
-                    {/* Reliable Voice Assistant - Always Available */}
-                    <ReliableVoiceAssistant 
-                      enableAudioResponse={true}
-                      isCompact={true}
-                    />
                   </SidebarProvider>
                 } />
               </Routes>

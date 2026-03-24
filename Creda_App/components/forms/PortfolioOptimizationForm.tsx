@@ -6,7 +6,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { P, Small, H4 } from '~/components/ui/typography';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import axios from 'axios';
+import { ApiService } from '~/services/api';
 
 type PortfolioOptimizationData = {
   investment_amount: number;
@@ -54,23 +54,25 @@ export default function PortfolioOptimizationForm({ bottomSheetRef, onResult }: 
     console.log('Submitting form data:', apiData);
 
     try {
-      const result = await axios.post('https://fafe2d2eb319.ngrok-free.app/portfolio_optimization', apiData);
-      console.log('Optimization result:', result.data);
-      onResult(result.data);
-    } catch (error) {
-      console.error('API Error:', error.response || error.message);
-      // Fallback to mock data if API fails
-      const mockResult = {
-        optimized_portfolio: {
-          stocks: 40,
-          bonds: 50,
-          mutual_funds: 10,
-          crypto: 0
-        },
+      const portfolioResult = await ApiService.chat({
+        message: `Optimize portfolio: investment_amount=${apiData.investment_amount}, risk_tolerance=${apiData.risk_tolerance}, horizon=${apiData.investment_horizon} years, sector=${apiData.preferences?.sector_preference}, age=${apiData.preferences?.age}. Provide optimized allocation as JSON.`,
+        user_id: 'app_user',
+        user_profile: { risk_tolerance: apiData.preferences?.age },
+      });
+      // Parse allocation from response if available, else use structured fallback
+      const mockResult = portfolioResult.data?.allocation ?? {
+        optimized_portfolio: { stocks: 40, bonds: 50, mutual_funds: 10 },
         expected_return: 7.5,
-        risk_level: 'Low'
+        risk_level: 'Low',
       };
       onResult(mockResult);
+    } catch (error: any) {
+      console.error('[PortfolioOptimization] API Error:', error);
+      onResult({
+        optimized_portfolio: { stocks: 40, bonds: 50, mutual_funds: 10, crypto: 0 },
+        expected_return: 7.5,
+        risk_level: 'Low',
+      });
     }
 
     bottomSheetRef.current?.dismiss();

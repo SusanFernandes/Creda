@@ -13,7 +13,11 @@ import {
   BarChart3,
   CreditCard,
   Shield,
-  Bell
+  Bell,
+  Flame,
+  Calculator,
+  Receipt,
+  Heart,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -65,6 +69,13 @@ const mainNavItems = [
     icon: Shield,
     badge: 'B+'
   },
+];
+
+const planningNavItems = [
+  { title: 'FIRE Planner',     url: '/fire-planner',    icon: Flame,      badge: 'New' },
+  { title: 'SIP Calculator',  url: '/sip-calculator',  icon: Calculator                },
+  { title: 'Tax Wizard',      url: '/tax-wizard',      icon: Receipt,    badge: 'New' },
+  { title: 'Couples Planner', url: '/couples-planner', icon: Heart                     },
 ];
 
 const toolsNavItems = [
@@ -159,6 +170,38 @@ export function AppSidebar() {
                           {item.badge && (
                             <Badge 
                               variant={isActive(item.url) ? 'secondary' : 'outline'} 
+                              className="text-xs"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
+            Planning Tools
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {planningNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild size="lg">
+                    <NavLink to={item.url} className={getNavClassName}>
+                      <item.icon className={`${collapsed ? 'mx-auto' : 'mr-3'} h-5 w-5`} />
+                      {!collapsed && (
+                        <div className="flex items-center justify-between flex-1">
+                          <span>{item.title}</span>
+                          {'badge' in item && item.badge && (
+                            <Badge
+                              variant={isActive(item.url) ? 'secondary' : 'outline'}
                               className="text-xs"
                             >
                               {item.badge}
