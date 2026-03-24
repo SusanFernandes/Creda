@@ -6,7 +6,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { P, Small, H4 } from '~/components/ui/typography';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import axios from 'axios';
+import { ApiService } from '~/services/api';
 
 type UserProfileData = {
   age: number;
@@ -67,10 +67,20 @@ export default function UserProfilePortfolioForm({ bottomSheetRef, onResult }: P
 
       console.log('API payload:', apiData);
 
-      const result = await axios.post('https://fafe2d2eb319.ngrok-free.app/get_portfolio_allocation', apiData);
+      const result = await ApiService.getPortfolioAllocation({
+        user_id: 'app_user',
+        age: apiData.age,
+        income: apiData.income,
+        savings: apiData.savings,
+        dependents: apiData.number_of_dependents,
+        risk_tolerance: apiData.risk_tolerance,
+        goal_type: apiData.investment_goal,
+        time_horizon: apiData.investment_horizon_years,
+      });
 
-      console.log('Portfolio allocation result:', result.data);
-      onResult(result.data.data);
+      if (result) {
+        onResult(result);
+      }
 
     } catch (error: any) {
       console.error('API Error:', error);

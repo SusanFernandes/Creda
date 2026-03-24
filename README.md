@@ -131,7 +131,9 @@ All clients hit the Gateway on **Port 8080**. Key endpoints:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/chat` | POST | Main conversational AI (routes to LangGraph) |
-| `/process_voice` | POST | Voice input → voice response (multilingual file upload) |
+| `/voice/command` | POST | **Push-to-talk**: audio → ASR → Groq function-calling → structured intent (navigation / action / answer) |
+| `/process_voice` | POST | Full voice pipeline: audio → ASR → LLM → TTS → audio stream |
+| `/tts_only` | POST | Text → Indic Parler-TTS audio (multilingual confirmations) |
 | `/twilio/voice` | POST | Incoming Twilio call handler (persistent sessions) |
 | `/twilio/process_speech` | POST | Twilio Gather continuation (multi-turn voice) |
 | `/portfolio/xray` | POST | CAMS PDF upload → full portfolio analysis |

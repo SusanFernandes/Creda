@@ -1,24 +1,17 @@
 
-import { Link, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Text, View } from "react-native";
-import { Gradient } from "~/components/Gradient";
-import { Button } from "~/components/ui/button";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
 
-export default function voiceScreen() {
-const [start,setStart]=useState(false)
+/**
+ * voice.tsx — Immediately redirect to the full AI Voice Agent screen.
+ */
+export default function VoiceScreen() {
+  const router = useRouter();
 
-      const startConversation = async () => {
-        setStart(true)
-      };
-      
-      const endConversation = async () => {
-  setStart(false)
-      };
-      
-    return (
-      <>
-<Link style={{color:"white"}} href={'/voiceagent'}>settings</Link>
-      </>
-    )
+  useEffect(() => {
+    // Replace so back-button doesn't loop
+    router.replace("/voiceagent" as any);
+  }, []);
+
+  return null;
 }

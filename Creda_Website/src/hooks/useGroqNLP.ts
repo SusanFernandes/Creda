@@ -1,96 +1,97 @@
+/**
+ * useGroqNLP — NLP / Intent processing for voice commands.
+ * Routes through the CREDA backend (/chat) instead of calling Groq directly
+ * from the browser (which would expose API keys).
+ */
 import { useState } from 'react';
+import { ApiService, VOICE_COMMANDS } from '@/services/api';
 
-interface GroqResponse {
+export interface NLPResponse {
   intent: string;
   action: string;
   parameters: Record<string, any>;
   confidence: number;
+  response_text?: string;
   translation?: string;
+  session_id?: string;
 }
+
+// Map an action string to the React Router path
+export const ACTION_TO_PATH: Record<string, string> = {
+  dashboard: '/dashboard',
+  portfolio: '/portfolio',
+  budget: '/budget',
+  health: '/health',
+  fire: '/fire-planner',
+  sip: '/sip-calculator',
+  tax: '/tax-wizard',
+  advisory: '/advisory',
+  goals: '/goals',
+  knowledge: '/knowledge',
+  voice: '/voice',
+  couples: '/couples-planner',
+  settings: '/settings',
+  help: '/help',
+};
 
 export const useGroqNLP = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const processCommand = async (text: string, language: string = 'english'): Promise<GroqResponse> => {
+  /**
+   * Process a natural-language command.
+   * 1. Try keyword matching (fast, offline).
+   * 2. If no keyword match OR text is a financial question, send to /chat.
+   */
+  const processCommand = async (
+    text: string,
+    language: string = 'english',
+    userId: string = 'web_user',
+    sessionId?: string,
+  ): Promise<NLPResponse> => {
     setIsProcessing(true);
-    
+
     try {
-      const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
-      
-      if (!groqApiKey) {
-        throw new Error('Groq API key not configured');
+      const lowerText = text.toLowerCase().trim();
+
+      // ── Step 1: keyword match (navigation intent) ─────────────────────────
+      for (const [action, keywords] of Object.entries(VOICE_COMMANDS)) {
+        const matched = keywords.some(
+          (kw) =>
+            lowerText.includes(kw.toLowerCase()) ||
+            fuzzyMatch(lowerText, kw.toLowerCase(), 0.85),
+        );
+
+        if (matched) {
+          // Pure navigation — no need to call the backend
+          return {
+            intent: 'navigation',
+            action,
+            parameters: { path: ACTION_TO_PATH[action] ?? '/dashboard' },
+            confidence: 0.9,
+          };
+        }
       }
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama3-70b-8192',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a financial assistant AI that parses voice commands for a finance platform called CREDA. 
-
-IMPORTANT: Respond only with valid JSON in this exact format:
-{
-  "intent": "one of: portfolio, budget, expense_analysis, goals, health, dashboard, investment_advice, transaction, market_update, balance_check, savings_plan",
-  "action": "specific action like show_portfolio, optimize_budget, add_expense, create_goal, etc.",
-  "parameters": {"key": "value"},
-  "confidence": 0.0-1.0,
-  "translation": "english translation if input was not in english"
-}
-
-Common voice commands and their mappings:
-- "show my portfolio" → {"intent": "portfolio", "action": "show_portfolio"}
-- "optimize my budget" → {"intent": "budget", "action": "optimize_budget"}
-- "add expense of 500 for food" → {"intent": "expense_analysis", "action": "add_expense", "parameters": {"amount": 500, "category": "food"}}
-- "set retirement goal of 1 crore" → {"intent": "goals", "action": "create_goal", "parameters": {"type": "retirement", "amount": 10000000}}
-- "check my financial health" → {"intent": "health", "action": "check_health"}
-- "go to dashboard" → {"intent": "dashboard", "action": "navigate"}
-- "invest in mutual funds" → {"intent": "investment_advice", "action": "suggest_investment", "parameters": {"type": "mutual_funds"}}
-
-Handle Indian languages and financial terms. Extract amounts, categories, and time periods from commands.`
-            },
-            {
-              role: 'user',
-              content: `Parse this voice command: "${text}". Language: ${language}`
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 500,
-        }),
+      // ── Step 2: send to CREDA backend for financial questions ──────────────
+      const langCode = languageNameToCode(language);
+      const chatRes = await ApiService.chat({
+        message: text,
+        user_id: userId,
+        session_id: sessionId,
+        language: langCode,
       });
 
-      if (!response.ok) {
-        throw new Error(`Groq API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No response from Groq API');
-      }
-
-      // Parse JSON response
-      const parsedResponse = JSON.parse(content);
-      
       return {
-        intent: parsedResponse.intent || 'unknown',
-        action: parsedResponse.action || 'unknown',
-        parameters: parsedResponse.parameters || {},
-        confidence: parsedResponse.confidence || 0.8,
-        translation: parsedResponse.translation
+        intent: chatRes.intent || 'general_chat',
+        action: 'answer',
+        parameters: chatRes.data || {},
+        confidence: 0.95,
+        response_text: chatRes.response,
+        session_id: chatRes.session_id,
       };
-
-    } catch (error) {
-      console.error('Groq NLP processing error:', error);
-      
-      // Fallback to basic pattern matching
-      return fallbackProcessing(text, language);
+    } catch (err) {
+      console.warn('useGroqNLP: backend failed, using fallback pattern matching', err);
+      return patternFallback(text);
     } finally {
       setIsProcessing(false);
     }
@@ -99,39 +100,51 @@ Handle Indian languages and financial terms. Extract amounts, categories, and ti
   return { processCommand, isProcessing };
 };
 
-// Fallback processing using pattern matching
-const fallbackProcessing = (text: string, language: string): GroqResponse => {
-  const lowerText = text.toLowerCase();
-  
-  // Basic pattern matching for common commands
-  if (lowerText.includes('portfolio') || lowerText.includes('investment')) {
-    return { intent: 'portfolio', action: 'show_portfolio', parameters: {}, confidence: 0.6 };
-  }
-  
-  if (lowerText.includes('budget') || lowerText.includes('बजट')) {
-    return { intent: 'budget', action: 'show_budget', parameters: {}, confidence: 0.6 };
-  }
-  
-  if (lowerText.includes('expense') || lowerText.includes('खर्च')) {
-    return { intent: 'expense_analysis', action: 'show_expenses', parameters: {}, confidence: 0.6 };
-  }
-  
-  if (lowerText.includes('goal') || lowerText.includes('लक्ष्य')) {
-    return { intent: 'goals', action: 'show_goals', parameters: {}, confidence: 0.6 };
-  }
-  
-  if (lowerText.includes('health') || lowerText.includes('स्वास्थ्य')) {
-    return { intent: 'health', action: 'check_health', parameters: {}, confidence: 0.6 };
-  }
-  
-  if (lowerText.includes('dashboard') || lowerText.includes('डैशबोर्ड')) {
-    return { intent: 'dashboard', action: 'navigate', parameters: {}, confidence: 0.6 };
-  }
-  
-  return { 
-    intent: 'unknown', 
-    action: 'clarify', 
-    parameters: { original_text: text }, 
-    confidence: 0.3 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function languageNameToCode(name: string): string {
+  const map: Record<string, string> = {
+    hindi: 'hi', tamil: 'ta', telugu: 'te', bengali: 'bn',
+    marathi: 'mr', gujarati: 'gu', kannada: 'kn', malayalam: 'ml',
+    punjabi: 'pa', urdu: 'ur', english: 'en',
   };
-};
+  return map[name.toLowerCase()] ?? 'en';
+}
+
+function fuzzyMatch(text: string, keyword: string, threshold = 0.85): boolean {
+  if (text.length === 0) return keyword.length === 0;
+  if (keyword.length === 0) return false;
+  const matrix: number[][] = Array.from({ length: keyword.length + 1 }, (_, i) =>
+    Array.from({ length: text.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= keyword.length; i++) {
+    for (let j = 1; j <= text.length; j++) {
+      matrix[i][j] =
+        keyword[i - 1] === text[j - 1]
+          ? matrix[i - 1][j - 1]
+          : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+    }
+  }
+  const maxLen = Math.max(text.length, keyword.length);
+  return (maxLen - matrix[keyword.length][text.length]) / maxLen >= threshold;
+}
+
+function patternFallback(text: string): NLPResponse {
+  const lower = text.toLowerCase();
+  const rules: Array<{ patterns: string[]; intent: string; action: string }> = [
+    { patterns: ['portfolio', 'investment', 'fund', 'sip', 'निवेश', 'పెట్టుబడి'], intent: 'portfolio', action: 'portfolio' },
+    { patterns: ['budget', 'expense', 'spend', 'खर्च', 'ఖర్చు'], intent: 'budget', action: 'budget' },
+    { patterns: ['health', 'score', 'स्वास्थ्य', 'ఆరోగ్యం'], intent: 'health', action: 'health' },
+    { patterns: ['retire', 'fire', 'रिटायर', 'పదవీ'], intent: 'fire', action: 'fire' },
+    { patterns: ['tax', 'टैक्स', 'పన్ను', 'কর'], intent: 'tax', action: 'tax' },
+    { patterns: ['goal', 'target', 'लक्ष्य', 'లక్ష్యం'], intent: 'goals', action: 'goals' },
+    { patterns: ['dashboard', 'home', 'डैशबोर्ड'], intent: 'navigation', action: 'dashboard' },
+  ];
+
+  for (const rule of rules) {
+    if (rule.patterns.some((p) => lower.includes(p))) {
+      return { intent: rule.intent, action: rule.action, parameters: {}, confidence: 0.6 };
+    }
+  }
+
+  return { intent: 'general_chat', action: 'answer', parameters: {}, confidence: 0.4 };
+}

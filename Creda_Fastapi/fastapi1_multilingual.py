@@ -7,6 +7,7 @@
 # Translation (IndicTrans2) only used for backend English→Indic
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+import asyncio
 import os
 import io
 import json
@@ -130,14 +131,32 @@ class ASREngine:
         try:
             wav, sr = torchaudio.load(buf)
         except Exception:
-            # soundfile fallback for formats torchaudio can't decode
+            # soundfile fallback for formats torchaudio can't decode directly
             buf.seek(0)
-            audio_np, sr = sf.read(buf, dtype="float32")
-            wav = torch.from_numpy(audio_np).float()
-            if wav.dim() == 1:
-                wav = wav.unsqueeze(0)                 # (1, T)
-            elif wav.dim() == 2 and wav.shape[1] <= 2:
-                wav = wav.T                             # (channels, T)
+            try:
+                audio_np, sr = sf.read(buf, dtype="float32")
+                wav = torch.from_numpy(audio_np).float()
+                if wav.dim() == 1:
+                    wav = wav.unsqueeze(0)                 # (1, T)
+                elif wav.dim() == 2 and wav.shape[1] <= 2:
+                    wav = wav.T                             # (channels, T)
+            except Exception:
+                # pydub fallback — handles M4A/AAC from Expo (requires ffmpeg in PATH)
+                buf.seek(0)
+                try:
+                    from pydub import AudioSegment
+                    seg = AudioSegment.from_file(buf)
+                    seg = seg.set_channels(1).set_frame_rate(16000)
+                    samples = np.array(seg.get_array_of_samples(), dtype=np.float32)
+                    samples /= np.iinfo(seg.array_type).max
+                    wav = torch.from_numpy(samples).unsqueeze(0)
+                    sr = 16000  # already resampled by pydub
+                except Exception as pydub_err:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Unsupported audio format — tried torchaudio, soundfile, pydub: {pydub_err}. "
+                               "Ensure ffmpeg is installed on the server.",
+                    )
 
         # mono
         if wav.shape[0] > 1:
@@ -990,6 +1009,256 @@ async def test_asr():
         "device": asr_engine.device if asr_engine else "unknown",
         "test_status": "ready" if (asr_engine and asr_engine.is_ready) else "unavailable",
     }
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ENDPOINT — POST /voice/command
+# Push-to-talk: audio → ASR → Groq function-calling → structured intent
+# Replaces ALL keyword/regex navigation maps in frontend.
+# Returns JSON the client executes directly (navigate / action / answer).
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# All navigable screens — the LLM picks from this enum
+_NAVIGATION_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "navigate_to_screen",
+            "description": "Navigate the user to a specific screen in the CREDA app",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "screen": {
+                        "type": "string",
+                        "enum": [
+                            "dashboard", "portfolio", "budget", "advisory",
+                            "goals", "expense_analytics", "financial_health",
+                            "knowledge", "voice", "settings", "sip_calculator",
+                            "fire_planner", "tax_wizard", "insurance", "bills",
+                            "investments", "fraud_detection", "couples_planner",
+                            "security", "help",
+                        ],
+                        "description": "The screen to navigate to",
+                    }
+                },
+                "required": ["screen"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_financial_action",
+            "description": "Execute a financial action such as calculating SIP, showing health score, or running a stress test",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "calculate_sip", "show_portfolio_xray", "run_stress_test",
+                            "get_health_score", "compare_tax_regime", "show_budget_analysis",
+                            "list_goals", "check_insurance_gap", "show_expense_breakdown",
+                        ],
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Optional parameters for the action",
+                    },
+                },
+                "required": ["action"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "answer_financial_question",
+            "description": "Answer a conversational financial question without navigating anywhere",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string"},
+                    "language": {"type": "string"},
+                },
+                "required": ["question"],
+            },
+        },
+    },
+]
+
+_INTENT_SYSTEM_PROMPT = """\
+You are the voice controller for CREDA, an Indian personal-finance app.
+The user spoke in {lang_name}. They are currently on the '{current_screen}' screen.
+
+Interpret their voice command and call exactly ONE of the provided functions.
+Commands can be in Hindi, Tamil, Telugu, Bengali, Hinglish, or any Indian language/English.
+
+Examples:
+- "mera portfolio dikhao" → navigate_to_screen(portfolio)
+- "SIP calculator kholna hai" → navigate_to_screen(sip_calculator)
+- "mera paisa kahan ja raha hai" → execute_financial_action(show_expense_breakdown)
+- "retirement plan banao" → navigate_to_screen(fire_planner)
+- "tax bachao" → execute_financial_action(compare_tax_regime)
+- "health score batao" → execute_financial_action(get_health_score)
+- "SIP kya hota hai" → answer_financial_question(...)
+- "show my bills" → navigate_to_screen(bills)
+- "budget dekhna hai" → navigate_to_screen(budget)
+"""
+
+
+async def _resolve_intent(transcript: str, language_code: str, current_screen: str) -> dict:
+    """ASR transcript → structured intent via Groq function calling."""
+    if not llm_engine or not llm_engine.is_ready:
+        return {"type": "conversation", "response": transcript, "raw_transcript": transcript}
+
+    lang_name = LANG_NAMES.get(language_code, "Hindi")
+    system = _INTENT_SYSTEM_PROMPT.format(lang_name=lang_name, current_screen=current_screen)
+
+    try:
+        resp = llm_engine.client.chat.completions.create(
+            model=llm_engine.primary_model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": transcript},
+            ],
+            tools=_NAVIGATION_TOOLS,
+            tool_choice="auto",
+            max_tokens=200,
+            temperature=0,
+        )
+        msg = resp.choices[0].message
+
+        if msg.tool_calls:
+            tc = msg.tool_calls[0]
+            return {
+                "type": "function_call",
+                "function": tc.function.name,
+                "args": json.loads(tc.function.arguments),
+                "raw_transcript": transcript,
+            }
+        else:
+            return {
+                "type": "conversation",
+                "response": msg.content or transcript,
+                "raw_transcript": transcript,
+            }
+    except Exception as e:
+        logger.warning("Intent resolution failed: %s", e)
+        return {"type": "conversation", "response": transcript, "raw_transcript": transcript}
+
+
+@app.post("/voice/command")
+async def voice_command(
+    audio: UploadFile = File(...),
+    language_code: str = Form(default="en"),
+    current_screen: str = Form(default="dashboard"),
+    user_id: str = Form(default="anonymous"),
+):
+    """
+    Push-to-talk voice command endpoint.
+
+    Pipeline: audio → ASR → Groq function-calling → structured JSON intent.
+    Replaces ALL NAVIGATION_MAP / keyword regex logic in the frontend.
+
+    Response shape:
+      {transcript, type: "function_call"|"conversation", function?, args?, response?}
+    """
+    start = time.time()
+
+    if not asr_engine or not asr_engine.is_ready:
+        raise HTTPException(status_code=503, detail="ASR engine not ready")
+
+    lang = language_code
+    if lang not in LANG_NAMES:
+        lang = "en"
+
+    audio_bytes = await audio.read()
+    transcript = asr_engine.transcribe(audio_bytes, lang)
+    logger.info("PTT ASR [%s] → %s", lang, transcript[:120])
+
+    intent = await _resolve_intent(transcript, lang, current_screen)
+    logger.info("PTT intent: %s in %.2fs", intent.get("type"), time.time() - start)
+
+    return JSONResponse(content={"transcript": transcript, **intent})
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ENDPOINT — POST /pipecat/offer
+# WebRTC signaling: browser SDP offer → bot SDP answer.
+# Starts an isolated Pipecat real-time voice pipeline per connection.
+# Requires: pip install "pipecat-ai[webrtc,silero]"
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+class PipecatOfferRequest(BaseModel):
+    sdp: str
+    type: str = "offer"
+    language_code: str = "en"
+    user_id: str = "anonymous"
+    current_screen: str = "dashboard"
+
+
+@app.post("/pipecat/offer")
+async def pipecat_offer(request: PipecatOfferRequest):
+    """
+    WebRTC signaling endpoint for the Pipecat real-time voice bot.
+
+    Flow:
+      1. Browser creates RTCPeerConnection + mic track + data channel.
+      2. Browser POSTs SDP offer here.
+      3. This endpoint creates a SmallWebRTCConnection, returns SDP answer.
+      4. Pipecat pipeline runs in a background task for the lifetime of the call.
+      5. Bot audio arrives via WebRTC audio track; navigation commands via data channel.
+    """
+    try:
+        from pipecat_bot import create_connection_from_offer, run_pipecat_bot, PIPECAT_AVAILABLE
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=501,
+            detail=f"Pipecat is not installed on this server: {exc}",
+        )
+
+    if not PIPECAT_AVAILABLE:
+        raise HTTPException(
+            status_code=501,
+            detail="pipecat-ai[webrtc,silero] is not installed. "
+                   "Run: pip install 'pipecat-ai[webrtc,silero]'",
+        )
+
+    try:
+        connection = await create_connection_from_offer(request.sdp, request.type)
+    except Exception as exc:
+        logger.error("Pipecat offer failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Failed to initialise WebRTC connection: {exc}")
+
+    answer = connection.get_answer()
+    if not answer:
+        raise HTTPException(status_code=500, detail="aiortc failed to produce SDP answer")
+
+    # Launch bot pipeline as a fire-and-forget background task
+    asyncio.create_task(
+        run_pipecat_bot(
+            connection=connection,
+            language_code=request.language_code,
+            user_id=request.user_id,
+            current_screen=request.current_screen,
+        ),
+        name=f"pipecat-{answer['pc_id']}",
+    )
+
+    logger.info(
+        "Pipecat session started  pc_id=%s  lang=%s  user=%s",
+        answer["pc_id"],
+        request.language_code,
+        request.user_id,
+    )
+
+    return JSONResponse(content={
+        "sdp": answer["sdp"],
+        "type": answer["type"],
+        "pc_id": answer["pc_id"],
+    })
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

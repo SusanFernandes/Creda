@@ -64,7 +64,16 @@ multilingual = [
     "sentencepiece>=0.2",
     "sacremoses>=0.1",
     "gtts>=2.5",
+    # pydub handles M4A/AAC from Expo recordings — requires ffmpeg in PATH
+    # Install ffmpeg: `apt install ffmpeg` (Linux) | `brew install ffmpeg` (Mac)
+    # It is pre-installed in the Docker image (see Dockerfile line ~9).
     "pydub>=0.25",
+
+    # ── Pipecat real-time voice pipeline (optional — gracefully disabled if absent) ──
+    # Enables SmallWebRTCTransport + SileroVAD for always-on streaming voice.
+    # PTT fallback (/voice/command) continues to work without this.
+    # System dependencies: apt install ffmpeg libavcodec-extra libopus0
+    "pipecat-ai[webrtc,silero]>=0.0.50",
 ]
 
 dev = [

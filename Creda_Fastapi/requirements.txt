@@ -57,7 +57,16 @@ sacremoses
 gtts
 
 # === Audio / Utilities ===
+# pydub handles M4A/AAC from Expo recordings (fallback when torchaudio/soundfile can't decode)
+# Requires ffmpeg in PATH: apt install ffmpeg | brew install ffmpeg
+# ffmpeg is pre-installed in the Docker image (Dockerfile)
 pydub
+
+# === Pipecat real-time voice pipeline (optional) ===
+# Enables always-on WebRTC streaming voice (SmallWebRTCTransport + SileroVAD).
+# PTT /voice/command fallback works without this.
+# System deps: apt install ffmpeg libavcodec-extra libopus0
+# pipecat-ai[webrtc,silero]>=0.0.50
 python-dateutil
 aiofiles
 requests

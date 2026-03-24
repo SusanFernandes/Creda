@@ -185,8 +185,10 @@ def determine_service_route(endpoint: str, request_data: Any = None) -> tuple:
     """Intelligent routing logic"""
     # Voice and language processing routes -> FastAPI 1
     voice_routes = [
-        "/process_voice", "/get_audio_response", "/translate", 
-        "/understand_intent", "/process_multilingual_query", "/test_asr"
+        "/process_voice", "/get_audio_response", "/translate",
+        "/understand_intent", "/process_multilingual_query", "/test_asr",
+        "/voice/command", "/tts_only", "/transcribe_only",
+        "/pipecat/offer",
     ]
     
     # Finance and portfolio routes -> FastAPI 2
@@ -305,17 +307,69 @@ async def process_voice_request(audio: UploadFile = File(...), language: str = "
             processing_time=time.time() - start_time
         )
     except HTTPException:
-        # Re-raise HTTP exceptions from route_request so FastAPI returns proper status codes
         raise
     except Exception as e:
         logger.error(f"Error in /process_voice proxy: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+@app.post("/voice/command")
+async def voice_command_proxy(
+    audio: UploadFile = File(...),
+    language_code: str = Form(default="en"),
+    current_screen: str = Form(default="dashboard"),
+    user_id: str = Form(default="anonymous"),
+):
+    """
+    Push-to-talk command endpoint.
+    Proxies to multilingual service /voice/command.
+    Returns structured JSON: {transcript, type, function?, args?, response?}
+    """
+    try:
+        content = await audio.read()
+        files = {
+            "audio": (audio.filename or "audio.wav", content, audio.content_type or "audio/wav")
+        }
+        data = {
+            "language_code": language_code,
+            "current_screen": current_screen,
+            "user_id": user_id,
+        }
+        return await route_request(FASTAPI1_URL, "/voice/command", "POST", data=data, files=files)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /voice/command proxy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pipecat/offer")
+async def pipecat_offer_proxy(request: Request):
+    """
+    WebRTC signaling: proxy the browser SDP offer to the multilingual service.
+    The multilingual service returns a SDP answer and starts a Pipecat pipeline.
+    Requires pipecat-ai[webrtc,silero] installed on the backend.
+
+    Request body (JSON):
+      { sdp, type, language_code?, user_id?, current_screen? }
+    Response (JSON):
+      { sdp, type, pc_id }
+    """
+    try:
+        body = await request.json()
+        return await route_request(FASTAPI1_URL, "/pipecat/offer", "POST", data=body)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /pipecat/offer proxy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/get_audio_response")
 async def get_audio_response(request_data: dict):
     """Route audio response generation to multilingual service"""
     start_time = time.time()
-    
+
     result = await route_request(FASTAPI1_URL, "/get_audio_response", "POST", data=request_data)
     
     return GatewayResponse(

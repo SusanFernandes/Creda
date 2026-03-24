@@ -1,51 +1,35 @@
-// src/components/AlwaysOnVoice.tsx
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useReliableVoice } from '@/hooks/useReliableVoice';
+/**
+ * AlwaysOnVoice — smart voice layer for CREDA website.
+ *
+ * Strategy
+ * ────────
+ * 1. Try Pipecat real-time WebRTC mode first (always-on, hands-free).
+ * 2. If the browser doesn't support WebRTC, pipecat is not installed on the
+ *    backend, or the WebRTC session enters a persistent error state →
+ *    transparently swap in the Push-to-Talk fallback.
+ *
+ * This lets us upgrade to real-time voice without removing the robust PTT
+ * system that already works correctly.
+ */
 
-export const AlwaysOnVoice = () => {
-  const nav = useNavigate();
-  const lastCommandRef = useRef<string>(''); // prevent double fire
+import { useState } from 'react';
+import { PipecatVoiceButton } from './PipecatVoiceButton';
+import { PushToTalkButton } from './PushToTalkButton';
 
-  const { isActive, currentTranscript, permissionGranted } = useReliableVoice({
-    enableAudioResponse: false,
-  });
+export function AlwaysOnVoice() {
+  // Start optimistically with Pipecat; fall back on fatal error
+  const [useFallback, setUseFallback] = useState(false);
 
-  /* ----------  ROUTING TABLE  ---------- */
-  const pageMap: Record<string, string> = {
-    dashboard: '/dashboard',
-    portfolio: '/portfolio',
-    budget: '/budget',
-    goals: '/goals',
-    settings: '/settings',
-    voice: '/voice',
-    health: '/health',
-    advisory: '/advisory',
-    expense: '/expense-analytics',
-    help: '/help',
-  };
+  if (useFallback) {
+    return <PushToTalkButton />;
+  }
 
-  /* ---- react to every final transcript ---- */
-  useEffect(() => {
-    if (!currentTranscript || isActive) return; // wait until listening ends
-    
-    if (currentTranscript === lastCommandRef.current) return; // debounce
-    lastCommandRef.current = currentTranscript;
-
-    const cmd = currentTranscript.toLowerCase().replace(/hey creda|ok creda|hello creda/g, '').trim();
-    const route = Object.keys(pageMap).find((k) => cmd.includes(k));
-    if (route) {
-      nav(pageMap[route]);
-      console.log('🎯 Navigated to', pageMap[route]);
-    }
-  }, [currentTranscript, isActive, nav]);
-
-  /* ---- auto-start wake-word listener ---- */
-  useEffect(() => {
-    if (permissionGranted && !isActive) {
-      // ReliableVoice auto-restarts; we just ensure first start
-    }
-  }, [permissionGranted, isActive]);
-
-  return null; // no UI
-};
+  return (
+    <PipecatVoiceButton
+      onFatalError={() => {
+        console.info('[AlwaysOnVoice] Pipecat failed — switching to push-to-talk mode');
+        setUseFallback(true);
+      }}
+    />
+  );
+}

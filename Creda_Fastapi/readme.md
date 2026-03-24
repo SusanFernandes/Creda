@@ -173,12 +173,63 @@ Creda_Fastapi/
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/process_voice` | POST | Full pipeline: audio → ASR → LLM → TTS → audio |
-| `/process_text` | POST | Text → LLM → translated response |
-| `/transcribe` | POST | Audio → text (ASR only) |
-| `/translate` | POST | Text translation between Indian languages |
-| `/tts/synthesize` | POST | Text → audio (TTS only) |
-| `/supported_languages` | GET | List of supported languages |
+| `/voice/command` | POST | **Push-to-talk**: audio → ASR → Groq function-calling → structured JSON intent. Replaces all frontend NAVIGATION_MAP / keyword regex. Accepts `audio` (webm/wav/m4a), `language_code`, `current_screen`, `user_id`. Returns `{transcript, type, function?, args?, response?}`. |
+| `/process_voice` | POST | Full pipeline: audio → ASR → LLM → TTS → audio stream. Used for Twilio voice calls. |
+| `/process_text` | POST | Text → LLM → TTS audio stream |
+| `/transcribe_only` | POST | Audio → text transcript (ASR only, no LLM) |
+| `/translate` | POST | Text translation between Indian languages (IndicTrans2) |
+| `/tts_only` | POST | Text → audio (Indic Parler-TTS). Used for multilingual confirmations. |
+| `/supported_languages` | GET | All 22 supported languages with capability flags |
+| `/health` | GET | Engine status for ASR, LLM, TTS, Translation |
+
+---
+
+## Push-to-Talk Voice Architecture
+
+The `/voice/command` endpoint powers the PTT button on both the website and the Expo app.  
+It replaces all `NAVIGATION_MAP` / keyword-regex logic that previously lived in the frontends.
+
+**Request** (multipart/form-data)
+| Field | Type | Description |
+|-------|------|-------------|
+| `audio` | file | WAV (website), M4A (Expo), WebM — pydub converts automatically via ffmpeg |
+| `language_code` | string | ISO code: `hi`, `ta`, `te`, `bn`, `mr`, `gu`, `kn`, `ml`, `pa`, `ur`, `en` |
+| `current_screen` | string | Active screen name, e.g. `dashboard`, `portfolio` (provides LLM context) |
+| `user_id` | string | User identifier |
+
+**Response** (JSON)
+```json
+// Navigation intent
+{ "transcript": "mera portfolio dikhao", "type": "function_call",
+  "function": "navigate_to_screen", "args": { "screen": "portfolio" } }
+
+// Financial action
+{ "transcript": "mera health score batao", "type": "function_call",
+  "function": "execute_financial_action", "args": { "action": "get_health_score" } }
+
+// Conversational answer
+{ "transcript": "SIP kya hota hai", "type": "conversation",
+  "response": "SIP yani Systematic Investment Plan ek tarika hai..." }
+```
+
+**Pipeline**
+```
+Audio blob  →  IndicConformer ASR  →  Groq llama-3.3-70b-versatile (function-calling)
+                                              │
+                    ┌─────────────────────────┼────────────────────────────┐
+                    ▼                         ▼                            ▼
+            navigate_to_screen    execute_financial_action    answer_financial_question
+            (router.push)         (custom event bus)          (speakResponse / chat)
+```
+
+**Audio format support** (three-tier fallback in `ASREngine.preprocess_audio`):
+1. `torchaudio.load()` — WAV, FLAC, MP3, WebM with ffmpeg backend
+2. `soundfile` — WAV, FLAC, OGG
+3. `pydub` — M4A/AAC from Expo (requires system `ffmpeg`; pre-installed in Docker)
+
+> **Note**: The website sends `audio/webm;codecs=opus` (MediaRecorder default — no ffmpeg needed).  
+> The Expo app sends `audio/m4a` — needs pydub + ffmpeg on the server.  
+> In Docker, ffmpeg is installed at image build time (see `Dockerfile` line ~9).
 
 ---
 
