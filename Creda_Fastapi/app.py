@@ -11,7 +11,8 @@ import asyncio
 import json
 import os
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, AsyncGenerator
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import time
 from datetime import datetime
@@ -26,13 +27,82 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Lifespan context manager for startup and shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage application lifespan: startup and shutdown events"""
+    # Startup
+    logger.info("🚀 CREDA API Gateway starting up...")
+    logger.info(f"📡 Waiting for backend services to be ready...")
+    
+    # Poll for services with retry logic
+    max_retries = 15
+    retry_interval = 2  # seconds
+    services_ready = {"multilingual": False, "finance": False}
+    
+    for attempt in range(1, max_retries + 1):
+        tasks = []
+        
+        if not services_ready["multilingual"]:
+            tasks.append(check_service_health(FASTAPI1_URL, "multilingual"))
+        if not services_ready["finance"]:
+            tasks.append(check_service_health(FASTAPI2_URL, "finance"))
+        
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Check multilingual service
+            if not services_ready["multilingual"]:
+                multi_healthy = await check_service_health(FASTAPI1_URL, "multilingual")
+                if multi_healthy:
+                    services_ready["multilingual"] = True
+                    logger.info(f"✅ Multilingual Service is READY ({FASTAPI1_URL})")
+            
+            # Check finance service
+            if not services_ready["finance"]:
+                finance_healthy = await check_service_health(FASTAPI2_URL, "finance")
+                if finance_healthy:
+                    services_ready["finance"] = True
+                    logger.info(f"✅ Finance Service is READY ({FASTAPI2_URL})")
+            
+            # All services ready
+            if services_ready["multilingual"] and services_ready["finance"]:
+                logger.info(f"✅ Gateway ready on port {GATEWAY_PORT}")
+                logger.info(f"✅ All services online and ready!")
+                break
+            
+            # Not all ready yet
+            if attempt < max_retries:
+                ready_count = sum(services_ready.values())
+                logger.info(f"⏳ Attempt {attempt}/{max_retries}: {ready_count}/2 services ready. Retrying in {retry_interval}s...")
+                await asyncio.sleep(retry_interval)
+        else:
+            # All services ready on first check
+            logger.info(f"✅ Gateway ready on port {GATEWAY_PORT}")
+            break
+    
+    # Log final status
+    if not all(services_ready.values()):
+        ready_services = [name for name, ready in services_ready.items() if ready]
+        unavailable = [name for name, ready in services_ready.items() if not ready]
+        logger.warning(f"⚠️  Gateway starting with incomplete backend services!")
+        logger.warning(f"   ✅ Ready: {ready_services if ready_services else 'None'}")
+        logger.warning(f"   ❌ Unavailable: {unavailable}")
+        logger.warning(f"   ℹ️  Gateway will route to available services only.")
+    
+    yield  # Application runs here
+    
+    # Shutdown
+    logger.info("🛑 CREDA API Gateway shutting down...")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="CREDA API Gateway",
     description="Intelligent routing layer for CREDA multilingual finance services",
     version="2.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -899,25 +969,7 @@ async def dynamic_route(endpoint: str, request: Request):
         # Don't re-raise as 500, preserve original error
         logger.error(f"Dynamic routing failed for /{endpoint}: {e}")
         raise e  # This maintains the original status code
-# Startup and shutdown events
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize gateway on startup"""
-    logger.info("🚀 CREDA API Gateway starting up...")
-    
-    # Initial health checks
-    await check_service_health(FASTAPI1_URL, "multilingual")
-    await check_service_health(FASTAPI2_URL, "finance")
-    
-    logger.info(f"✅ Gateway ready on port {GATEWAY_PORT}")
-    logger.info(f"📡 Multilingual Service: {FASTAPI1_URL}")
-    logger.info(f"💰 Finance Service: {FASTAPI2_URL}")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("🛑 CREDA API Gateway shutting down...")
 
 # Error handlers
 
