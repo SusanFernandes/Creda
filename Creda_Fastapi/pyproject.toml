@@ -9,77 +9,68 @@ authors = [{ name = "CREDA Team" }]
 
 dependencies = [
     # ── Framework ──
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
-    "python-multipart>=0.0.9",
-    "pydantic>=2.7",
-    "python-dotenv>=1.0",
-    "httpx>=0.27",
-    "jinja2>=3.1",
-    "aiofiles>=23.2",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "pydantic",
+    "python-dotenv",
+    "httpx",
+    "jinja2",
+    "aiofiles",
 
     # ── Database & persistence ──
-    "sqlmodel>=0.0.16",
-    "aiosqlite>=0.20",
+    "sqlmodel",
+    "aiosqlite",
 
     # ── LangGraph agent orchestration ──
-    "langgraph>=0.2",
-    "langchain-core>=0.2",
-    "langchain-groq>=0.1",
+    "langgraph",
+    "langchain-core",
+    "langchain-groq",
 
     # ── LLM ──
-    "groq>=0.4",
+    "groq",
 
     # ── Financial math ──
-    "casparser>=0.3",
-    "pyxirr>=0.10",
-    "yfinance>=0.2",
-    "pandas>=2.0",
-    "numpy>=1.24",
-    "scipy>=1.11",
-    "scikit-learn>=1.3",
+    "casparser",
+    "pyxirr",
+    "yfinance",
+    "pandas",
+    "numpy",
+    "scipy",
+    "scikit-learn",
 
     # ── RAG ──
-    "chromadb>=0.5",
-    "sentence-transformers>=2.6",
+    "chromadb",
+    "sentence-transformers",
 
     # ── PDF ──
-    "pdfplumber>=0.10",
-    "pymupdf>=1.23",
+    "pdfplumber",
+    "pymupdf",
 
     # ── Utilities ──
-    "python-dateutil>=2.8",
-    "requests>=2.31",
+    "python-dateutil",
+    "requests",
 ]
 
 [project.optional-dependencies]
 multilingual = [
-    # Only needed when running the Multilingual Service (Port 8000)
-    "torch>=2.1",
-    "torchaudio>=2.1",
-    "transformers>=4.36",
-    "soundfile>=0.12",
+    "torch",
+    "torchaudio",
+    "transformers",
+    "soundfile",
     "parler-tts @ git+https://github.com/huggingface/parler-tts.git",
     "IndicTransToolkit",
-    "sentencepiece>=0.2",
-    "sacremoses>=0.1",
-    "gtts>=2.5",
-    # pydub handles M4A/AAC from Expo recordings — requires ffmpeg in PATH
-    # Install ffmpeg: `apt install ffmpeg` (Linux) | `brew install ffmpeg` (Mac)
-    # It is pre-installed in the Docker image (see Dockerfile line ~9).
-    "pydub>=0.25",
-
-    # ── Pipecat real-time voice pipeline (optional — gracefully disabled if absent) ──
-    # Enables SmallWebRTCTransport + SileroVAD for always-on streaming voice.
-    # PTT fallback (/voice/command) continues to work without this.
-    # System dependencies: apt install ffmpeg libavcodec-extra libopus0
-    "pipecat-ai[webrtc,silero]>=0.0.50",
+    "sentencepiece",
+    "sacremoses",
+    "gtts",
+    "pydub",
+    "pipecat-ai",
 ]
 
 dev = [
-    "pytest>=7.0",
-    "pytest-asyncio>=0.23",
-    "ruff>=0.3",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
 ]
 
 [project.scripts]
@@ -90,22 +81,23 @@ creda-finance = "fastapi2_finance:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["agents"]
 
-# ── Ruff (linter + formatter) ──
 [tool.ruff]
 target-version = "py311"
 line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
-ignore = ["E501"]  # line length handled by formatter
+ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
 
-# ── Pytest ──
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

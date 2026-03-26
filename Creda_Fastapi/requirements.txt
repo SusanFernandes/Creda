@@ -1,12 +1,8 @@
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# CREDA Backend — Requirements
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 # === Framework ===
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
+fastapi
+uvicorn[standard]
 python-multipart
-pydantic>=2.0.0
+pydantic
 python-dotenv
 httpx
 jinja2
@@ -16,21 +12,21 @@ sqlmodel
 aiosqlite
 
 # === LangGraph — agent orchestration (Finance Service) ===
-langgraph>=0.2.0
-langchain-core>=0.2.0
-langchain-groq>=0.1.0
+langgraph
+langchain-core
+langchain-groq
 
 # === Financial math ===
 casparser
 pyxirr
 yfinance
 pandas
-numpy>=1.24.0
+numpy
 scipy
 scikit-learn
 
 # === RAG ===
-chromadb>=0.5.0
+chromadb
 sentence-transformers
 
 # === PDF ===
@@ -43,7 +39,7 @@ groq
 # === Twilio — Voice calling integration ===
 twilio
 
-# === Multilingual (Port 8000 — ASR, TTS, Translation) ===
+# === Multilingual ===
 torch
 torchaudio
 transformers
@@ -57,16 +53,7 @@ sacremoses
 gtts
 
 # === Audio / Utilities ===
-# pydub handles M4A/AAC from Expo recordings (fallback when torchaudio/soundfile can't decode)
-# Requires ffmpeg in PATH: apt install ffmpeg | brew install ffmpeg
-# ffmpeg is pre-installed in the Docker image (Dockerfile)
 pydub
-
-# === Pipecat real-time voice pipeline (optional) ===
-# Enables always-on WebRTC streaming voice (SmallWebRTCTransport + SileroVAD).
-# PTT /voice/command fallback works without this.
-# System deps: apt install ffmpeg libavcodec-extra libopus0
-# pipecat-ai[webrtc,silero]>=0.0.50
 python-dateutil
 aiofiles
 requests
