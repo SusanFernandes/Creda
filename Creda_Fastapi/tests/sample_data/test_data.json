@@ -1,0 +1,266 @@
+{
+  "multilingual_test_queries": {
+    "finance_queries": {
+      "en": [
+        "What is a mutual fund?",
+        "How do I start investing?",
+        "What is SIP and how does it work?",
+        "Tell me about the benefits of long-term investing",
+        "What is portfolio diversification?",
+        "How much should I invest each month?",
+        "What is a good asset allocation for my age?",
+        "What are the tax implications of investments?",
+        "How do I calculate my retirement needs?",
+        "What is FIRE and how do I achieve it?"
+      ],
+      "hi": [
+        "म्यूचुअल फंड क्या है?",
+        "मैं निवेश कहाँ से शुरू करूँ?",
+        "SIP क्या है और यह कैसे काम करता है?",
+        "दीर्घकालीन निवेश के लाभ बताइए",
+        "पोर्टफोलियो विविधिकरण क्या है?",
+        "मैं हर महीने कितना निवेश करूँ?",
+        "मेरी उम्र के अनुसार सही asset allocation क्या है?",
+        "निवेश के कर निहितार्थ क्या हैं?",
+        "मैं अपनी सेवानिवृत्ति की जरूरतों की गणना कैसे करूँ?",
+        "FIRE क्या है और मैं इसे कैसे प्राप्त करूँ?"
+      ],
+      "ta": [
+        "மியூச்சுவல் பண்ட் என்றால் என்ன?",
+        "நான் எவ்வாறு முதலீடு செய்ய ஆரம்பிக்கலாம்?",
+        "SIP என்றால் என்ன மற்றும் இது எவ்வாறு செயல்படுகிறது?",
+        "நீண்டகால முதலீட்டின் நன்மைகளைச் சொல்லுங்கள்",
+        "போர்ட்ஃபோலியோ பன்முகப்படுத்தல் என்றால் என்ன?",
+        "நான் ஒவ்வொரு மாதமும் எவ்வளவு முதலீடு செய்ய வேண்டும்?",
+        "என் வயதுக்கு ஏற்ற சரியான சম்பத்தி ஒதுக்கீடு என்ன?",
+        "முதலீட்டின் வரி விளைவுகள் யாவை?",
+        "நான் என் ஓய்வு பெறும் தேவைகளை எவ்வாறு கணக்கிடுவது?",
+        "FIRE என்றால் என்ன மற்றும் நான் இதை எவ்வாறு அடைவது?"
+      ],
+      "te": [
+        "మ్యూచువల్ ఫండ్ అంటే ఏమిటి?",
+        "నేను ఎలా పెట్టుబడి పెట్టడం ప్రారంభించాలి?",
+        "SIP అంటే ఏమిటి మరియు ఇది ఎలా పనిచేస్తుంది?",
+        "దీర్ఘకాల పెట్టుబడి యొక్క ప్రయోజనాల గురించి చెప్పండి",
+        "పోర్ట్‌ఫోలియో విభేదీకరణ అంటే ఏమిటి?",
+        "నేను ప్రతి నెలకు ఎంత పెట్టుబడి పెట్టాలి?",
+        "నా వయస్కు తగిన సరిఅయిన సంపద కేటాయింపు ఏమిటి?",
+        "పెట్టుబడి యొక్క పన్ను చిక్కులు ఏమిటి?",
+        "నేను నా సేవనిష్క్రమణ అవసరాలను ఎలా లెక్కించాలి?",
+        "FIRE అంటే ఏమిటి మరియు నేను దానిని ఎలా సాధించాలి?"
+      ],
+      "bn": [
+        "মিউচুয়াল ফান্ড কী?",
+        "আমি কীভাবে বিনিয়োগ শুরু করতে পারি?",
+        "SIP কী এবং এটি কীভাবে কাজ করে?",
+        "দীর্ঘমেয়াদী বিনিয়োগের সুবিধাগুলি বলুন",
+        "পোর্টফোলিও বৈচিত্র্যকরণ কী?",
+        "আমি প্রতি মাসে কত বিনিয়োগ করব?",
+        "আমার বয়সের জন্য সঠিক সম্পদ বরাদ্দ কী?",
+        "বিনিয়োগের করের প্রভাব কী?",
+        "আমি আমার অবসর চাহিদা কীভাবে গণনা করব?",
+        "FIRE কী এবং আমি এটি কীভাবে অর্জন করব?"
+      ],
+      "mr": [
+        "म्यूचुअल फंड म्हणजे काय?",
+        "मी गुंतवणूक कोठून सुरू करू?",
+        "SIP म्हणजे काय आणि तो कसे काम करतो?",
+        "दीर्घकालीन गुंतवणूकीचे फायदे सांगा",
+        "पोर्टफोलिओ विविधीकरण म्हणजे काय?",
+        "मी दरमहा किती गुंतवणूक करावी?",
+        "माझ्या वयाबद्दल योग्य संपत्ती वंटन काय आहे?",
+        "गुंतवणूकीचे कर परिणाम काय आहेत?",
+        "मी माझ्या निवृत्तीची गरज कशी मोजावी?",
+        "FIRE म्हणजे काय आणि मी ते कसे साध्य करू?"
+      ]
+    },
+    "household_finance_queries": {
+      "en": [
+        "How should I budget my monthly income?",
+        "What is emergency fund and how much do I need?",
+        "How to reduce my expenses?",
+        "Should I pay off debt or invest?",
+        "What is the 50-30-20 budgeting rule?"
+      ],
+      "hi": [
+        "मैं अपनी मासिक आय का बजट कैसे बनाऊँ?",
+        "इमरजेंसी फंड क्या है और मुझे कितना चाहिए?",
+        "मैं अपने खर्च कैसे कम करूँ?",
+        "क्या मैं कर्ज चुकाऊँ या निवेश करूँ?",
+        "50-30-20 बजटिंग नियम क्या है?"
+      ],
+      "ta": [
+        "நான் என் மாதாந்தர வருமானத்திற்கு பட்ജெட் செய்ய வேண்டும்?",
+        "அவசర நிதி என்றால் என்ன மற்றும் நான் எவ்வளவு தேவை?",
+        "நான் என் செலவுகளைக் குறைப்பது எப்படி?",
+        "நான் கடனை சரிசெய்ய வேண்டுமா அல்லது முதலீடு செய்ய வேண்டுமா?",
+        "50-30-20 பட்ജெটிங் விதி என்றால் என்ன?"
+      ]
+    }
+  },
+  "accuracy_baselines": {
+    "translation_references": {
+      "en_to_hi": [
+        {
+          "english": "What is a mutual fund?",
+          "hindi": "म्यूचुअल फंड क्या है?",
+          "key_terms": ["म्यूचुअल फंड", "क्या"]
+        },
+        {
+          "english": "I want to invest in stocks",
+          "hindi": "मैं स्टॉक में निवेश करना चाहता हूँ",
+          "key_terms": ["निवेश", "स्टॉक"]
+        },
+        {
+          "english": "How much returns can I expect?",
+          "hindi": "मैं कितना रिटर्न की उम्मीद कर सकता हूँ?",
+          "key_terms": ["रिटर्न", "उम्मीद"]
+        }
+      ],
+      "hi_to_en": [
+        {
+          "hindi": "मुझे म्यूचुअल फंड के बारे में बताइए",
+          "english": "Tell me about mutual funds",
+          "key_terms": ["mutual fund", "funds"]
+        },
+        {
+          "hindi": "मैं SIP से कितना रिटर्न पा सकता हूँ?",
+          "english": "How much return can I get from SIP?",
+          "key_terms": ["SIP", "return"]
+        }
+      ]
+    },
+    "asr_references": {
+      "hindi": {
+        "audio_description": "Hindi financial query: 'मुझे SIP के बारे में बताइए'",
+        "expected_transcript": "मुझे SIP के बारे में बताइए",
+        "pronunciation": "Mujhe SIP ke baare mein bataiye",
+        "key_words": ["SIP", "बताइए"]
+      },
+      "english": {
+        "audio_description": "English financial query: 'What is a mutual fund?'",
+        "expected_transcript": "What is a mutual fund?",
+        "key_words": ["mutual", "fund"]
+      },
+      "tamil": {
+        "audio_description": "Tamil financial query: 'என் பணத்தை முதலீடு செய்யுங்கள்'",
+        "expected_transcript": "என் பணத்தை முதலீடு செய்யுங்கள்",
+        "key_words": ["பணத்தை", "முதலீடு"]
+      }
+    }
+  },
+  "edge_cases": {
+    "text_content": [
+      {
+        "type": "code_mixing_hinglish",
+        "text": "Mujhe ₹50,000 per month ke liye best investment batao jo 8-10% return de",
+        "language": "hi",
+        "description": "Mixed Hindi-English query"
+      },
+      {
+        "type": "special_characters",
+        "text": "What is P/E ratio? ROI@12% vs @ 15%",
+        "language": "en",
+        "description": "Query with symbols and special characters"
+      },
+      {
+        "type": "repeated_characters",
+        "text": "Hellloooooo!!!! I want inveeeestment adviiiiice",
+        "language": "en",
+        "description": "Repeated characters for emphasis"
+      },
+      {
+        "type": "very_long_query",
+        "text": "I have been working for 10 years and I have accumulated a decent corpus. I want to make sure that I can retire comfortably at 45 and travel the world. I have a wife and two kids and my expenses are around 100000 per month. Can you help me plan my financial future?",
+        "language": "en",
+        "description": "Very long query (>200 chars)"
+      },
+      {
+        "type": "emoji",
+        "text": "Tell me about 📈 stocks 💰 and 💎 wealth creation ✨",
+        "language": "en",
+        "description": "Query with emoji"
+      },
+      {
+        "type": "numbers_only",
+        "text": "50000 10 15 100000",
+        "language": "en",
+        "description": "Only numbers"
+      }
+    ]
+  },
+  "test_scenarios": {
+    "sip_planning": {
+      "user_profile": {
+        "age": 30,
+        "monthly_income": 150000,
+        "monthly_expenses": 60000,
+        "existing_savings": 500000,
+        "investment_goal": "wealth_creation",
+        "time_horizon": 20,
+        "risk_tolerance": "moderate"
+      },
+      "queries": [
+        "I want to start a SIP. How much should I invest?",
+        "What instruments are suitable for a 20-year horizon?",
+        "How much corpus would I have in 20 years?",
+        "What if markets fall 20%? Should I stop investing?"
+      ],
+      "expected_suggestions": [
+        "Monthly SIP amount: ₹50,000 - ₹75,000",
+        "Recommended mix: 60% equity, 40% debt",
+        "Expected corpus in 20 years: ₹2-3 crores",
+        "Continue SIP during market downturns"
+      ]
+    },
+    "fire_planning": {
+      "user_profile": {
+        "age": 35,
+        "monthly_income": 200000,
+        "monthly_expenses": 75000,
+        "existing_savings": 1000000,
+        "retirement_age": 45,
+        "post_retirement_expenses": 50000,
+        "life_expectancy": 85
+      },
+      "queries": [
+        "Can I retire in 10 years?",
+        "What corpus do I need?",
+        "What's the best asset allocation?",
+        "How much should I invest annually?"
+      ],
+      "expected_suggestions": [
+        "Yes, retirement in 10 years is achievable",
+        "Required corpus: ₹1.2 - 1.5 crores",
+        "Asset allocation: 70% equity, 30% debt",
+        "Annual investment needed: ₹50 - 60 lakhs"
+      ]
+    },
+    "tax_planning": {
+      "user_profile": {
+        "age": 40,
+        "annual_income": 2000000,
+        "tax_slab": "30%",
+        "existing_tax_benefits": 150000,
+        "investment_horizon": 15
+      },
+      "queries": [
+        "How can I reduce my tax liability?",
+        "What are the best tax-saving investments?",
+        "Should I use ELSS or PPF?",
+        "What's my total tax liability after investments?"
+      ],
+      "expected_suggestions": [
+        "Tax-saving options: ELSS, PPF, NPS",
+        "ELSS recommended for growth + tax benefit",
+        "Suggested investment: ₹1.5 - 2 lakhs in ELSS",
+        "Estimated tax savings: ₹45,000 - 60,000"
+      ]
+    }
+  },
+  "service_endpoints": {
+    "gateway": "http://localhost:8080",
+    "multilingual": "http://localhost:8000",
+    "finance": "http://localhost:8001"
+  }
+}

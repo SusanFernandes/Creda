@@ -64,7 +64,8 @@ export type PipecatStatus =
   | 'connecting'
   | 'connected'
   | 'bot-speaking'
-  | 'error';
+  | 'error'
+  | 'unsupported';  // server returned 501 — pipecat not installed, don't retry
 
 export interface UsePipecatVoiceOptions {
   /** IETF language tag / CREDA language code, e.g. "en", "hi", "ta" */
@@ -186,6 +187,8 @@ export function usePipecatVoice({
 
   // ── Connect ────────────────────────────────────────────────────────────────
   const connect = useCallback(async () => {
+    // 'unsupported' means server returned 501 — pipecat not installed, never retry
+    if (status === 'unsupported') return;
     if (status !== 'disconnected' && status !== 'error') return;
 
     setStatus('connecting');
@@ -268,6 +271,13 @@ export function usePipecatVoice({
 
       if (!resp.ok) {
         const detail = await resp.text();
+        // 501 = server permanently doesn't support pipecat — never retry
+        if (resp.status === 501) {
+          console.warn('[Pipecat] Server does not support real-time voice (501). Using PTT fallback.');
+          cleanup();
+          setStatus('unsupported');
+          return;
+        }
         throw new Error(`${resp.status}: ${detail}`);
       }
       answerData = await resp.json();

@@ -248,6 +248,9 @@ async def route_request(service_url: str, endpoint: str, method: str = "POST",
     except httpx.ConnectError:
         logger.error(f"Cannot connect to service: {service_url}")
         raise HTTPException(status_code=503, detail="Service unavailable")
+    except HTTPException:
+        # Preserve the original status code (e.g. 501 from pipecat, 422 from validation)
+        raise
     except Exception as e:
         logger.error(f"Routing error for {endpoint}: {e}")
         raise HTTPException(status_code=500, detail=f"Internal routing error: {str(e)}")
@@ -936,7 +939,7 @@ async def gateway_supported_features():
 
 # Dynamic routing for any endpoint
 
-@app.api_route("/{endpoint:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/{endpoint:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
 async def dynamic_route(endpoint: str, request: Request):
     """Dynamic routing for any endpoint"""
     start_time = time.time()

@@ -1222,8 +1222,9 @@ async def pipecat_offer(request: PipecatOfferRequest):
     if not PIPECAT_AVAILABLE:
         raise HTTPException(
             status_code=501,
-            detail="pipecat-ai[webrtc,silero] is not installed. "
-                   "Run: pip install 'pipecat-ai[webrtc,silero]'",
+            detail="Real-time voice is not available on this server. "
+                   "The pipecat-ai WebRTC/Silero extras are required but not installed. "
+                   "Push-to-talk (/voice/command) is still available.",
         )
 
     try:

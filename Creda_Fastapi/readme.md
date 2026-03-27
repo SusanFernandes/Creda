@@ -382,7 +382,13 @@ curl -X POST http://localhost:8001/sip-calculator \
   -H "Content-Type: application/json" \
   -d '{"monthly_amount": 10000, "expected_return": 12, "years": 15}'
 
-# Run test suite
+# Run all tests
+pytest
+
+# Run all tests with verbose output
+pytest -v
+
+# Run specific test file
 pytest test_gateway.py -v
 ```
 
