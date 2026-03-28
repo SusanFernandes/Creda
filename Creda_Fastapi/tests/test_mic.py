@@ -105,7 +105,7 @@ def send_to_creda(audio_bytes: bytes, language_code: str):
         pass
 
 
-def test_health():
+def check_health():
     """Quick health check."""
     try:
         resp = requests.get(f"{CREDA_URL}/health", timeout=5)
@@ -114,7 +114,7 @@ def test_health():
         print(f"Service unreachable: {e}")
 
 
-def test_text(text: str, language_code: str):
+def send_text(text: str, language_code: str):
     """Send a text query and get audio response."""
     url = f"{CREDA_URL}/process_text"
     print(f"Sending text query: '{text}'  lang={language_code}")
@@ -150,9 +150,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.health:
-        test_health()
+        check_health()
     elif args.text:
-        test_text(args.text, args.lang)
+        send_text(args.text, args.lang)
     else:
         audio = record_audio(duration=args.duration)
         send_to_creda(audio, args.lang)

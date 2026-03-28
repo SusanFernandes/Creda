@@ -1,0 +1,285 @@
+INFO:     115.110.161.198:0 - "GET /docs HTTP/1.1" 200 OK
+C:\Users\Z0058J5C\Personal Project\Creda\.venv\Lib\site-packages\fastapi\openapi\utils.py:255: UserWarning: Duplicate Operation ID dynamic_route__endpoint__post for function dynamic_route at C:\Users\Z0058J5C\Personal Project\Creda\Creda_Fastapi\app.py    
+  warnings.warn(message, stacklevel=1)
+INFO:     115.110.161.198:0 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     103.201.150.96:0 - "OPTIONS /pipecat/offer HTTP/1.1" 200 OK
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 6110915853420449477 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 2C:11:C1:9C:E7:5E:23:F4:AF:77:2E:D7:6F:A5:34:72:95:70:07:0E:A5:48:66:2C:6B:A9:48:A3:D6:1D:2E:55\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:c2410f44c3ad771a6a375da0ec7b5459\r\na=ice-ufrag:23170179\r\na=mid:0\r\na=msid:{6b2b9297-7d18-408b-8f8f-dcf5e9aff595} {046dd673-0ae7-4679-8f6d-9a41468d7e00}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:4061056252 cname:{6a1e68a6-f22b-405c-bd0e-9c10f857fa4a}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:c2410f44c3ad771a6a375da0ec7b5459\r\na=ice-ufrag:23170179\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:watchfiles.main:4 changes detected
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 1821717511723476275 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 03:07:4D:11:E6:7C:52:9A:FF:27:DF:E6:E8:27:B2:66:A5:43:B6:37:6D:1D:1B:EF:F8:62:12:2F:20:F6:59:6A\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:2f34be7c65dc06855ec94b0f8cadd901\r\na=ice-ufrag:80e68bfc\r\na=mid:0\r\na=msid:{f576b853-b23c-4676-9815-e0eb11a37f84} {963fbdd3-fa0e-4f80-bdaf-9ce614c8df6a}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:2371833951 cname:{b4b5128b-246c-4c4c-8d47-837397d6a75c}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:2f34be7c65dc06855ec94b0f8cadd901\r\na=ice-ufrag:80e68bfc\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 7067606597110207681 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 09:94:73:BD:F6:3C:64:44:8F:17:54:26:F6:B9:7F:BB:49:9F:93:4D:88:60:52:AF:90:D4:15:CB:D6:9B:D7:51\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:674f9d70c29bdef43133b7a0420e9d0d\r\na=ice-ufrag:2a0e954f\r\na=mid:0\r\na=msid:{bf07ff6c-4331-4c3f-bc1e-f80a1ba69079} {39b63739-ffb2-4ee2-8c2f-7bac5c394328}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:3378045385 cname:{8dcecca8-1d81-428e-9bbe-5926a11bb15c}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:674f9d70c29bdef43133b7a0420e9d0d\r\na=ice-ufrag:2a0e954f\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 1461157778056576631 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 FA:3C:72:6E:F6:C6:44:F0:DB:E1:C5:31:04:1D:C0:17:94:AC:A4:82:FD:6E:95:E0:76:07:0C:49:30:A4:84:2C\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:e6e8ba078ca26ca8d10e664979ee7a5d\r\na=ice-ufrag:f47c4e49\r\na=mid:0\r\na=msid:{b025f5c9-0c28-46d7-af91-d626a8d05c9b} {9a111543-c5e6-45ee-ada0-f5d7df95b6e1}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:2458783051 cname:{0a410277-62ab-42ce-aeea-e66ced1b89d6}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:e6e8ba078ca26ca8d10e664979ee7a5d\r\na=ice-ufrag:f47c4e49\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 6499266717366528141 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 87:F5:5A:1E:2E:E5:6E:E5:F6:54:01:96:95:FD:37:DB:CA:DB:5F:F3:D9:7F:9C:B7:21:42:B7:58:D8:20:50:FE\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:c190063de720fe7ffa79960c27a468b0\r\na=ice-ufrag:e2419ac0\r\na=mid:0\r\na=msid:{1d042b49-b22d-491f-9e85-ae0b1bb23e79} {8831bc34-3a55-401e-be05-a9e28a397d41}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:529518985 cname:{6c6f00e9-8b0d-47ad-a2ad-66b75951396d}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:c190063de720fe7ffa79960c27a468b0\r\na=ice-ufrag:e2419ac0\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 7939591465398022498 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 6D:C2:FE:72:71:56:CF:E5:1F:25:CF:AB:EC:1F:FD:57:F4:7A:1E:26:BD:3A:60:10:9F:55:97:66:B0:8B:D7:F5\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:e2cef8d45be781fd6cf80c144d1b807c\r\na=ice-ufrag:0fb16c35\r\na=mid:0\r\na=msid:{90119547-0809-409f-bb12-02d4bb1b384e} {07916d14-822b-4a50-9ab1-39b2e933c263}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:1244761650 cname:{9bb86fb3-bbca-49a1-a1d2-281a131335de}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:e2cef8d45be781fd6cf80c144d1b807c\r\na=ice-ufrag:0fb16c35\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 23126289370907274 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 12:E4:F7:00:57:B4:8C:D4:25:60:E6:E1:25:23:91:C4:7B:10:18:E1:C6:F3:AF:FD:CF:B8:16:35:F8:D2:DF:74\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:738605c76bdd53ef44b4089e11a1da36\r\na=ice-ufrag:d6e59ac1\r\na=mid:0\r\na=msid:{7179c099-2d10-465e-b8ba-09ade89a24d8} {1b3e6c67-1fef-459d-aa75-747c3a2ca3db}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:2281713820 cname:{8c84dbcb-bead-403c-b041-f374c580d651}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:738605c76bdd53ef44b4089e11a1da36\r\na=ice-ufrag:d6e59ac1\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 208550787453159331 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 CF:81:E7:50:AA:F7:6A:26:55:0E:65:C6:18:5E:D9:24:B8:6D:EB:1A:FF:1F:D5:B4:D7:B3:0B:1E:24:0A:53:DA\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:9fbc060f4148409b8d79297ad326976b\r\na=ice-ufrag:5fb665ca\r\na=mid:0\r\na=msid:{e2b5f323-a218-4e33-a758-7cedd2d0f448} {bc2a4aa2-6b68-4fb6-b3cb-d209b73aa797}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:1046015731 cname:{2305b5a0-cc7d-43e4-ba09-35e647ebfc06}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:9fbc060f4148409b8d79297ad326976b\r\na=ice-ufrag:5fb665ca\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 9106882961386265480 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 B4:D9:80:CD:5F:F0:9E:57:75:F3:65:6E:3A:36:A0:81:94:5F:50:63:61:3C:04:65:71:48:CE:FE:3B:6E:95:66\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:3e5f222ab981ff1deee8e466913e18f4\r\na=ice-ufrag:d62cc2ec\r\na=mid:0\r\na=msid:{4617746c-09af-4212-a5e1-ed350a95c928} {0f7a0784-f0b9-40a6-aced-ba5944ed4133}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:503437535 cname:{7c8cf3ea-1f8f-4115-8d9f-842d26e56335}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:3e5f222ab981ff1deee8e466913e18f4\r\na=ice-ufrag:d62cc2ec\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 7766422630725639655 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 FC:CD:69:ED:52:70:97:EE:9A:4F:8E:00:78:FA:2E:82:27:44:9E:1E:E8:37:B3:B6:29:95:34:74:05:D8:77:8C\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:8279c27588879b77ac73aa8e4f73ce35\r\na=ice-ufrag:f4557666\r\na=mid:0\r\na=msid:{7395464f-9cd2-443c-99ca-e701b28c2d51} {b1daa50e-eb7d-4edb-8637-82c0484c0df9}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:352574882 cname:{90b78d7b-7f29-4dbe-be4b-89aeb77d9d30}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:8279c27588879b77ac73aa8e4f73ce35\r\na=ice-ufrag:f4557666\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 6929296619751953838 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 B6:53:1C:49:41:EF:61:49:42:0C:9A:26:6F:40:9B:61:47:67:E0:D9:3B:ED:D3:54:10:EA:DC:A7:78:E8:2B:F2\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:05db8d591cdc806fe3cabea4fa60cdba\r\na=ice-ufrag:9f23d914\r\na=mid:0\r\na=msid:{5e76cb9d-3d2e-4e15-94c9-3a3f0018570b} {50b7fe3d-f4e8-493e-9bfb-fdfaddd5fa8e}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:211704396 cname:{599b7867-cc57-47c7-bd69-2bef6bf2f96b}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:05db8d591cdc806fe3cabea4fa60cdba\r\na=ice-ufrag:9f23d914\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 3799015693066127324 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 78:59:ED:B0:DE:D5:66:F9:FE:89:FC:85:47:CE:73:9C:5E:4D:89:8A:21:6A:B1:6C:0F:99:EE:A6:63:85:EC:F0\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:e389a99dc6fba0bd46a2330fdb9b49db\r\na=ice-ufrag:2d467fe1\r\na=mid:0\r\na=msid:{67fa355f-9963-4b94-9441-cb4ef6471751} {050759ac-1f5c-4045-bf8d-786b49d2d1ff}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:244231836 cname:{51404550-c878-425e-8db3-3151db960c02}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:e389a99dc6fba0bd46a2330fdb9b49db\r\na=ice-ufrag:2d467fe1\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 7123673825736647401 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 CE:27:D8:9A:9F:DC:1E:92:DD:37:A0:1D:38:4F:E8:EC:F9:14:6E:D7:A8:40:8E:11:E3:6D:7A:41:68:04:64:E3\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:8575d9c1b67f7c6105572a0c477e9839\r\na=ice-ufrag:fff89e76\r\na=mid:0\r\na=msid:{4b89f095-b535-4fdc-9a39-a0a39b7ef99a} {247cfdda-820a-4f37-9ba6-2ea879706c15}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:3830808995 cname:{dda8e6ea-6271-476f-986d-c469723d3469}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:8575d9c1b67f7c6105572a0c477e9839\r\na=ice-ufrag:fff89e76\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 4683763458751994148 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 14:43:5F:98:36:E0:A4:48:6F:4F:1B:F1:60:BC:3B:24:F7:03:DA:4B:14:BF:F2:DD:CF:29:E0:71:88:06:16:A8\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:b0726967ef4a9968ac1427d18f1ade97\r\na=ice-ufrag:8583bd1e\r\na=mid:0\r\na=msid:{7614685e-0c5b-4ecb-b729-9b46b0825f99} {b7128bdd-0142-43ee-8221-844de6b8d775}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:4098336288 cname:{efeca679-5ea3-4c09-8ff8-837b6116a1ee}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:b0726967ef4a9968ac1427d18f1ade97\r\na=ice-ufrag:8583bd1e\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'voice'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 4281609486039158206 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 C4:89:75:D4:7A:B5:69:3B:35:89:0B:CB:17:9E:99:56:7E:01:E0:1E:3B:03:C7:67:ED:83:C4:BB:1D:6C:28:98\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:ae33f5bd53dd286f2783140f6494dfd3\r\na=ice-ufrag:489c21dd\r\na=mid:0\r\na=msid:{73035f71-e284-4c55-92a1-28cb91c02bbf} {434da477-0d95-40ab-9920-f672fd7b948f}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:2813698340 cname:{d58e7479-9854-4fcf-8471-5461fa2cc837}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:ae33f5bd53dd286f2783140f6494dfd3\r\na=ice-ufrag:489c21dd\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'voice'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 1556501204162945841 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 9C:81:F3:F1:3B:2E:21:BD:81:71:8F:0B:5C:F2:8B:21:99:C4:52:24:4D:AF:12:2B:2A:B7:FE:58:8E:F7:3F:C8\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:a3c7b9aeef8d31e8967ca97be78fdd7f\r\na=ice-ufrag:0e575fae\r\na=mid:0\r\na=msid:{057e30c2-f961-41bf-813c-d9247b187bc6} {6022de48-b05b-4f7a-8e38-c622b47234ab}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:2467192214 cname:{a0c9a276-218c-4818-90da-ebae13378454}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:a3c7b9aeef8d31e8967ca97be78fdd7f\r\na=ice-ufrag:0e575fae\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'voice'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 7125658490262331369 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 6D:30:CA:05:DD:C9:F0:50:21:56:23:03:5D:EE:EF:4E:66:62:0D:C8:93:CA:4D:38:9B:FA:2C:40:05:8E:B2:AA\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:19d276dbede100f69a1a22a4c98b898f\r\na=ice-ufrag:38cf3978\r\na=mid:0\r\na=msid:{27087b0f-e131-420f-8f41-7e0c88211e5b} {b403b435-6eac-4032-8a58-9126bdf682d7}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:605298733 cname:{942f25af-dbed-4f16-bd5f-6ec3cff4c0ec}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:19d276dbede100f69a1a22a4c98b898f\r\na=ice-ufrag:38cf3978\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'voice'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 9095275523182102318 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 C1:2E:72:F4:6F:E6:7F:8F:1A:0C:6A:BE:F3:D2:71:3D:72:F1:4B:AC:42:85:77:42:6F:14:83:B5:5C:25:A7:F5\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:23799dade5efddf29b6910a5273dafd5\r\na=ice-ufrag:294f0099\r\na=mid:0\r\na=msid:{c95b6c1f-8540-4c4e-bdb6-da15a0710d98} {89684374-8bbe-4383-931e-b124ccdadc56}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:507600643 cname:{76f1eff8-c035-4722-8306-f6bb56061a8f}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:23799dade5efddf29b6910a5273dafd5\r\na=ice-ufrag:294f0099\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 4268693006709955268 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 A2:F1:52:87:30:89:0C:F5:FC:22:74:05:A2:F6:AA:47:F9:03:86:F3:29:2A:59:2B:17:65:0F:F6:95:6D:E9:66\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:3c9719ca891b784627c46c543ee1f4ec\r\na=ice-ufrag:2692e898\r\na=mid:0\r\na=msid:{d7cd22c1-d6f6-4308-a3e3-1f4261c00554} {79de0c37-756b-4370-aeab-9e497d30ee98}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:10214563 cname:{531f6cca-0ad1-46d2-a87e-0ac3bb080aed}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:3c9719ca891b784627c46c543ee1f4ec\r\na=ice-ufrag:2692e898\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8000/pipecat/offer
+INFO:app:Data: {'sdp': 'v=0\r\no=mozilla...THIS_IS_SDPARTA-99.0 622860206490932292 0 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=fingerprint:sha-256 7F:62:36:D9:7F:F2:F2:79:B3:93:1F:E3:74:61:35:7D:53:A3:CB:47:8C:94:7B:C5:44:B8:91:BD:D3:56:A4:EF\r\na=group:BUNDLE 0 1\r\na=ice-options:trickle\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level\r\na=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap-allow-mixed\r\na=fmtp:109 maxplaybackrate=48000;stereo=1;useinbandfec=1\r\na=fmtp:101 0-15\r\na=ice-pwd:1a4d286b8e6257bb283765c5b941b744\r\na=ice-ufrag:9739ee62\r\na=mid:0\r\na=msid:{199c7520-773d-4c31-afeb-268e7c23ed95} {e8f8737f-f7a7-4a17-9ae2-866e7fc0dace}\r\na=rtcp-mux\r\na=rtpmap:109 opus/48000/2\r\na=rtpmap:9 G722/8000/1\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:101 telephone-event/8000/1\r\na=setup:actpass\r\na=ssrc:1119495095 cname:{c81355ec-5896-4a92-afa5-b37ccc069fe0}\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=sendrecv\r\na=extmap-allow-mixed\r\na=ice-pwd:1a4d286b8e6257bb283765c5b941b744\r\na=ice-ufrag:9739ee62\r\na=mid:1\r\na=setup:actpass\r\na=sctp-port:5000\r\na=max-message-size:1073741823\r\n', 'type': 'offer', 'language_code': 'en', 'user_id': 'web_user', 'current_screen': 'dashboard'}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8000/pipecat/offer "HTTP/1.1 501 Not Implemented"
+INFO:app:Response status: 501
+ERROR:app:Service error for /pipecat/offer: 501 - {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+ERROR:app:Routing error for /pipecat/offer: 501: {"detail":"pipecat-ai[webrtc,silero] is not installed. Run: pip install 'pipecat-ai[webrtc,silero]'"}
+INFO:     103.201.150.96:0 - "POST /pipecat/offer HTTP/1.1" 500 Internal Server Error
+INFO:     103.201.150.96:0 - "HEAD /health HTTP/1.1" 405 Method Not Allowed
+INFO:     103.201.150.96:0 - "OPTIONS /sip-calculator HTTP/1.1" 200 OK
+INFO:app:Routing POST request to http://localhost:8001/sip-calculator
+INFO:app:Data: {'monthly_amount': 30500, 'expected_return': 12, 'years': 15, 'step_up_percent': 10}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/sip-calculator "HTTP/1.1 200 OK"
+INFO:app:Response status: 200
+INFO:     103.201.150.96:0 - "POST /sip-calculator HTTP/1.1" 200 OK
+INFO:app:Routing POST request to http://localhost:8001/sip-calculator
+INFO:app:Data: {'monthly_amount': 30500, 'expected_return': 12, 'years': 15, 'step_up_percent': 10}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/sip-calculator "HTTP/1.1 200 OK"
+INFO:app:Response status: 200
+INFO:     103.201.150.96:0 - "POST /sip-calculator HTTP/1.1" 200 OK
+INFO:     103.201.150.96:0 - "OPTIONS /tax-wizard HTTP/1.1" 200 OK
+INFO:app:Routing POST request to http://localhost:8001/tax-wizard
+INFO:app:Data: {'user_id': 'guest', 'annual_income': 1200000, 'investments_80c': 150000, 'nps_contribution': 50000, 'health_insurance_premium': 25000, 'hra': 0, 'home_loan_interest': 0}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/tax-wizard "HTTP/1.1 200 OK"
+INFO:app:Response status: 200
+INFO:     103.201.150.96:0 - "POST /tax-wizard HTTP/1.1" 200 OK
+INFO:watchfiles.main:3 changes detected
+INFO:     103.201.150.96:0 - "OPTIONS /money-health-score HTTP/1.1" 200 OK
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error
+INFO:app:Routing POST request to http://localhost:8001/money-health-score
+INFO:app:Data: {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}
+INFO:app:Params: None
+INFO:httpx:HTTP Request: POST http://localhost:8001/money-health-score "HTTP/1.1 422 Unprocessable Entity"
+INFO:app:Response status: 422
+ERROR:app:Validation error for /money-health-score: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+ERROR:app:Routing error for /money-health-score: 422: Validation error: {'detail': [{'type': 'missing', 'loc': ['body', 'user_id'], 'msg': 'Field required', 'input': {'age': 32, 'income': 800000, 'savings': 250000, 'dependents': 1, 'risk_tolerance': 3, 'goal_type': 'retirement', 'time_horizon': 25}}]}
+INFO:     103.201.150.96:0 - "POST /money-health-score HTTP/1.1" 500 Internal Server Error

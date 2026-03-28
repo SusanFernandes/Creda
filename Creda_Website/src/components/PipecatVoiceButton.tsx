@@ -76,6 +76,13 @@ const STATUS_CONFIG: Record<
     pulse: false,
     label: 'Unavailable',
   },
+  unsupported: {
+    bg:    'bg-muted text-muted-foreground',
+    ring:  'ring-muted/30',
+    icon:  WifiOff,
+    pulse: false,
+    label: 'Not available',
+  },
 };
 
 // Props that AlwaysOnVoice passes so it knows when to fall back
@@ -120,6 +127,11 @@ export function PipecatVoiceButton({ onFatalError }: PipecatVoiceButtonProps) {
   // If persistent error — notify parent after a brief delay
   const errorCountRef = useRef(0);
   useEffect(() => {
+    if (status === 'unsupported') {
+      // Server returned 501 — pipecat not installed, immediately fall back to PTT
+      onFatalError?.();
+      return;
+    }
     if (status === 'error') {
       errorCountRef.current += 1;
       if (errorCountRef.current >= 2) {

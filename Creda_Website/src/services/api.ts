@@ -15,7 +15,7 @@ export const MULTILINGUAL_URL =
 // ─── Axios Instances ──────────────────────────────────────────────────────────
 const gatewayClient = axios.create({
   baseURL: GATEWAY_URL,
-  timeout: 30000,
+  timeout: 30000,   
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -257,7 +257,11 @@ export class ApiService {
 
   static async getHealthScore(profile: UserProfile): Promise<any> {
     try {
-      const res = await gatewayClient.post('/money-health-score', profile);
+      const res = await gatewayClient.post('/money-health-score', {
+        user_id: profile.user_id || 'anonymous',
+        language: profile.language || 'en',
+        ...profile,
+      });
       return unwrap(res.data);
     } catch {
       return DUMMY_DATA.healthScore;

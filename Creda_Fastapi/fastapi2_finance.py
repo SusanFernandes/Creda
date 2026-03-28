@@ -158,7 +158,7 @@ class UserProfileRequest(BaseModel):
 
 
 class MoneyHealthRequest(BaseModel):
-    user_id: str
+    user_id: str = "anonymous"
     language: Optional[str] = "en"
 
 

@@ -53,8 +53,9 @@ try:
 except ImportError as _pipecat_err:
     PIPECAT_AVAILABLE = False
     logger.warning(
-        "pipecat-ai[webrtc,silero] not installed — real-time voice disabled. "
-        "Install with: pip install 'pipecat-ai[webrtc,silero]'  (%s)",
+        "Pipecat WebRTC transport not available — real-time voice disabled. "
+        "Base pipecat-ai is installed but the [webrtc,silero] extras are missing. "
+        "Push-to-talk (/voice/command) still works.  (%s)",
         _pipecat_err,
     )
 
