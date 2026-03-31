@@ -18,9 +18,9 @@ from typing import Optional
 from urllib.parse import quote as url_quote
 
 import torch
-import torchaudio
 import soundfile as sf
 import numpy as np
+from scipy import signal as scipy_signal
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +38,23 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("creda.multilingual")
+
+
+def _resample_waveform(wav: torch.Tensor, orig_sr: int, target_sr: int) -> torch.Tensor:
+    """Resample (1, T) waveform; prefers torchaudio if compatible, else scipy (avoids broken torchaudio DLLs on Windows)."""
+    if orig_sr == target_sr:
+        return wav
+    try:
+        import torchaudio
+
+        return torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=target_sr)(wav)
+    except Exception as e:
+        logger.debug("torchaudio resample unavailable (%s), using scipy", e)
+        w = wav.squeeze(0).detach().cpu().numpy().astype(np.float64)
+        num = int(round(w.shape[-1] * target_sr / float(orig_sr)))
+        out = scipy_signal.resample(w, num)
+        return torch.from_numpy(out.astype(np.float32)).unsqueeze(0)
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CONSTANTS
@@ -127,44 +144,57 @@ class ASREngine:
     def preprocess_audio(self, audio_bytes: bytes) -> torch.Tensor:
         """Raw bytes → 16 kHz mono float tensor of shape (1, num_samples)."""
         buf = io.BytesIO(audio_bytes)
+        wav: torch.Tensor | None = None
+        sr: int | None = None
 
+        # Prefer soundfile first (avoids importing torchaudio when its Windows DLLs mismatch torch).
         try:
-            wav, sr = torchaudio.load(buf)
+            buf.seek(0)
+            audio_np, sr = sf.read(buf, dtype="float32")
+            wav = torch.from_numpy(audio_np).float()
+            if wav.dim() == 1:
+                wav = wav.unsqueeze(0)
+            elif wav.dim() == 2 and wav.shape[1] <= 2:
+                wav = wav.T
         except Exception:
-            # soundfile fallback for formats torchaudio can't decode directly
+            wav = None
+
+        if wav is None:
+            try:
+                import torchaudio
+
+                buf.seek(0)
+                wav, sr = torchaudio.load(buf)
+            except Exception as e:
+                logger.debug("torchaudio.load skipped: %s", e)
+                wav = None
+
+        if wav is None:
+            # pydub fallback — handles M4A/AAC from Expo (requires ffmpeg in PATH)
             buf.seek(0)
             try:
-                audio_np, sr = sf.read(buf, dtype="float32")
-                wav = torch.from_numpy(audio_np).float()
-                if wav.dim() == 1:
-                    wav = wav.unsqueeze(0)                 # (1, T)
-                elif wav.dim() == 2 and wav.shape[1] <= 2:
-                    wav = wav.T                             # (channels, T)
-            except Exception:
-                # pydub fallback — handles M4A/AAC from Expo (requires ffmpeg in PATH)
-                buf.seek(0)
-                try:
-                    from pydub import AudioSegment
-                    seg = AudioSegment.from_file(buf)
-                    seg = seg.set_channels(1).set_frame_rate(16000)
-                    samples = np.array(seg.get_array_of_samples(), dtype=np.float32)
-                    samples /= np.iinfo(seg.array_type).max
-                    wav = torch.from_numpy(samples).unsqueeze(0)
-                    sr = 16000  # already resampled by pydub
-                except Exception as pydub_err:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Unsupported audio format — tried torchaudio, soundfile, pydub: {pydub_err}. "
-                               "Ensure ffmpeg is installed on the server.",
-                    )
+                from pydub import AudioSegment
+
+                seg = AudioSegment.from_file(buf)
+                seg = seg.set_channels(1).set_frame_rate(16000)
+                samples = np.array(seg.get_array_of_samples(), dtype=np.float32)
+                samples /= np.iinfo(seg.array_type).max
+                wav = torch.from_numpy(samples).unsqueeze(0)
+                sr = 16000
+            except Exception as pydub_err:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported audio format — tried soundfile, torchaudio, pydub: {pydub_err}. "
+                    "Ensure ffmpeg is installed on the server.",
+                )
 
         # mono
         if wav.shape[0] > 1:
             wav = torch.mean(wav, dim=0, keepdim=True)
 
         # resample to 16 kHz
-        if sr != 16000:
-            wav = torchaudio.transforms.Resample(orig_freq=sr, new_freq=16000)(wav)
+        if sr is not None and sr != 16000:
+            wav = _resample_waveform(wav, sr, 16000)
 
         # peak-normalize
         wav = wav / (wav.abs().max() + 1e-8)

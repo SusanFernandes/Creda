@@ -219,12 +219,18 @@ if PIPECAT_AVAILABLE:
 
             # ── Resample to 16 kHz if needed ─────────────────────────────────
             if src_rate != self._OUT_SAMPLE_RATE:
-                import torch
-                import torchaudio
+                try:
+                    import torch
+                    import torchaudio
 
-                t = torch.from_numpy(samples).unsqueeze(0)
-                t = torchaudio.transforms.Resample(src_rate, self._OUT_SAMPLE_RATE)(t)
-                samples = t.squeeze(0).numpy()
+                    t = torch.from_numpy(samples).unsqueeze(0)
+                    t = torchaudio.transforms.Resample(src_rate, self._OUT_SAMPLE_RATE)(t)
+                    samples = t.squeeze(0).numpy()
+                except Exception:
+                    from scipy import signal as _sig
+
+                    num = int(round(len(samples) * self._OUT_SAMPLE_RATE / float(src_rate)))
+                    samples = _sig.resample(samples.astype(np.float64), num).astype(np.float32)
 
             # ── Yield in 20 ms chunks (320 samples × 2 bytes at 16 kHz) ─────
             pcm_out: bytes = (samples * 32767).astype(np.int16).tobytes()

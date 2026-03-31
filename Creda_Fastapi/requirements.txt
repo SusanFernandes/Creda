@@ -28,6 +28,8 @@ scikit-learn
 # === RAG ===
 chromadb
 sentence-transformers
+# transformers needs a protobuf that exposes google.protobuf.runtime_version
+protobuf>=4.25.3
 
 # === PDF ===
 pdfplumber

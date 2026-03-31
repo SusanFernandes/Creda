@@ -42,6 +42,7 @@ dependencies = [
     # ── RAG ──
     "chromadb",
     "sentence-transformers",
+    "protobuf>=4.25.3",
 
     # ── PDF ──
     "pdfplumber",
