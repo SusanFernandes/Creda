@@ -345,6 +345,53 @@ export class ApiService {
       return DUMMY_DATA.portfolio;
     }
   }
+
+  static async optimizeBudget(profile: UserProfile, expenses: Array<{ category: string; amount: number; description?: string }>): Promise<any> {
+    try {
+      const res = await gatewayClient.post('/budget/optimize', {
+        user_id: profile.user_id || 'anonymous',
+        expenses,
+        language: profile.language || 'en',
+        user_profile: profile,
+      });
+      return unwrap(res.data);
+    } catch {
+      return {
+        response: 'Budget optimization is temporarily unavailable.',
+        recommendations: ['Track all expenses', 'Follow the 50/30/20 rule', 'Automate SIPs'],
+      };
+    }
+  }
+
+  static async checkRebalancing(params: { profile: UserProfile; current_allocation: Record<string, any>; threshold?: number }): Promise<any> {
+    try {
+      const res = await gatewayClient.post('/portfolio/check-rebalance', {
+        user_id: params.profile.user_id || 'anonymous',
+        current_allocation: params.current_allocation,
+        threshold: params.threshold ?? 0.05,
+        language: params.profile.language || 'en',
+        profile: params.profile,
+      });
+      return unwrap(res.data);
+    } catch {
+      return null;
+    }
+  }
+
+  static async portfolioOptimization(params: { profile: UserProfile; goals: string[]; time_horizon_years?: number }): Promise<any> {
+    try {
+      const res = await gatewayClient.post('/portfolio/optimize', {
+        user_id: params.profile.user_id || 'anonymous',
+        goals: params.goals,
+        time_horizon_years: params.time_horizon_years ?? 25,
+        language: params.profile.language || 'en',
+        profile: params.profile,
+      });
+      return unwrap(res.data);
+    } catch {
+      return DUMMY_DATA.portfolio;
+    }
+  }
 }
 
 // ─── Voice Command Keywords (multilingual) ────────────────────────────────────

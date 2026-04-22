@@ -17,14 +17,14 @@ def money_health_score_agent(state: FinancialState) -> dict:
     profile = state.get("user_profile", {})
     portfolio = state.get("portfolio_data", {})
 
-    income = max(1, profile.get("income", 1))  # avoid division by zero
-    expenses = profile.get("expenses", income * 0.7)
-    savings = profile.get("savings", 0)
+    income = max(1, profile.get("income") or 1)  # avoid division by zero
+    expenses = profile.get("expenses") or (income * 0.7)  # guard against explicit None
+    savings = profile.get("savings") or 0
 
     scores: Dict[str, Dict[str, Any]] = {}
 
     # ── 1. Emergency Preparedness (ideal = 6 months expenses) ──
-    emergency_fund = profile.get("emergency_fund", savings * 0.2)
+    emergency_fund = profile.get("emergency_fund") or (savings * 0.2)
     emergency_needed = expenses * 6
     em_score = min(100, int(emergency_fund / emergency_needed * 100)) if emergency_needed else 0
     scores["emergency_preparedness"] = {
@@ -40,7 +40,7 @@ def money_health_score_agent(state: FinancialState) -> dict:
     }
 
     # ── 2. Insurance Coverage ──
-    life_cover = profile.get("life_insurance_cover", 0)
+    life_cover = profile.get("life_insurance_cover") or 0
     recommended_life = income * 12 * 15
     ins_score = min(100, int(life_cover / recommended_life * 100)) if recommended_life else 0
     scores["insurance_coverage"] = {
@@ -72,7 +72,7 @@ def money_health_score_agent(state: FinancialState) -> dict:
     }
 
     # ── 4. Debt Health (EMI / income < 40%) ──
-    monthly_emi = profile.get("monthly_emi", 0)
+    monthly_emi = profile.get("monthly_emi") or 0
     emi_ratio = monthly_emi / income if income else 0
     debt_score = max(0, 100 - int(emi_ratio * 250))
     scores["debt_health"] = {
@@ -88,7 +88,7 @@ def money_health_score_agent(state: FinancialState) -> dict:
 
     # ── 5. Tax Efficiency ──
     max_80c = 150_000
-    current_80c = profile.get("investments_80c", profile.get("80c_investments", 0))
+    current_80c = profile.get("investments_80c") or profile.get("80c_investments") or 0
     tax_score = min(100, int(current_80c / max_80c * 100)) if max_80c else 0
     scores["tax_efficiency"] = {
         "score": tax_score,
@@ -103,10 +103,10 @@ def money_health_score_agent(state: FinancialState) -> dict:
     }
 
     # ── 6. Retirement Readiness ──
-    age = profile.get("age", 30)
+    age = profile.get("age") or 30
     retirement_age = 60
     years_left = max(1, retirement_age - age)
-    corpus = portfolio.get("total_current_value", savings)
+    corpus = portfolio.get("total_current_value") or savings
     retirement_needed = expenses * 12 * 25
     on_track = retirement_needed * max(0, age - 20) / max(1, retirement_age - 20)
     ret_score = min(100, int(corpus / on_track * 100)) if on_track else 30
