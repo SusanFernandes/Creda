@@ -39,6 +39,20 @@ async def get_conversation(user_id: str, session_id: str, limit: int = 20) -> li
     return [json.loads(m) for m in raw]
 
 
+# ── Last intent tracking (for follow-up detection) ────────────────────
+
+async def save_last_intent(user_id: str, session_id: str, intent: str):
+    """Store the last classified intent for follow-up detection (1h TTL)."""
+    r = get_redis()
+    await r.set(f"intent:{user_id}:{session_id}", intent, ex=3600)
+
+
+async def get_last_intent(user_id: str, session_id: str) -> str | None:
+    """Retrieve the last classified intent for this session."""
+    r = get_redis()
+    return await r.get(f"intent:{user_id}:{session_id}")
+
+
 # ── Generic cache ─────────────────────────────────────────────────────
 
 async def cache_get(key: str) -> str | None:

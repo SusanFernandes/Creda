@@ -49,6 +49,7 @@ help: ## Show this help
 	@Write-Host '    make venv              Create Python virtual environment'
 	@Write-Host '    make install           Install all Python dependencies'
 	@Write-Host '    make env               Create .env from .env.example'
+	@Write-Host '    make download-model    Download MiniLM to local models/ (offline embeddings)'
 	@Write-Host '    make migrate           Run Django + Alembic migrations'
 	@Write-Host '    make superuser         Create Django admin superuser'
 	@Write-Host '    make seed              Seed demo data (2 users with full data)'
@@ -73,7 +74,7 @@ help: ## Show this help
 # ─── FIRST-TIME INIT ─────────────────────────────────────────────
 
 .PHONY: init
-init: venv install env docker wait migrate ## One-time full setup
+init: venv install env download-model docker wait migrate ## One-time full setup
 	@Write-Host ''
 	@Write-Host '  ═══════════════════════════════════════════════════' -ForegroundColor Cyan
 	@Write-Host '  Setup complete!' -ForegroundColor Green
@@ -82,7 +83,14 @@ init: venv install env docker wait migrate ## One-time full setup
 	@Write-Host '    1. Edit .env and add your GROQ_API_KEY'
 	@Write-Host '    2. Run "make all" to start all services'
 	@Write-Host '    3. Open http://localhost:8000'
+	@Write-Host '    Note: MiniLM model (~87MB) was downloaded to models/ for offline intent matching.'
 	@Write-Host '  ═══════════════════════════════════════════════════' -ForegroundColor Cyan
+
+.PHONY: download-model
+download-model: ## Download all-MiniLM-L6-v2 to local models/ (offline intent embeddings)
+	@Write-Host 'Downloading sentence-transformers/all-MiniLM-L6-v2 (~87MB)...' -ForegroundColor Yellow
+	@& '$(PYTHON)' -c "from sentence_transformers import SentenceTransformer; from pathlib import Path; d=Path('models/all-MiniLM-L6-v2'); m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); d.parent.mkdir(parents=True,exist_ok=True); m.save(str(d)); print('Saved to',d)"
+	@Write-Host 'Model downloaded and saved locally (models/all-MiniLM-L6-v2).' -ForegroundColor Green
 
 .PHONY: venv
 venv: ## Create Python virtual environment

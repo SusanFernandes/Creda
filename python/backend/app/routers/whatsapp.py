@@ -41,19 +41,20 @@ async def whatsapp_webhook(
         await db.commit()
         await db.refresh(session)
 
-    # Route through chat pipeline
-    from app.services.intent_classifier import keyword_pre_classify
-    intent = keyword_pre_classify(message)
-    if intent is None:
-        from app.agents.intent_router import llm_classify_intent
-        intent = await llm_classify_intent(message)
+    # Route through 4-tier intent cascade
+    from app.services.intent_engine import classify_intent
+    from app.redis_client import save_message, get_conversation, save_last_intent, get_last_intent
 
-    from app.redis_client import save_message, get_conversation
-    history = await get_conversation(f"wa:{phone}", "whatsapp", limit=10)
+    wa_id = f"wa:{phone}"
+    last_intent = await get_last_intent(wa_id, "whatsapp")
+    intent_result = await classify_intent(message, last_intent=last_intent)
+    intent = intent_result.intent
+
+    history = await get_conversation(wa_id, "whatsapp", limit=10)
 
     from app.agents.graph import run_agent
     chat_result = await run_agent(
-        user_id=session.user_id or f"wa:{phone}",
+        user_id=session.user_id or wa_id,
         message=message,
         intent=intent,
         language=session.language,
@@ -62,8 +63,9 @@ async def whatsapp_webhook(
         db=db,
     )
 
-    await save_message(f"wa:{phone}", "whatsapp", "user", message)
-    await save_message(f"wa:{phone}", "whatsapp", "assistant", chat_result["response"])
+    await save_message(wa_id, "whatsapp", "user", message)
+    await save_message(wa_id, "whatsapp", "assistant", chat_result["response"])
+    await save_last_intent(wa_id, "whatsapp", intent)
 
     # Update last_message_at
     from datetime import datetime

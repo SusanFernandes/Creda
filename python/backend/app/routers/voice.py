@@ -78,15 +78,14 @@ async def voice_pipeline(
 
     # 2. Chat (reuse the chat logic with voice_mode=True)
     from app.agents.graph import run_agent
-    from app.services.intent_classifier import keyword_pre_classify
-    from app.redis_client import save_message, get_conversation
+    from app.services.intent_engine import classify_intent
+    from app.redis_client import save_message, get_conversation, save_last_intent, get_last_intent
 
     sid = session_id or str(uuid.uuid4())
     message = stt_result["text"]
-    intent = keyword_pre_classify(message)
-    if intent is None:
-        from app.agents.intent_router import llm_classify_intent
-        intent = await llm_classify_intent(message)
+    last_intent = await get_last_intent(auth.user_id, sid)
+    intent_result = await classify_intent(message, last_intent=last_intent)
+    intent = intent_result.intent
 
     history = await get_conversation(auth.user_id, sid, limit=10)
     result = await run_agent(
@@ -100,6 +99,7 @@ async def voice_pipeline(
 
     await save_message(auth.user_id, sid, "user", message)
     await save_message(auth.user_id, sid, "assistant", result["response"])
+    await save_last_intent(auth.user_id, sid, intent)
 
     # 3. Synthesize response
     from app.services.tts import synthesize_speech

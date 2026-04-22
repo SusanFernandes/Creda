@@ -1,11 +1,12 @@
 """
 Chat router — main entry point for all text conversations.
 
-Flow: keyword_pre_classify (~0ms) → LLM intent if needed → LangGraph agent → response
-The keyword pre-classifier is a ROUTER-LEVEL gate, not a LangGraph node.
+Flow: 4-tier intent cascade → LangGraph agent → response
+Tier 1: follow-up (0ms) → Tier 2: keyword scoring (0ms) → Tier 3: embedding (~10ms) → Tier 4: LLM (1-2s)
 """
 import uuid
 import time
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -15,8 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
-from app.redis_client import save_message, get_conversation
-from app.services.intent_classifier import keyword_pre_classify
+from app.redis_client import save_message, get_conversation, save_last_intent, get_last_intent
+from app.services.intent_engine import classify_intent
+
+logger = logging.getLogger("creda.chat")
 
 router = APIRouter()
 
@@ -44,18 +47,20 @@ async def chat(
     session_id = body.session_id or str(uuid.uuid4())
     t0 = time.monotonic()
 
-    # Step 1: keyword pre-classifier (~0ms, no LLM)
-    intent = keyword_pre_classify(body.message)
+    # Step 1: 4-tier intent classification cascade
+    last_intent = await get_last_intent(auth.user_id, session_id)
+    intent_result = await classify_intent(body.message, last_intent=last_intent)
+    intent = intent_result.intent
+    logger.info(
+        "Intent: %s (tier=%d/%s, conf=%.2f, %.1fms)",
+        intent, intent_result.tier, intent_result.tier_name,
+        intent_result.confidence, intent_result.latency_ms,
+    )
 
-    # Step 2: LLM intent classifier only if keywords didn't match
-    if intent is None:
-        from app.agents.intent_router import llm_classify_intent
-        intent = await llm_classify_intent(body.message)
-
-    # Step 3: get conversation history from Redis
+    # Step 2: get conversation history from Redis
     history = await get_conversation(auth.user_id, session_id, limit=10)
 
-    # Step 4: build initial state and invoke LangGraph
+    # Step 3: build initial state and invoke LangGraph
     from app.agents.graph import run_agent
     result = await run_agent(
         user_id=auth.user_id,
@@ -66,11 +71,12 @@ async def chat(
         history=history,
     )
 
-    # Step 5: persist to Redis (conversation history)
+    # Step 4: persist to Redis (conversation history + intent for follow-up detection)
     await save_message(auth.user_id, session_id, "user", body.message)
     await save_message(auth.user_id, session_id, "assistant", result["response"])
+    await save_last_intent(auth.user_id, session_id, intent)
 
-    # Step 6: persist to PostgreSQL (permanent record)
+    # Step 5: persist to PostgreSQL (permanent record)
     from app.models import ConversationMessage
     db.add(ConversationMessage(
         user_id=auth.user_id, session_id=session_id, role="user",
@@ -83,7 +89,7 @@ async def chat(
     ))
     await db.commit()
 
-    # Step 7: compliance — log advice for SEBI audit trail
+    # Step 6: compliance — log advice for SEBI audit trail
     try:
         from app.services.compliance import log_advice
         await log_advice(
@@ -114,10 +120,10 @@ async def chat_stream(
 ):
     """SSE streaming endpoint for Django HTMX frontend."""
     session_id = body.session_id or str(uuid.uuid4())
-    intent = keyword_pre_classify(body.message)
-    if intent is None:
-        from app.agents.intent_router import llm_classify_intent
-        intent = await llm_classify_intent(body.message)
+    last_intent = await get_last_intent(auth.user_id, session_id)
+    intent_result = await classify_intent(body.message, last_intent=last_intent)
+    intent = intent_result.intent
+    await save_last_intent(auth.user_id, session_id, intent)
 
     history = await get_conversation(auth.user_id, session_id, limit=10)
 
