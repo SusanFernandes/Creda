@@ -28,7 +28,7 @@ import SIPCalculator from "./pages/SIPCalculator";
 import TaxWizard from "./pages/TaxWizard";
 import CouplesPlanner from "./pages/CouplesPlanner";
 import NotFound from "./pages/NotFound";
-import { AlwaysOnVoice } from "./components/AlwaysOnVoice";
+import { PoiseAssistant } from "./components/PoiseAssistant";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const queryClient = new QueryClient();
@@ -42,7 +42,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-               <AlwaysOnVoice />
+              <PoiseAssistant />
 
               <Routes>
                 <Route path="/" element={<LandingPage />} />
