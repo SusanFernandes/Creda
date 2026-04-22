@@ -28,7 +28,7 @@ Use ₹ amounts. Be specific and actionable. Consider Indian tax rules for HUF, 
 
 async def _get_family_members(user_id: str, db: AsyncSession) -> list[dict]:
     """Fetch linked family members and their profiles/portfolios."""
-    from app.models import FamilyLink, UserProfile, Holding
+    from app.models import FamilyLink, UserProfile, Portfolio, PortfolioFund
 
     result = await db.execute(
         select(FamilyLink).where(
@@ -48,15 +48,21 @@ async def _get_family_members(user_id: str, db: AsyncSession) -> list[dict]:
         if not member_profile:
             continue
 
-        # Get member holdings
-        holdings_result = await db.execute(
-            select(Holding).where(Holding.user_id == link.member_id)
+        # Get member portfolio via Portfolio → PortfolioFund
+        portfolio_result = await db.execute(
+            select(Portfolio).where(Portfolio.user_id == link.member_id)
         )
-        holdings = holdings_result.scalars().all()
+        member_portfolio = portfolio_result.scalar_one_or_none()
 
-        portfolio_value = sum(
-            (h.current_price or 0) * (h.quantity or 0) for h in holdings
-        )
+        portfolio_value = 0
+        holdings_count = 0
+        if member_portfolio:
+            funds_result = await db.execute(
+                select(PortfolioFund).where(PortfolioFund.portfolio_id == member_portfolio.id)
+            )
+            funds = funds_result.scalars().all()
+            portfolio_value = sum(f.current_value or 0 for f in funds)
+            holdings_count = len(funds)
 
         members.append({
             "relationship": link.relationship_type,
@@ -67,7 +73,7 @@ async def _get_family_members(user_id: str, db: AsyncSession) -> list[dict]:
             "risk_appetite": member_profile.risk_appetite or "moderate",
             "has_health_insurance": member_profile.has_health_insurance,
             "portfolio_value": portfolio_value,
-            "holdings_count": len(holdings),
+            "holdings_count": holdings_count,
         })
 
     return members
@@ -76,7 +82,6 @@ async def _get_family_members(user_id: str, db: AsyncSession) -> list[dict]:
 async def run(state: FinancialState) -> dict[str, Any]:
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
-    db = state.get("db")
 
     user_income = profile.get("monthly_income", 0)
     user_portfolio = portfolio.get("current_value", 0)
@@ -94,13 +99,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     # Get family members if db is available
+    # Get family members from DB
     family_members = []
-    if db:
-        try:
-            user_id = state.get("user_id", "")
-            family_members = await _get_family_members(user_id, db)
-        except Exception as e:
-            logger.warning("Could not fetch family members: %s", e)
+    try:
+        from app.database import AsyncSessionLocal
+        user_id = state.get("user_id", "")
+        async with AsyncSessionLocal() as db_session:
+            family_members = await _get_family_members(user_id, db_session)
+    except Exception as e:
+        logger.warning("Could not fetch family members: %s", e)
 
     all_members = [primary] + family_members
 

@@ -1,42 +1,104 @@
 """
 Social Proof agent — anonymized crowd wisdom, peer benchmarking.
 "78% of users in your age group increased SIPs after the last correction."
+Uses real DB aggregation when enough users exist, falls back to curated benchmarks.
 """
 import logging
 from typing import Any
+
+from sqlalchemy import select, func as sqlfunc, and_
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.llm import primary_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.social_proof")
 
-# Pre-computed peer benchmarks (in production, these come from DB aggregates)
-_PEER_BENCHMARKS = {
+# Curated fallback benchmarks (used when <5 users in age group)
+_FALLBACK_BENCHMARKS = {
     "20-30": {
         "avg_savings_rate": 22, "avg_sip": 8000, "avg_emergency_months": 2.5,
         "top_funds": ["Nifty 50 Index", "Parag Parikh Flexi Cap", "Mirae Asset Large Cap"],
         "avg_equity_pct": 75, "insurance_adoption": 45,
         "behavior": "78% increased SIPs after market corrections",
+        "sample_size": 0,
     },
     "30-40": {
         "avg_savings_rate": 28, "avg_sip": 18000, "avg_emergency_months": 4.2,
         "top_funds": ["HDFC Balanced Advantage", "SBI Bluechip", "Axis Midcap"],
         "avg_equity_pct": 65, "insurance_adoption": 72,
         "behavior": "65% have started FIRE planning in this age group",
+        "sample_size": 0,
     },
     "40-50": {
         "avg_savings_rate": 32, "avg_sip": 28000, "avg_emergency_months": 6.1,
         "top_funds": ["ICICI Pru Equity & Debt", "Kotak Flexicap", "HDFC Top 100"],
         "avg_equity_pct": 55, "insurance_adoption": 88,
         "behavior": "72% shifted to direct plans for lower expense ratios",
+        "sample_size": 0,
     },
     "50+": {
         "avg_savings_rate": 35, "avg_sip": 22000, "avg_emergency_months": 8.5,
         "top_funds": ["SBI Magnum Gilt", "HDFC Corporate Bond", "Aditya Birla Sun Life Savings"],
         "avg_equity_pct": 35, "insurance_adoption": 92,
         "behavior": "85% have adequate health insurance in this group",
+        "sample_size": 0,
     },
 }
+
+
+async def _get_real_peer_benchmarks(age_group: str, db: AsyncSession) -> dict | None:
+    """Query real anonymized peer data from DB. Returns None if too few users."""
+    from app.models import UserProfile
+
+    age_ranges = {"20-30": (20, 30), "30-40": (30, 40), "40-50": (40, 50), "50+": (50, 100)}
+    age_min, age_max = age_ranges.get(age_group, (20, 100))
+
+    try:
+        result = await db.execute(
+            select(
+                sqlfunc.count(UserProfile.id).label("count"),
+                sqlfunc.avg(UserProfile.monthly_income).label("avg_income"),
+                sqlfunc.avg(UserProfile.monthly_expenses).label("avg_expenses"),
+                sqlfunc.avg(UserProfile.emergency_fund).label("avg_emergency"),
+                sqlfunc.sum(
+                    sqlfunc.cast(UserProfile.has_health_insurance, sqlfunc.literal_column("INTEGER"))
+                ).label("insured_count"),
+            ).where(
+                and_(
+                    UserProfile.age >= age_min,
+                    UserProfile.age < age_max,
+                    UserProfile.onboarding_complete == True,
+                )
+            )
+        )
+        row = result.one()
+        count = row.count or 0
+
+        # Need at least 5 users for meaningful peer data
+        if count < 5:
+            return None
+
+        avg_income = row.avg_income or 0
+        avg_expenses = row.avg_expenses or 0
+        avg_emergency = row.avg_emergency or 0
+        insured = row.insured_count or 0
+        savings_rate = round((avg_income - avg_expenses) / avg_income * 100, 1) if avg_income > 0 else 0
+        emergency_months = round(avg_emergency / avg_expenses, 1) if avg_expenses > 0 else 0
+
+        return {
+            "avg_savings_rate": savings_rate,
+            "avg_sip": round((avg_income - avg_expenses) * 0.5),  # Assume ~50% of savings goes to SIP
+            "avg_emergency_months": emergency_months,
+            "top_funds": _FALLBACK_BENCHMARKS.get(age_group, {}).get("top_funds", []),
+            "avg_equity_pct": _FALLBACK_BENCHMARKS.get(age_group, {}).get("avg_equity_pct", 60),
+            "insurance_adoption": round(insured / count * 100) if count > 0 else 0,
+            "behavior": _FALLBACK_BENCHMARKS.get(age_group, {}).get("behavior", ""),
+            "sample_size": count,
+        }
+    except Exception as e:
+        logger.warning("DB peer query failed: %s", e)
+        return None
 
 _SOCIAL_PROMPT = """You are a peer comparison analyst for Indian investors.
 Given the user's profile and their peer group benchmarks, provide:
@@ -66,7 +128,17 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     age = profile.get("age", 30)
     age_group = _get_age_group(age)
-    peers = _PEER_BENCHMARKS.get(age_group, _PEER_BENCHMARKS["30-40"])
+
+    # Try real DB aggregation first, fall back to curated benchmarks
+    peers = None
+    try:
+        from app.database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db_session:
+            peers = await _get_real_peer_benchmarks(age_group, db_session)
+    except Exception as e:
+        logger.warning("Could not query peer benchmarks from DB: %s", e)
+    if peers is None:
+        peers = _FALLBACK_BENCHMARKS.get(age_group, _FALLBACK_BENCHMARKS["30-40"])
 
     income = profile.get("monthly_income", 50000)
     expenses = profile.get("monthly_expenses", 30000)

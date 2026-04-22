@@ -235,16 +235,20 @@ class BackendClient:
 
     # ── Voice ──────────────────────────────────────────────
     async def voice_chat(self, audio_bytes: bytes, filename: str, language: str = "en") -> dict:
-        """Send audio to voice pipeline, return text response."""
-        files = {"audio": (filename, audio_bytes, "audio/wav")}
+        """Send audio to voice pipeline, return text + audio response."""
+        import base64
+        files = {"audio": (filename, audio_bytes, "audio/webm")}
         data = {"language": language}
         resp = await self._client.post("/voice/pipeline", files=files, data=data, headers=self._headers())
         resp.raise_for_status()
+        # Capture the audio body (WAV bytes) and encode as base64
+        audio_b64 = base64.b64encode(resp.content).decode("ascii") if resp.content else ""
         return {
             "response": resp.headers.get("X-Response-Text", ""),
             "transcript": resp.headers.get("X-Transcript", ""),
             "intent": resp.headers.get("X-Intent", ""),
             "language": resp.headers.get("X-Language", language),
+            "audio_data": audio_b64,
         }
 
     # ── Helper ─────────────────────────────────────────────

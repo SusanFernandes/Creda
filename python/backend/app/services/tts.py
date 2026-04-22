@@ -28,27 +28,32 @@ _EDGE_VOICES = {
 async def synthesize_speech(text: str, language: str = "en", voice: str | None = None) -> bytes:
     """
     Synthesize text to audio bytes.
-    Fallback chain: Kokoro → Edge TTS → Piper → gTTS.
+    Fallback chain: Kokoro (English) → Edge TTS (all languages) → Piper (English) → gTTS (all).
+    For non-English, skip Kokoro and Piper (English-only engines).
     """
-    # 1. Kokoro TTS (best quality, Docker container)
-    try:
-        return await _kokoro_tts(text, language, voice)
-    except Exception as e:
-        logger.warning("Kokoro TTS failed: %s", e)
+    is_english = language in ("en", "")
 
-    # 2. Edge TTS (free, good quality, needs internet)
+    # 1. Kokoro TTS (best quality, but English-only)
+    if is_english:
+        try:
+            return await _kokoro_tts(text, language, voice)
+        except Exception as e:
+            logger.warning("Kokoro TTS failed: %s", e)
+
+    # 2. Edge TTS (free, good quality, supports all 11 Indian languages)
     try:
         return await _edge_tts(text, language)
     except Exception as e:
         logger.warning("Edge TTS failed: %s", e)
 
     # 3. Piper TTS (local, English-only fallback)
-    try:
-        return await _piper_tts(text)
-    except Exception as e:
-        logger.warning("Piper TTS failed: %s", e)
+    if is_english:
+        try:
+            return await _piper_tts(text)
+        except Exception as e:
+            logger.warning("Piper TTS failed: %s", e)
 
-    # 4. gTTS (last resort, slow but reliable)
+    # 4. gTTS (last resort, slow but supports all languages)
     return await _gtts_fallback(text, language)
 
 
@@ -56,19 +61,21 @@ async def _kokoro_tts(text: str, language: str, voice: str | None) -> bytes:
     """Kokoro TTS via Docker container (OpenAI-compatible API)."""
     import httpx
 
-    # Map language to appropriate Kokoro voice
+    # Kokoro voices — use English voices as primary since Kokoro
+    # is strongest in English. For non-English text, Edge TTS or gTTS
+    # will handle better via the fallback chain.
     _KOKORO_VOICES = {
         "en": "af_heart",
-        "hi": "hf_alpha",
-        "ta": "tf_diya",
-        "te": "tf_diya",
-        "bn": "bf_emma",
-        "mr": "hf_alpha",
-        "gu": "hf_alpha",
-        "kn": "tf_diya",
-        "ml": "tf_diya",
-        "pa": "hf_alpha",
-        "ur": "hf_alpha",
+        "hi": "af_heart",
+        "ta": "af_heart",
+        "te": "af_heart",
+        "bn": "af_heart",
+        "mr": "af_heart",
+        "gu": "af_heart",
+        "kn": "af_heart",
+        "ml": "af_heart",
+        "pa": "af_heart",
+        "ur": "af_heart",
     }
 
     payload = {

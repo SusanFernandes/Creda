@@ -105,7 +105,7 @@ async def _check_goal_drift(profile: UserProfile, db: AsyncSession):
     goals = result.scalars().all()
 
     for goal in goals:
-        if not goal.target_amount or not goal.target_date or not goal.monthly_sip:
+        if not goal.target_amount or not goal.target_date or not goal.monthly_investment:
             continue
         months_total = max(
             (goal.target_date.year - goal.created_at.year) * 12
@@ -115,7 +115,7 @@ async def _check_goal_drift(profile: UserProfile, db: AsyncSession):
             (date.today().year - goal.created_at.year) * 12
             + (date.today().month - goal.created_at.month), 0
         )
-        expected = goal.monthly_sip * months_elapsed
+        expected = goal.monthly_investment * months_elapsed
         actual = goal.progress_pct * goal.target_amount / 100 if goal.progress_pct else 0
 
         if expected > 0 and actual < expected * 0.8:
@@ -131,16 +131,23 @@ async def _check_goal_drift(profile: UserProfile, db: AsyncSession):
 
 async def _check_loss_aversion(profile: UserProfile, db: AsyncSession):
     """Behavioral nudge: detect panic patterns and encourage steady investing."""
-    from app.models import Holding
-    result = await db.execute(
-        select(Holding).where(Holding.user_id == profile.user_id)
+    from app.models import Portfolio, PortfolioFund
+    portfolio_result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == profile.user_id)
     )
-    holdings = result.scalars().all()
-    if not holdings:
+    portfolio = portfolio_result.scalar_one_or_none()
+    if not portfolio:
         return
 
-    total_invested = sum(h.buy_price * h.quantity for h in holdings if h.buy_price and h.quantity)
-    total_current = sum(h.current_price * h.quantity for h in holdings if h.current_price and h.quantity)
+    funds_result = await db.execute(
+        select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+    )
+    funds = funds_result.scalars().all()
+    if not funds:
+        return
+
+    total_invested = sum(f.invested or 0 for f in funds)
+    total_current = sum(f.current_value or 0 for f in funds)
 
     if total_invested > 0:
         portfolio_return = (total_current - total_invested) / total_invested * 100

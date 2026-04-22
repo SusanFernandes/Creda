@@ -118,17 +118,21 @@ function voiceApp() {
         const data = await resp.json();
         this.transcript = data.transcript || '';
         this.response = data.response || '';
-        this.agentUsed = data.agent_used || '';
-        this.status = data.audio_url ? 'playing' : 'idle';
+        this.agentUsed = data.intent || '';
 
         if (this.transcript && this.response) {
           this.history.unshift({ id: ++this.histId, transcript: this.transcript, response: this.response });
         }
 
-        if (data.audio_url) {
-          const audio = new Audio(data.audio_url);
+        // Play audio from base64 data
+        if (data.audio_data) {
+          this.status = 'playing';
+          const audio = new Audio('data:audio/wav;base64,' + data.audio_data);
           audio.onended = () => { this.status = 'idle'; };
-          audio.play();
+          audio.onerror = () => { this.status = 'idle'; };
+          audio.play().catch(() => { this.status = 'idle'; });
+        } else {
+          this.status = 'idle';
         }
       } catch (e) {
         this.status = 'error';
