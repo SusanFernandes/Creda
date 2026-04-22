@@ -1,0 +1,94 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Goal Simulator{% endblock %}
+{% block page_title %}Goal Simulator{% endblock %}
+{% block page_subtitle %}Goal Scenario Planner{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8" x-data="{ target: {{ target }}, years: {{ years }} }">
+  <!-- Input Controls -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h3 class="font-bold mb-1">Simulation Parameters</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Adjust and simulate different scenarios</p>
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Target Amount (₹)</label>
+        <input type="number" name="target" x-model="target"
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Time Horizon (Years)</label>
+        <input type="number" name="years" x-model="years" min="1" max="40"
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+      </div>
+      <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
+        Run Simulation
+      </button>
+    </form>
+  </div>
+
+  {% if sim %}
+  {% if sim.analysis and sim.analysis.scenarios %}
+  <!-- Scenarios -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for scenario in sim.analysis.scenarios %}
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50 {% if scenario.meets_target %}border-emerald-500/30{% endif %}">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{{ scenario.label }}</p>
+      <p class="text-2xl font-black italic tracking-tight {% if scenario.meets_target %}text-emerald-500{% else %}text-slate-700 dark:text-slate-200{% endif %}">
+        ₹{{ scenario.final_value|floatformat:0 }}
+      </p>
+      <p class="text-xs text-slate-500 mt-2">
+        SIP: ₹{{ scenario.monthly_sip|floatformat:0 }}/mo @ {{ scenario.return_rate }}%
+      </p>
+      {% if scenario.meets_target %}
+      <div class="flex items-center gap-1.5 mt-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-500">Target Met</p>
+      </div>
+      {% else %}
+      <p class="text-xs text-red-500 mt-2">Shortfall: ₹{{ scenario.shortfall|floatformat:0 }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if sim.analysis.year_by_year %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-4">Year-by-Year Projection</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 dark:border-slate-800">
+            <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Year</th>
+            <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Invested</th>
+            <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Value</th>
+            <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Gain</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for yr in sim.analysis.year_by_year %}
+          <tr class="border-b border-slate-50 dark:border-slate-800/50">
+            <td class="px-4 py-3 font-medium">Year {{ yr.year }}</td>
+            <td class="text-right px-4 py-3">₹{{ yr.total_invested|floatformat:0 }}</td>
+            <td class="text-right px-4 py-3 font-semibold">₹{{ yr.value|floatformat:0 }}</td>
+            <td class="text-right px-4 py-3 {% if yr.gain >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">₹{{ yr.gain|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if sim.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Simulation Analysis
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ sim.response }}</div>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

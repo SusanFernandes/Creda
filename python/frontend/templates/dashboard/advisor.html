@@ -1,0 +1,77 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Advisor{% endblock %}
+{% block page_title %}Financial Advisor{% endblock %}
+{% block page_subtitle %}Expert Human Handoff{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  {% if handoff %}
+  {% if handoff.analysis %}
+  <!-- Escalation Status -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 text-center relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent"></div>
+    <div class="relative">
+      {% if handoff.analysis.should_escalate %}
+      <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      </div>
+      <h2 class="text-2xl font-black italic mb-2">Human Advisor Recommended</h2>
+      <p class="text-sm text-slate-500 max-w-lg mx-auto">Based on the complexity of your financial situation, we recommend consulting a certified financial advisor.</p>
+      {% else %}
+      <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h2 class="text-2xl font-black italic mb-2">AI Coverage Sufficient</h2>
+      <p class="text-sm text-slate-500 max-w-lg mx-auto">CREDA can handle your current queries. A human advisor is not required at this time.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Triggers -->
+  {% if handoff.analysis.triggers %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-4">Escalation Triggers Detected</h3>
+    <div class="space-y-3">
+      {% for trigger in handoff.analysis.triggers %}
+      <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50/30 dark:bg-amber-900/10 border border-amber-200/50">
+        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+        <div>
+          <p class="font-semibold text-sm">{{ trigger.reason }}</p>
+          <p class="text-xs text-slate-500 mt-0.5">{{ trigger.detail }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Context Package -->
+  {% if handoff.analysis.context_summary %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-1">Prepared Context for Advisor</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">This summary will be shared with your advisor</p>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ handoff.analysis.context_summary }}</div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if handoff.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Recommendation
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ handoff.response }}</div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">CREDA will analyze your financial situation and determine if a human advisor consultation would be beneficial.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

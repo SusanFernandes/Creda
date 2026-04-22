@@ -1,0 +1,141 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Voice Agent{% endblock %}
+{% block page_title %}Voice Agent{% endblock %}
+{% block page_subtitle %}Multilingual Voice Interface{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" x-data="voiceApp()">
+  <!-- Voice Interface -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center">
+    <div class="mb-6">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Voice-Powered Financial Assistant</p>
+      <p class="text-sm text-slate-500 max-w-md mx-auto">Speak in English, Hindi, Tamil, Telugu, Bengali, Marathi, or any supported language. CREDA will understand and respond in your language.</p>
+    </div>
+
+    <!-- Mic Button -->
+    <div class="relative inline-flex items-center justify-center mb-8">
+      <!-- Pulse rings -->
+      <div x-show="recording" class="absolute w-40 h-40 rounded-full bg-blue-500/10 animate-ping"></div>
+      <div x-show="recording" class="absolute w-32 h-32 rounded-full bg-blue-500/20 animate-pulse"></div>
+      <button @click="toggleRecording()"
+              :class="recording ? 'bg-red-500 hover:bg-red-600 shadow-red-500/25 scale-110' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25'"
+              class="relative w-24 h-24 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 z-10">
+        <svg x-show="!recording" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        <svg x-show="recording" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div class="mb-6">
+      <p x-show="status === 'idle'" class="text-sm text-slate-400">Tap the microphone to start speaking</p>
+      <p x-show="status === 'recording'" class="text-sm text-red-500 font-medium animate-pulse">Listening...</p>
+      <p x-show="status === 'processing'" class="text-sm text-blue-500 font-medium">Processing your request...</p>
+      <p x-show="status === 'playing'" class="text-sm text-emerald-500 font-medium">Playing response...</p>
+      <p x-show="status === 'error'" class="text-sm text-red-500" x-text="errorMsg"></p>
+    </div>
+
+    <!-- Transcript -->
+    <div x-show="transcript" class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-left mb-4">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">You said</p>
+      <p class="text-sm" x-text="transcript"></p>
+    </div>
+
+    <!-- Response -->
+    <div x-show="response" class="glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-5 text-left">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-500">CREDA Response</p>
+      </div>
+      <p class="text-sm leading-relaxed" x-text="response"></p>
+      <p x-show="agentUsed" class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-3" x-text="'Agent: ' + agentUsed"></p>
+    </div>
+  </div>
+
+  <!-- Conversation History -->
+  <div x-show="history.length > 0" class="mt-8">
+    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Conversation History</h3>
+    <div class="space-y-3">
+      <template x-for="item in history" :key="item.id">
+        <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-4">
+          <p class="text-xs text-slate-500 mb-1" x-text="item.transcript"></p>
+          <p class="text-sm" x-text="item.response"></p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<script>
+function voiceApp() {
+  return {
+    recording: false,
+    status: 'idle',
+    transcript: '',
+    response: '',
+    agentUsed: '',
+    errorMsg: '',
+    history: [],
+    histId: 0,
+    mediaRecorder: null,
+    chunks: [],
+
+    async toggleRecording() {
+      if (this.recording) {
+        this.mediaRecorder?.stop();
+        this.recording = false;
+      } else {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          this.mediaRecorder = new MediaRecorder(stream);
+          this.chunks = [];
+          this.mediaRecorder.ondataavailable = (e) => this.chunks.push(e.data);
+          this.mediaRecorder.onstop = () => this.processAudio(stream);
+          this.mediaRecorder.start();
+          this.recording = true;
+          this.status = 'recording';
+          this.transcript = '';
+          this.response = '';
+        } catch (e) {
+          this.status = 'error';
+          this.errorMsg = 'Microphone access denied.';
+        }
+      }
+    },
+
+    async processAudio(stream) {
+      this.status = 'processing';
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(this.chunks, { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.webm');
+
+      try {
+        const resp = await fetch('/api/voice/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+          body: formData,
+        });
+        const data = await resp.json();
+        this.transcript = data.transcript || '';
+        this.response = data.response || '';
+        this.agentUsed = data.agent_used || '';
+        this.status = data.audio_url ? 'playing' : 'idle';
+
+        if (this.transcript && this.response) {
+          this.history.unshift({ id: ++this.histId, transcript: this.transcript, response: this.response });
+        }
+
+        if (data.audio_url) {
+          const audio = new Audio(data.audio_url);
+          audio.onended = () => { this.status = 'idle'; };
+          audio.play();
+        }
+      } catch (e) {
+        this.status = 'error';
+        this.errorMsg = 'Failed to process audio. Please try again.';
+      }
+    }
+  };
+}
+</script>
+{% endblock %}

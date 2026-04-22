@@ -1,0 +1,131 @@
+{% extends "base_dashboard.html" %}
+{% block title %}AI Chat{% endblock %}
+{% block page_title %}AI Chat{% endblock %}
+{% block page_subtitle %}AI Financial Intelligence{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto h-[calc(100vh-12rem)] flex flex-col" x-data="chatApp()">
+
+  <!-- Messages -->
+  <div class="flex-1 overflow-y-auto space-y-4 pb-4 pr-2 scrollbar-thin" id="chat-messages" x-ref="messages">
+    <!-- Welcome message -->
+    <div x-show="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center">
+      <div class="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold italic mb-2">CREDA AI Chat</h3>
+      <p class="text-sm text-slate-500 max-w-md">Ask me anything about your finances — investments, tax planning, budgeting, insurance, or just general money questions. I understand Hindi, Tamil, Telugu and more.</p>
+      <div class="grid grid-cols-2 gap-3 mt-6 max-w-md w-full">
+        <button @click="input = 'Analyze my portfolio risk'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
+          <p class="font-semibold mb-0.5">Portfolio Analysis</p>
+          <p class="text-slate-400">Check risk & allocation</p>
+        </button>
+        <button @click="input = 'How can I save more on taxes?'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
+          <p class="font-semibold mb-0.5">Tax Optimization</p>
+          <p class="text-slate-400">Save on income tax</p>
+        </button>
+        <button @click="input = 'What is my FIRE number?'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
+          <p class="font-semibold mb-0.5">FIRE Planning</p>
+          <p class="text-slate-400">Early retirement path</p>
+        </button>
+        <button @click="input = 'Create a monthly budget for me'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
+          <p class="font-semibold mb-0.5">Budget Coach</p>
+          <p class="text-slate-400">50/30/20 breakdown</p>
+        </button>
+      </div>
+    </div>
+
+    <template x-for="msg in messages" :key="msg.id">
+      <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'" class="animate-slide-up">
+        <div :class="msg.role === 'user'
+              ? 'bg-blue-600 text-white rounded-[1.5rem] rounded-br-lg px-5 py-3 max-w-[75%] shadow-lg shadow-blue-500/10'
+              : 'glass border border-slate-200/50 dark:border-slate-700/50 rounded-[1.5rem] rounded-bl-lg px-5 py-3 max-w-[75%]'">
+          <p class="text-sm whitespace-pre-wrap leading-relaxed" x-text="msg.content"></p>
+          <div x-show="msg.agent" class="mt-2 flex items-center gap-1.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em] opacity-50" x-text="msg.agent"></p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Typing indicator -->
+    <div x-show="loading" class="flex justify-start animate-fade-in">
+      <div class="glass border border-slate-200/50 dark:border-slate-700/50 rounded-[1.5rem] rounded-bl-lg px-5 py-4">
+        <div class="flex gap-1.5">
+          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
+          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.15s"></span>
+          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.3s"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-3 mt-4">
+    <form @submit.prevent="sendMessage" class="flex gap-3 items-center">
+      <input x-model="input" type="text" placeholder="Ask CREDA anything about your finances..."
+             class="flex-1 px-4 py-3 bg-transparent rounded-xl outline-none text-sm placeholder:text-slate-400"
+             :disabled="loading" @keydown.enter="sendMessage">
+      <button type="submit" :disabled="loading || !input.trim()"
+              class="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white flex items-center justify-center transition-all hover:scale-105 disabled:scale-100">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function chatApp() {
+  return {
+    messages: [],
+    input: '',
+    loading: false,
+    msgId: 0,
+    sessionId: crypto.randomUUID(),
+
+    async sendMessage() {
+      const text = this.input.trim();
+      if (!text || this.loading) return;
+
+      this.messages.push({ id: ++this.msgId, role: 'user', content: text });
+      this.input = '';
+      this.loading = true;
+
+      this.$nextTick(() => {
+        this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+      });
+
+      try {
+        const resp = await fetch('/api/chat/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+          },
+          body: JSON.stringify({ message: text, session_id: this.sessionId }),
+        });
+        const data = await resp.json();
+        this.messages.push({
+          id: ++this.msgId,
+          role: 'assistant',
+          content: data.response,
+          agent: data.agent_used,
+        });
+      } catch (e) {
+        this.messages.push({
+          id: ++this.msgId,
+          role: 'assistant',
+          content: 'Connection interrupted. Please try again.',
+        });
+      }
+
+      this.loading = false;
+      this.$nextTick(() => {
+        this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+      });
+    }
+  };
+}
+</script>
+{% endblock %}

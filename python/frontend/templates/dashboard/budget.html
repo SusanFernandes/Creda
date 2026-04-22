@@ -1,0 +1,65 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Budget Coach{% endblock %}
+{% block page_title %}Budget Coach{% endblock %}
+{% block page_subtitle %}Monthly Budget Planner{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  {% if budget %}
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Income</p>
+      <p class="text-3xl font-black italic tracking-tight">₹{{ budget.analysis.monthly_income|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Expenses</p>
+      <p class="text-3xl font-black italic tracking-tight text-red-500">₹{{ budget.analysis.monthly_expenses|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Savings Rate</p>
+      <p class="text-3xl font-black italic tracking-tight text-blue-600">{{ budget.analysis.savings_rate }}%</p>
+    </div>
+  </div>
+
+  <!-- 50/30/20 Rule -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h3 class="font-bold mb-1">50 / 30 / 20 Rule</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Budget Allocation Analysis</p>
+    {% for category, data in budget.analysis.rule_50_30_20.items %}
+    <div class="mb-6 last:mb-0">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm font-semibold capitalize">{{ category }}</span>
+        <span class="text-sm {% if data.status == 'ok' %}text-emerald-500{% else %}text-red-500{% endif %} font-bold">
+          ₹{{ data.actual|floatformat:0 }} / ₹{{ data.target|floatformat:0 }}
+        </span>
+      </div>
+      <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-3">
+        {% widthratio data.actual data.target 100 as pct %}
+        <div class="h-3 rounded-full transition-all duration-500 {% if data.status == 'ok' %}bg-emerald-500{% else %}bg-red-500{% endif %}"
+             style="width: min({{ pct|default:0 }}%, 100%)"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if budget.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Budget Analysis
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ budget.response }}</div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">Complete your profile to get budget analysis.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}Profile Configuration{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8">
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h3 class="font-bold mb-1">Profile Settings</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Personal & Financial Information</p>
+    <form hx-post="{% url 'settings' %}" hx-target="#settings-result" class="space-y-5">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Name</label>
+          <input type="text" name="name" value="{{ profile.name|default:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Age</label>
+          <input type="number" name="age" value="{{ profile.age|default:30 }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Income (₹)</label>
+          <input type="number" name="monthly_income" value="{{ profile.monthly_income|default:0 }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Expenses (₹)</label>
+          <input type="number" name="monthly_expenses" value="{{ profile.monthly_expenses|default:0 }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Language</label>
+          <select name="language" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+            <option value="en" {% if profile.language == 'en' %}selected{% endif %}>English</option>
+            <option value="hi" {% if profile.language == 'hi' %}selected{% endif %}>Hindi</option>
+            <option value="ta" {% if profile.language == 'ta' %}selected{% endif %}>Tamil</option>
+            <option value="te" {% if profile.language == 'te' %}selected{% endif %}>Telugu</option>
+            <option value="bn" {% if profile.language == 'bn' %}selected{% endif %}>Bengali</option>
+            <option value="mr" {% if profile.language == 'mr' %}selected{% endif %}>Marathi</option>
+            <option value="gu" {% if profile.language == 'gu' %}selected{% endif %}>Gujarati</option>
+            <option value="kn" {% if profile.language == 'kn' %}selected{% endif %}>Kannada</option>
+            <option value="ml" {% if profile.language == 'ml' %}selected{% endif %}>Malayalam</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Risk Appetite</label>
+          <select name="risk_appetite" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+            <option value="conservative" {% if profile.risk_appetite == 'conservative' %}selected{% endif %}>Conservative</option>
+            <option value="moderate" {% if profile.risk_appetite == 'moderate' %}selected{% endif %}>Moderate</option>
+            <option value="aggressive" {% if profile.risk_appetite == 'aggressive' %}selected{% endif %}>Aggressive</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
+        Save Changes
+      </button>
+    </form>
+    <div id="settings-result" class="mt-4"></div>
+  </div>
+</div>
+{% endblock %}

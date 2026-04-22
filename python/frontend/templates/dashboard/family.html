@@ -1,0 +1,134 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Family Wealth{% endblock %}
+{% block page_title %}Family Wealth{% endblock %}
+{% block page_subtitle %}Household Financial Intelligence{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <!-- Link Family Member -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold text-lg mb-2">Link Family Member</h2>
+    <p class="text-sm text-slate-500 mb-5">Connect family members for household wealth tracking.</p>
+    <form method="POST" class="flex flex-wrap items-end gap-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="link">
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-1">Email</label>
+        <input type="email" name="member_email" placeholder="family@example.com" required
+               class="glass rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none w-64">
+      </div>
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-1">Relationship</label>
+        <select name="relationship" class="glass rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+          <option value="spouse">Spouse</option>
+          <option value="parent">Parent</option>
+          <option value="child">Child</option>
+          <option value="sibling">Sibling</option>
+        </select>
+      </div>
+      <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">
+        Send Link Request
+      </button>
+    </form>
+  </div>
+
+  <!-- Linked Members -->
+  {% if members %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold text-lg mb-5">Linked Members</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for m in members %}
+      <div class="p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-blue-600/10 flex items-center justify-center">
+          <span class="text-lg font-bold text-blue-600">{{ m.name|truncatechars:1|upper }}</span>
+        </div>
+        <div>
+          <p class="font-bold text-sm">{{ m.name }}</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ m.relationship }}</p>
+          {% if m.age %}<p class="text-xs text-slate-500">Age: {{ m.age }}</p>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Household Wealth Analysis -->
+  {% if wealth %}
+  {% if wealth.data %}
+  {% with hw=wealth.data.household %}
+  {% if hw %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Household Net Worth</p>
+        <h2 class="text-3xl font-black italic tracking-tight">₹{{ hw.household_net_worth|floatformat:0|default:"0" }}</h2>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-2xl font-black italic text-blue-600">{{ hw.total_members }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Members</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-2xl font-black italic text-emerald-500">₹{{ hw.total_monthly_income|floatformat:0|default:"0" }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Monthly Income</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-2xl font-black italic text-blue-600">₹{{ hw.total_portfolio_value|floatformat:0|default:"0" }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Portfolio Value</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-2xl font-black italic text-amber-500">{{ hw.household_savings_rate }}%</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Savings Rate</p>
+      </div>
+    </div>
+    <p class="text-sm text-slate-500 mt-4 text-center">{{ hw.insurance_coverage }}</p>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Suggestions -->
+  {% if wealth.data.suggestions %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold text-lg mb-5">Optimization Suggestions</h2>
+    <div class="space-y-4">
+      {% for s in wealth.data.suggestions %}
+      <div class="p-5 rounded-2xl border {% if s.type == 'tax_optimization' %}border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10{% elif s.type == 'insurance_gap' %}border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10{% else %}border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-900/10{% endif %}">
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] {% if s.type == 'tax_optimization' %}text-emerald-500{% elif s.type == 'insurance_gap' %}text-red-500{% else %}text-amber-500{% endif %} mb-2">{{ s.type|title }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300">{{ s.tip }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI Analysis -->
+  {% if wealth.data.analysis %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Family Analysis
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ wealth.data.analysis }}</div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% elif not members %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </div>
+    <h3 class="font-bold text-lg mb-2">No Family Members Linked</h3>
+    <p class="text-slate-500 text-sm">Link family members above to see your household wealth analysis.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

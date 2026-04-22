@@ -1,0 +1,51 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CREDA{% endblock %} — Financial Intelligence</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            creda: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' }
+          },
+          borderRadius: { '4xl':'2rem', '5xl':'2.5rem', '6xl':'3rem' },
+        }
+      }
+    }
+  </script>
+
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js" defer></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  <style>
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    .glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .dark .glass { background: rgba(15,23,42,0.85); }
+    .gradient-blur { position:absolute; border-radius:9999px; filter:blur(140px); pointer-events:none; }
+    [x-cloak] { display: none !important; }
+    /* Smooth page transitions */
+    .htmx-settling { opacity: 0; }
+    .htmx-swapping { opacity: 0; transition: opacity 200ms ease-out; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 antialiased min-h-screen"
+      hx-boost="true"
+      x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
+      :class="{ 'dark': darkMode }">
+  {% block body %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

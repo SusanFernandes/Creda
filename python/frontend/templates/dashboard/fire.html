@@ -1,0 +1,74 @@
+{% extends "base_dashboard.html" %}
+{% block title %}FIRE Planner{% endblock %}
+{% block page_title %}FIRE Planner{% endblock %}
+{% block page_subtitle %}Financial Independence Roadmap{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  {% if fire %}
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-6 -mt-6"></div>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">FIRE Number</p>
+      <p class="text-3xl font-black italic tracking-tight text-blue-600">₹{{ fire.analysis.fire_number|floatformat:0 }}</p>
+      <p class="text-xs text-slate-400 mt-2">Target corpus for independence</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Current Corpus</p>
+      <p class="text-3xl font-black italic tracking-tight">₹{{ fire.analysis.current_corpus|floatformat:0 }}</p>
+      <p class="text-xs text-slate-400 mt-2">Accumulated so far</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Required SIP</p>
+      <p class="text-3xl font-black italic tracking-tight {% if fire.analysis.on_track %}text-emerald-500{% else %}text-red-500{% endif %}">
+        ₹{{ fire.analysis.required_sip|floatformat:0 }}<span class="text-base font-semibold">/mo</span>
+      </p>
+      {% if fire.analysis.on_track %}
+      <div class="flex items-center gap-1.5 mt-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <p class="text-xs text-emerald-500 font-medium">On track</p>
+      </div>
+      {% else %}
+      <p class="text-xs text-red-500 mt-2">Gap: ₹{{ fire.analysis.sip_gap|floatformat:0 }}/mo</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if fire.analysis.tax_gaps %}
+  <div class="glass rounded-2xl border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-6">
+    <div class="flex items-center gap-2 mb-3">
+      <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+      <h3 class="font-bold text-sm">Tax Optimization Gaps</h3>
+    </div>
+    <div class="space-y-2">
+      {% for gap in fire.analysis.tax_gaps %}
+      <p class="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+        <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+        {{ gap }}
+      </p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if fire.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA FIRE Strategy
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ fire.response }}</div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">Complete your profile to generate your FIRE roadmap.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
