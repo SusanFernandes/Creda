@@ -205,8 +205,8 @@ async def check_service_health(service_url: str, service_name: str) -> bool:
         return False
 
 async def route_request(service_url: str, endpoint: str, method: str = "POST", 
-                       data: Any = None, files: Dict = None, params: Dict = None) -> Dict:
-    """Route request to appropriate service"""
+                       data: Any = None, files: Dict = None, params: Dict = None):
+    """Route request to appropriate service. Returns dict for JSON or Response for binary."""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             url = f"{service_url}{endpoint}"
@@ -234,6 +234,11 @@ async def route_request(service_url: str, endpoint: str, method: str = "POST",
             logger.info(f"Response status: {response.status_code}")
             
             if response.status_code == 200:
+                # Check content type — don't call .json() on binary responses
+                content_type = response.headers.get("content-type", "")
+                if any(ct in content_type for ct in ("audio/", "application/octet-stream", "image/", "video/")):
+                    # Return a FastAPI Response with raw bytes for binary content
+                    return Response(content=response.content, media_type=content_type)
                 return response.json()
             elif response.status_code == 422:
                 error_detail = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
@@ -272,6 +277,7 @@ def determine_service_route(endpoint: str, request_data: Any = None) -> tuple:
         "/portfolio/xray", "/portfolio/stress-test", "/fire-planner",
         "/money-health-score", "/tax-wizard", "/sip-calculator",
         "/couples-planner", "/twilio/brain", "/supported_features",
+        "/budget/optimize", "/portfolio/optimize", "/portfolio/check-rebalance",
     ]
     
     if endpoint in voice_routes:
@@ -759,8 +765,8 @@ async def gateway_chat(request_data: dict):
 @app.post("/portfolio/xray")
 async def gateway_portfolio_xray(
     file: UploadFile = File(...),
-    password: str = Form(...),
     user_id: str = Form(...),
+    password: str = Form(default=""),
     language: str = Form(default="en"),
 ):
     """CAMS PDF X-Ray — streams to finance service."""
@@ -829,6 +835,36 @@ async def gateway_couples(request_data: dict):
     """Joint financial planning for couples — both partners' data."""
     start_time = time.time()
     result = await route_request(FASTAPI2_URL, "/couples-planner", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/budget/optimize")
+async def gateway_budget_optimize(request_data: dict):
+    """AI-powered budget optimisation."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/budget/optimize", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/portfolio/optimize")
+async def gateway_portfolio_optimize(request_data: dict):
+    """AI-powered portfolio optimisation."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/portfolio/optimize", "POST", data=request_data)
+    return GatewayResponse(
+        success=True, data=result, service="finance",
+        timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
+    )
+
+@app.post("/portfolio/check-rebalance")
+async def gateway_portfolio_rebalance(request_data: dict):
+    """Portfolio rebalancing check."""
+    start_time = time.time()
+    result = await route_request(FASTAPI2_URL, "/portfolio/check-rebalance", "POST", data=request_data)
     return GatewayResponse(
         success=True, data=result, service="finance",
         timestamp=datetime.now().isoformat(), processing_time=time.time() - start_time
@@ -961,6 +997,10 @@ async def dynamic_route(endpoint: str, request: Request):
     try:
         result = await route_request(service_url, f"/{endpoint}", method, data=request_data)
         
+        # If route_request returned a Response (binary content), pass it through directly
+        if isinstance(result, Response):
+            return result
+
         return GatewayResponse(
             success=True,
             data=result,

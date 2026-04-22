@@ -175,11 +175,37 @@ class TaxWizardRequest(BaseModel):
 
 
 class CouplesRequest(BaseModel):
-    user_id_1: str
-    user_id_2: str
+    user_id_1: str = ""
+    user_id_2: str = ""
+    # Accept frontend field names as aliases
+    partner1_user_id: Optional[str] = None
+    partner2_user_id: Optional[str] = None
     partner_1: Optional[Dict[str, Any]] = {}
     partner_2: Optional[Dict[str, Any]] = {}
     combined_goals: Optional[List[str]] = []
+    combined_goal: Optional[str] = None  # frontend sends singular form
+
+    def get_user_id_1(self) -> str:
+        return self.user_id_1 or self.partner1_user_id or "anonymous"
+
+    def get_user_id_2(self) -> str:
+        return self.user_id_2 or self.partner2_user_id or "anonymous"
+
+
+class FIREPlannerRequest(BaseModel):
+    """Accepts both ChatRequest format and frontend FIRERequest format."""
+    user_id: str = "anonymous"
+    message: Optional[str] = None
+    session_id: Optional[str] = None
+    language: Optional[str] = "en"
+    user_profile: Optional[Dict[str, Any]] = {}
+    portfolio_data: Optional[Dict[str, Any]] = {}
+    # Frontend FIRERequest fields
+    monthly_expenses: Optional[float] = None
+    current_savings: Optional[float] = None
+    monthly_investment: Optional[float] = None
+    expected_return: Optional[float] = None
+    inflation_rate: Optional[float] = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -552,8 +578,8 @@ async def twilio_process_speech(
 @app.post("/portfolio/xray")
 async def portfolio_xray(
     file: UploadFile = File(...),
-    password: str = Form(...),
     user_id: str = Form(...),
+    password: str = Form(default=""),
     language: Optional[str] = Form(default="en"),
 ):
     """Upload CAMS/KFintech PDF → full X-Ray (XIRR, overlap, expense drag, rebalancing)."""
@@ -673,16 +699,45 @@ async def portfolio_history(user_id: str):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/fire-planner")
-async def fire_planner(request: ChatRequest):
+async def fire_planner(request: FIREPlannerRequest):
     """FIRE path planner — full month-by-month roadmap."""
-    request.message = "Create my complete FIRE financial roadmap with month-by-month milestones"
+    # Build context message from frontend FIRE fields if no message provided
+    fire_context_parts = []
+    if request.monthly_expenses is not None:
+        fire_context_parts.append(f"monthly expenses ₹{request.monthly_expenses:,.0f}")
+    if request.current_savings is not None:
+        fire_context_parts.append(f"current savings ₹{request.current_savings:,.0f}")
+    if request.monthly_investment is not None:
+        fire_context_parts.append(f"monthly investment ₹{request.monthly_investment:,.0f}")
+    if request.expected_return is not None:
+        fire_context_parts.append(f"expected return {request.expected_return}%")
+    if request.inflation_rate is not None:
+        fire_context_parts.append(f"inflation {request.inflation_rate}%")
+
+    if request.message:
+        message = request.message
+    elif fire_context_parts:
+        message = (
+            "Create my complete FIRE financial roadmap with month-by-month milestones. "
+            f"My details: {', '.join(fire_context_parts)}."
+        )
+    else:
+        message = "Create my complete FIRE financial roadmap with month-by-month milestones"
+
+    # Merge FIRE fields into user_profile so agents can use them
+    profile = dict(request.user_profile or {})
+    if request.monthly_expenses is not None:
+        profile.setdefault("expenses", request.monthly_expenses)
+    if request.current_savings is not None:
+        profile.setdefault("savings", request.current_savings)
+
     session_id = request.session_id or str(uuid.uuid4())
     return await _run_graph(
-        message=request.message,
+        message=message,
         user_id=request.user_id,
         session_id=session_id,
         language=request.language or "en",
-        user_profile=request.user_profile,
+        user_profile=profile,
         portfolio_data=request.portfolio_data,
     )
 
@@ -738,17 +793,25 @@ async def tax_wizard(request: TaxWizardRequest):
 @app.post("/couples-planner")
 async def couples_planner(request: CouplesRequest):
     """Joint financial planning for couples — optimises across both incomes."""
+    # Resolve user IDs from either naming convention
+    uid1 = request.get_user_id_1()
+    uid2 = request.get_user_id_2()
+    # Merge combined_goal into combined_goals list if provided
+    goals = list(request.combined_goals or [])
+    if request.combined_goal and request.combined_goal not in goals:
+        goals.append(request.combined_goal)
+
     # Load saved profiles if partner data not provided
     p1 = request.partner_1 or {}
     p2 = request.partner_2 or {}
 
     with Session(engine) as sess:
         if not p1:
-            row = sess.exec(select(UserProfile).where(UserProfile.user_id == request.user_id_1)).first()
+            row = sess.exec(select(UserProfile).where(UserProfile.user_id == uid1)).first()
             if row:
                 p1 = {c.name: getattr(row, c.name) for c in UserProfile.__table__.columns if c.name not in ("id", "created_at", "updated_at")}
         if not p2:
-            row = sess.exec(select(UserProfile).where(UserProfile.user_id == request.user_id_2)).first()
+            row = sess.exec(select(UserProfile).where(UserProfile.user_id == uid2)).first()
             if row:
                 p2 = {c.name: getattr(row, c.name) for c in UserProfile.__table__.columns if c.name not in ("id", "created_at", "updated_at")}
 
@@ -771,7 +834,7 @@ async def couples_planner(request: CouplesRequest):
         "hra": max(p1.get("hra", 0) or 0, p2.get("hra", 0) or 0),
     }
 
-    goals_text = ", ".join(request.combined_goals) if request.combined_goals else "retirement, home purchase, child education"
+    goals_text = ", ".join(goals) if goals else "retirement, home purchase, child education"
 
     return await _run_graph(
         message=(
@@ -785,9 +848,143 @@ async def couples_planner(request: CouplesRequest):
             f"Optimise: HRA claims, NPS matching, SIP splits for tax efficiency, "
             f"joint vs individual insurance, combined net worth tracking."
         ),
-        user_id=request.user_id_1,
+        user_id=uid1,
         session_id=str(uuid.uuid4()),
         user_profile=combined_profile,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  BUDGET & PORTFOLIO OPTIMIZATION ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class BudgetOptimizeRequest(BaseModel):
+    user_id: str = "anonymous"
+    expenses: Optional[List[Dict[str, Any]]] = []
+    language: Optional[str] = "en"
+    user_profile: Optional[Dict[str, Any]] = {}
+
+
+class PortfolioOptimizeRequest(BaseModel):
+    user_id: str = "anonymous"
+    goals: Optional[List[str]] = []
+    time_horizon_years: Optional[int] = 25
+    language: Optional[str] = "en"
+    profile: Optional[Dict[str, Any]] = {}
+
+
+class RebalanceCheckRequest(BaseModel):
+    user_id: str = "anonymous"
+    current_allocation: Optional[Dict[str, Any]] = {}
+    threshold: Optional[float] = 0.05
+    language: Optional[str] = "en"
+    profile: Optional[Dict[str, Any]] = {}
+
+
+@app.post("/budget/optimize")
+async def budget_optimize(request: BudgetOptimizeRequest):
+    """AI-powered budget optimisation — analyses expenses and suggests savings."""
+    user_id = request.user_id
+    user_profile = dict(request.user_profile or {})
+
+    # Load persisted profile if not supplied
+    if not user_profile:
+        with Session(engine) as sess:
+            row = sess.exec(select(UserProfile).where(UserProfile.user_id == user_id)).first()
+            if row:
+                user_profile = row.model_dump()
+
+    expenses_text = ""
+    if request.expenses:
+        expenses_text = "My expenses: " + ", ".join(
+            f"{e.get('category', 'other')}: ₹{e.get('amount', 0)}" for e in request.expenses
+        )
+
+    message = (
+        f"Optimise my monthly budget. {expenses_text} "
+        f"Suggest where I can save more and how to reallocate savings to investments."
+    )
+
+    return await _run_graph(
+        message=message,
+        user_id=user_id,
+        session_id=str(uuid.uuid4()),
+        language=request.language or "en",
+        user_profile=user_profile,
+    )
+
+
+@app.post("/portfolio/optimize")
+async def portfolio_optimize(request: PortfolioOptimizeRequest):
+    """AI-powered portfolio optimisation based on goals and risk profile."""
+    user_id = request.user_id
+    user_profile = dict(request.profile or {})
+
+    if not user_profile:
+        with Session(engine) as sess:
+            row = sess.exec(select(UserProfile).where(UserProfile.user_id == user_id)).first()
+            if row:
+                user_profile = row.model_dump()
+
+    goals_text = ", ".join(request.goals) if request.goals else "wealth creation, retirement"
+    message = (
+        f"Optimise my portfolio for these goals: {goals_text}. "
+        f"Time horizon: {request.time_horizon_years} years. "
+        f"Give specific fund recommendations and allocation percentages."
+    )
+
+    return await _run_graph(
+        message=message,
+        user_id=user_id,
+        session_id=str(uuid.uuid4()),
+        language=request.language or "en",
+        user_profile=user_profile,
+    )
+
+
+@app.post("/portfolio/check-rebalance")
+async def portfolio_check_rebalance(request: RebalanceCheckRequest):
+    """Check whether portfolio needs rebalancing based on drift threshold."""
+    user_id = request.user_id
+    user_profile = dict(request.profile or {})
+    portfolio_data: Dict[str, Any] = {}
+
+    with Session(engine) as sess:
+        if not user_profile:
+            row = sess.exec(select(UserProfile).where(UserProfile.user_id == user_id)).first()
+            if row:
+                user_profile = row.model_dump()
+        snapshot = sess.exec(
+            select(PortfolioSnapshot)
+            .where(PortfolioSnapshot.user_id == user_id)
+            .order_by(PortfolioSnapshot.snapshot_date.desc())  # type: ignore[arg-type]
+        ).first()
+        if snapshot:
+            portfolio_data = {
+                "total_current_value": snapshot.current_value,
+                "schemes": json.loads(snapshot.holdings_json),
+            }
+
+    alloc_text = ""
+    if request.current_allocation:
+        alloc_text = "Current allocation: " + ", ".join(
+            f"{k}: {v}" for k, v in request.current_allocation.items()
+        )
+
+    message = (
+        f"Check if my portfolio needs rebalancing. {alloc_text} "
+        f"Drift threshold: {request.threshold * 100:.0f}%. "
+        f"Give a rebalancing plan if needed."
+    )
+
+    return await _run_graph(
+        message=message,
+        user_id=user_id,
+        session_id=str(uuid.uuid4()),
+        language=request.language or "en",
+        user_profile=user_profile,
+        portfolio_data=portfolio_data,
     )
 
 
