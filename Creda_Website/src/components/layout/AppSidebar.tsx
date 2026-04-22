@@ -124,58 +124,78 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   
   const getNavClassName = ({ isActive }: { isActive: boolean }) => 
-    isActive 
-      ? 'bg-gradient-primary text-foreground shadow-glow font-medium' 
-      : 'text-sidebar-foreground hover:bg-muted/80 hover:text-foreground transition-colors';
+    `flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group ${
+      isActive 
+        ? 'bg-primary/10 text-primary font-semibold shadow-[0_0_15px_rgba(var(--primary),0.1)]' 
+        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+    }`;
 
   return (
     <Sidebar 
-      className={collapsed ? "w-16" : "w-64"}
+      className={`border-r border-border/50 transition-all duration-500 ease-in-out ${collapsed ? "w-20" : "w-72"}`}
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-border/40 p-4">
+      <SidebarHeader className="p-6">
         {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 dark:text-white text-foreground" />
+          <div className="flex items-center gap-4 group cursor-pointer">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-variant rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-primary/30 transition-shadow duration-300">
+                <TrendingUp className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full border-2 border-background animate-pulse" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-gradient">Creda</h2>
-              <p className="text-xs text-muted-foreground">AI Finance Assistant</p>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                Creda
+              </h2>
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
+                AI Finance Hub
+              </span>
             </div>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto">
-            <TrendingUp className="w-5 h-5 dark:text-white text-foreground" />
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-variant rounded-xl flex items-center justify-center mx-auto shadow-lg hover:shadow-primary/30 transition-all duration-300">
+            <TrendingUp className="w-6 h-6 text-primary-foreground" />
           </div>
         )}
       </SidebarHeader>
 
       <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
-            Main
+          <SidebarGroupLabel className={`px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2 ${collapsed ? 'sr-only' : ''}`}>
+            Main Terminal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton asChild size="lg" className="h-11">
                     <NavLink to={item.url} className={getNavClassName}>
-                      <item.icon className={`${collapsed ? 'mx-auto' : 'mr-3'} h-5 w-5`} />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge 
-                              variant={isActive(item.url) ? 'secondary' : 'outline'} 
-                              className="text-xs"
-                            >
-                              {item.badge}
-                            </Badge>
+                      {({ isActive }) => (
+                        <>
+                          <div className={`relative flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+                            <item.icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            {isActive && !collapsed && (
+                              <div className="absolute -left-3 w-1 h-5 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                            )}
+                          </div>
+                          {!collapsed && (
+                            <div className="flex items-center justify-between flex-1">
+                              <span className="text-sm tracking-wide">{item.title}</span>
+                              {item.badge && (
+                                <Badge 
+                                  variant="secondary"
+                                  className={`text-[10px] font-bold px-1.5 h-5 min-w-[20px] justify-center transition-all duration-300 ${
+                                    isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 text-muted-foreground/70'
+                                  }`}
+                                >
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -186,28 +206,39 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
-            Planning Tools
+          <SidebarGroupLabel className={`px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2 mt-4 ${collapsed ? 'sr-only' : ''}`}>
+            Wealth Planning
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {planningNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton asChild size="lg" className="h-11">
                     <NavLink to={item.url} className={getNavClassName}>
-                      <item.icon className={`${collapsed ? 'mx-auto' : 'mr-3'} h-5 w-5`} />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span>{item.title}</span>
-                          {'badge' in item && item.badge && (
-                            <Badge
-                              variant={isActive(item.url) ? 'secondary' : 'outline'}
-                              className="text-xs"
-                            >
-                              {item.badge}
-                            </Badge>
+                      {({ isActive }) => (
+                        <>
+                          <div className={`relative flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+                            <item.icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            {isActive && !collapsed && (
+                              <div className="absolute -left-3 w-1 h-5 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                            )}
+                          </div>
+                          {!collapsed && (
+                            <div className="flex items-center justify-between flex-1">
+                              <span className="text-sm tracking-wide">{item.title}</span>
+                              {'badge' in item && item.badge && (
+                                <Badge
+                                  variant="secondary"
+                                  className={`text-[10px] font-bold px-1.5 h-5 min-w-[20px] justify-center transition-all duration-300 ${
+                                    isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 text-muted-foreground/70'
+                                  }`}
+                                >
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -218,28 +249,39 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
-            Tools
+          <SidebarGroupLabel className={`px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2 mt-4 ${collapsed ? 'sr-only' : ''}`}>
+            Intelligent Tools
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {toolsNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton asChild size="lg" className="h-11">
                     <NavLink to={item.url} className={getNavClassName}>
-                      <item.icon className={`${collapsed ? 'mx-auto' : 'mr-3'} h-5 w-5`} />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge 
-                              variant={isActive(item.url) ? 'secondary' : 'outline'} 
-                              className="text-xs"
-                            >
-                              {item.badge}
-                            </Badge>
+                      {({ isActive }) => (
+                        <>
+                          <div className={`relative flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+                            <item.icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            {isActive && !collapsed && (
+                              <div className="absolute -left-3 w-1 h-5 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                            )}
+                          </div>
+                          {!collapsed && (
+                            <div className="flex items-center justify-between flex-1">
+                              <span className="text-sm tracking-wide">{item.title}</span>
+                              {item.badge && (
+                                <Badge 
+                                  variant="secondary"
+                                  className={`text-[10px] font-bold px-1.5 h-5 min-w-[20px] justify-center transition-all duration-300 ${
+                                    isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 text-muted-foreground/70'
+                                  }`}
+                                >
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -250,17 +292,26 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
-            Account
+          <SidebarGroupLabel className={`px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2 mt-4 ${collapsed ? 'sr-only' : ''}`}>
+            System
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {settingsNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton asChild size="lg" className="h-11">
                     <NavLink to={item.url} className={getNavClassName}>
-                      <item.icon className={`${collapsed ? 'mx-auto' : 'mr-3'} h-5 w-5`} />
-                      {!collapsed && <span>{item.title}</span>}
+                      {({ isActive }) => (
+                        <>
+                          <div className={`relative flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+                            <item.icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            {isActive && !collapsed && (
+                              <div className="absolute -left-3 w-1 h-5 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                            )}
+                          </div>
+                          {!collapsed && <span className="text-sm tracking-wide">{item.title}</span>}
+                        </>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -270,28 +321,43 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40 p-4">
+      <SidebarFooter className="p-6 border-t border-border/40">
         {!collapsed && (
-          <div className="space-y-3">
-            <div className="p-3 bg-gradient-card rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Bell className="h-4 w-4 text-accent" />
-                <span className="text-sm font-medium">Pro Tips</span>
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 relative overflow-hidden group/card shadow-sm">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/card:scale-110 transition-transform duration-500">
+                <Brain className="h-12 w-12 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Say "Hey Creda" to activate voice commands instantly!
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-accent/20 rounded-lg">
+                  <Bell className="h-3.5 w-3.5 text-accent" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-foreground/80">Pro Tips</span>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Say <span className="text-primary font-medium">"Hey Creda"</span> to activate voice commands and manage assets instantly!
               </p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-1 flex-1 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full w-2/3 bg-gradient-to-r from-primary to-primary-glow rounded-full" />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground/60">65%</span>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full">
+            
+            <Button size="lg" className="w-full h-12 bg-primary hover:bg-primary-dark text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 rounded-xl group overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
               <Mic className="h-4 w-4 mr-2" />
-              Voice Assistant
+              <span className="font-semibold tracking-wide">Voice Assistant</span>
             </Button>
           </div>
         )}
         {collapsed && (
-          <Button variant="outline" size="icon" className="w-8 h-8 mx-auto">
-            <Mic className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-col gap-4 items-center">
+            <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-primary hover:bg-primary/10 transition-all duration-300 shadow-sm border border-border/40">
+              <Mic className="h-5 w-5" />
+            </Button>
+          </div>
         )}
       </SidebarFooter>
     </Sidebar>

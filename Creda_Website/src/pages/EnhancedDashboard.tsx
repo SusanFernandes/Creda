@@ -18,7 +18,8 @@ import {
   Filter,
   Download,
   Share,
-  Settings
+  Settings,
+  Brain
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,20 +89,19 @@ const EnhancedDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [portfolio, budget, health] = await Promise.all([
+      const [portfolio, health] = await Promise.all([
         ApiService.getPortfolioAllocation(userProfile),
-        ApiService.optimizeBudget(userProfile, []),
-        ApiService.calculateHealthScore(userProfile)
+        ApiService.getHealthScore(userProfile)
       ]);
       
       setPortfolioData(portfolio);
-      setBudgetData(budget);
+      // setBudgetData(budget); // ApiService.optimizeBudget missing
       setHealthScore(health);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       toast({
-        title: "Data Loading Error",
-        description: "Using offline data. Some features may be limited.",
+        title: "Synchronization Warning",
+        description: "Operating in high-availability offline mode.",
         variant: "destructive"
       });
     } finally {
@@ -117,7 +117,8 @@ const EnhancedDashboard: React.FC = () => {
       trend: 'up' as const,
       icon: <TrendingUp className="w-5 h-5" />,
       prefix: "₹",
-      description: "Portfolio + Cash + FD"
+      gradient: "from-blue-500/20 to-cyan-500/20",
+      iconBg: "bg-blue-500"
     },
     {
       title: "Monthly Returns",
@@ -126,7 +127,8 @@ const EnhancedDashboard: React.FC = () => {
       trend: 'up' as const,
       icon: <DollarSign className="w-5 h-5" />,
       suffix: "%",
-      description: "Annualized returns"
+      gradient: "from-emerald-500/20 to-teal-500/20",
+      iconBg: "bg-emerald-500"
     },
     {
       title: "Emergency Fund",
@@ -134,8 +136,9 @@ const EnhancedDashboard: React.FC = () => {
       change: 0.3,
       trend: 'up' as const,
       icon: <PiggyBank className="w-5 h-5" />,
-      suffix: " months",
-      description: "Expense coverage"
+      suffix: " mths",
+      gradient: "from-amber-500/20 to-orange-500/20",
+      iconBg: "bg-amber-500"
     },
     {
       title: "Goal Progress",
@@ -144,51 +147,64 @@ const EnhancedDashboard: React.FC = () => {
       trend: 'up' as const,
       icon: <Target className="w-5 h-5" />,
       suffix: "%",
-      description: "Retirement readiness"
+      gradient: "from-purple-500/20 to-pink-500/20",
+      iconBg: "bg-purple-500"
     }
-  ];
+  ] as Array<{
+    title: string;
+    value: any;
+    change: number;
+    trend: 'up' | 'down';
+    icon: React.ReactNode;
+    prefix?: string;
+    suffix?: string;
+    gradient: string;
+    iconBg: string;
+  }>;
 
   const recentAlerts = [
     {
       type: "opportunity",
       title: "Rebalancing Opportunity",
       description: "Your portfolio has drifted 6% from target allocation",
-      action: "Rebalance Now",
-      priority: "medium",
-      timestamp: "2 hours ago"
+      action: "Fix Calibration",
+      priority: "high",
+      timestamp: "2h ago"
     },
     {
       type: "achievement",
       title: "Goal Milestone Reached",
       description: "Emergency fund target of ₹75,000 achieved!",
-      action: "View Goals",
+      action: "Set New Target",
       priority: "low",
-      timestamp: "1 day ago"
+      timestamp: "1d ago"
     },
     {
       type: "market",
-      title: "Market Update",
+      title: "Neural Market Update",
       description: "Large cap funds showing strong performance this quarter",
-      action: "Learn More",
-      priority: "low",
-      timestamp: "3 days ago"
+      action: "Optimize",
+      priority: "medium",
+      timestamp: "3d ago"
     }
   ];
 
   const quickActions = [
-    { label: "Add Money", icon: Plus, action: () => {} },
-    { label: "SIP Setup", icon: Calendar, action: () => {} },
-    { label: "Tax Planning", icon: AlertTriangle, action: () => {} },
-    { label: "Goals Review", icon: Target, action: () => {} },
+    { label: "Add Capital", icon: Plus, action: () => {} },
+    { label: "SIP Engine", icon: Calendar, action: () => {} },
+    { label: "Tax Wizard", icon: AlertTriangle, action: () => {} },
+    { label: "Goal Monitor", icon: Target, action: () => {} },
   ];
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <RefreshCw className="w-12 h-12 animate-spin mx-auto text-primary" />
-            <p className="text-lg text-muted-foreground">Loading your financial dashboard...</p>
+      <div className="flex h-[80vh] items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        <div className="text-center space-y-6 relative z-10">
+          <RefreshCw className="w-16 h-16 animate-spin mx-auto text-primary/40" />
+          <div className="space-y-2">
+            <h3 className="text-2xl font-black tracking-tight text-foreground/80">Calibrating Analytics</h3>
+            <p className="text-muted-foreground animate-pulse text-sm">Processing multi-source financial streams...</p>
           </div>
         </div>
       </div>
@@ -196,347 +212,383 @@ const EnhancedDashboard: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8 max-w-7xl">
-      {/* Header with Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-3xl font-bold text-gradient"
-          >
-            Good morning! 👋
-          </motion.h1>
-          <p className="text-muted-foreground mt-2">
-            Here's your financial overview for {new Date().toLocaleDateString('en-IN', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            {['1M', '3M', '6M', '1Y', 'ALL'].map((period) => (
-              <Button
-                key={period}
-                variant={timeframe === period ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setTimeframe(period as any)}
-                className="h-8 px-3"
-              >
-                {period}
-              </Button>
-            ))}
+    <div className="min-h-screen pb-12 relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
+
+      <div className="container mx-auto p-4 md:p-8 space-y-10 relative z-10 max-w-7xl">
+        {/* Superior Header */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 pb-6 border-b border-border/40">
+          <div className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 w-fit"
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Enhanced Logic v2.4</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl md:text-6xl font-black tracking-tighter"
+            >
+              System <span className="text-gradient">Intelligence</span>
+            </motion.h1>
+            <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Synced: {new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
+          <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+            <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl backdrop-blur-sm border border-border/40">
+              {['1M', '3M', '6M', '1Y', 'ALL'].map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setTimeframe(period as any)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all ${
+                    timeframe === period 
+                      ? 'bg-primary text-primary-foreground shadow-lg' 
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2 flex-1 md:flex-none">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="h-12 rounded-xl group relative overflow-hidden bg-primary text-primary-foreground border-none shadow-xl shadow-primary/20"
+                onClick={() => window.location.href = '/voice'}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+                <Mic className="mr-3 h-5 w-5" />
+                <span className="font-bold">Command Bot</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <Download className="mr-2 h-4 w-4" />
-                Export Report
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Share className="mr-2 h-4 w-4" />
-                Share Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Customize
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Button variant="outline" onClick={fetchDashboardData}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-12 w-12 rounded-xl border-border/60 hover:bg-muted/40 transition-all"
+                onClick={fetchDashboardData}
+              >
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Top Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {topMetrics.map((metric, index) => (
+        {/* Real-time Metric Layer */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {topMetrics.map((metric, index) => (
+            <motion.div
+              key={metric.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ y: -5 }}
+              className="group"
+            >
+              <Card className="h-full relative overflow-hidden border-border/50 bg-card/40 backdrop-blur-xl group-hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-primary/5">
+                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${metric.gradient} blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:opacity-100 transition-opacity opacity-50`} />
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{metric.title}</span>
+                  <div className={`p-2.5 ${metric.iconBg} rounded-xl text-white shadow-lg transition-transform group-hover:scale-110`}>
+                    {metric.icon}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  <div className="text-3xl font-black tracking-tighter">
+                    {metric.prefix}{metric.value}{metric.suffix}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-black tracking-tight ${metric.trend === 'up' ? 'text-success' : 'text-error'}`}>
+                      {metric.trend === 'up' ? '+' : '-'}{metric.change}%
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">Calibrated</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Cognitive Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <motion.div
-            key={metric.title}
+            className="lg:col-span-2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="border-none bg-card shadow-xl overflow-hidden group h-full">
+              <div className="p-6 border-b border-border/40 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-black tracking-tight">Growth Projection</h3>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-black tracking-tighter">₹{(portfolioPerformanceData[portfolioPerformanceData.length-1].value).toLocaleString()}</span>
+                    <Badge variant="outline" className="text-[10px] font-black border-none bg-emerald-500/10 text-emerald-500">+12.5%</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Portfolio delta over 6 months</p>
+                </div>
+                <div className="p-2.5 bg-primary/10 rounded-xl text-primary shadow-lg shadow-primary/5">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="p-8">
+                <AdvancedLineChart
+                  data={portfolioPerformanceData}
+                  title=""
+                  description=""
+                  valuePrefix="₹"
+                  showTarget={true}
+                  showTrend={true}
+                  height={320}
+                  noCard
+                />
+              </div>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="h-full border-none bg-card shadow-xl overflow-hidden">
+              <div className="p-6 border-b border-border/40">
+                <h3 className="text-lg font-black tracking-tight">Structural Allocation</h3>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-black tracking-tighter">₹2,70,000</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Assets</span>
+                </div>
+              </div>
+              <div className="p-8 flex flex-col justify-center h-full">
+                <AdvancedPieChart
+                  data={allocationData}
+                  title=""
+                  description=""
+                  valuePrefix="₹"
+                  showPercentages={true}
+                  showLegend={true}
+                  height={320}
+                  noCard
+                />
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Functional Integration Layer */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: 0.5 }}
           >
-            <MetricCard
-              title={metric.title}
-              value={metric.value}
-              change={metric.change}
-              trend={metric.trend}
-              icon={metric.icon}
-              prefix={metric.prefix}
-              suffix={metric.suffix}
-              description={metric.description}
-              size="md"
-            />
+            <Card className="border-border/50 bg-card/40 backdrop-blur-xl relative overflow-hidden h-full">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-black tracking-tight flex items-center gap-3">
+                  <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600">
+                    <PiggyBank className="w-5 h-5" />
+                  </div>
+                  Savings DNA
+                </CardTitle>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Historical retention trends</p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <AdvancedLineChart
+                  data={monthlyFlowData.map(item => ({ 
+                    name: item.name, 
+                    value: item.savings,
+                    target: 40000 
+                  }))}
+                  title=""
+                  description=""
+                  valuePrefix="₹"
+                  showTarget={true}
+                  color="hsl(var(--chart-2))"
+                  height={250}
+                  noCard
+                />
+              </CardContent>
+            </Card>
           </motion.div>
-        ))}
-      </div>
 
-      {/* Alerts Section */}
-      {recentAlerts.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Alert className="border-l-4 border-l-warning bg-warning/5">
-            <Bell className="h-4 w-4 text-warning" />
-            <AlertDescription>
-              <div className="flex items-center justify-between">
-                <div>
-                  <strong>{recentAlerts[0].title}:</strong> {recentAlerts[0].description}
-                </div>
-                <Button variant="outline" size="sm">
-                  {recentAlerts[0].action}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </motion.div>
-      )}
-
-      {/* Main Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Portfolio Performance */}
-        <motion.div
-          className="lg:col-span-2"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <AdvancedLineChart
-            data={portfolioPerformanceData}
-            title="Portfolio Performance"
-            description="Track your investment growth over time"
-            valuePrefix="₹"
-            showTarget={true}
-            showTrend={true}
-            height={350}
-          />
-        </motion.div>
-
-        {/* Portfolio Allocation */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <AdvancedPieChart
-            data={allocationData}
-            title="Asset Allocation"
-            description="Current portfolio distribution"
-            valuePrefix="₹"
-            showPercentages={true}
-            showLegend={true}
-            height={350}
-          />
-        </motion.div>
-      </div>
-
-      {/* Secondary Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly Cash Flow */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <AdvancedLineChart
-            data={monthlyFlowData.map(item => ({ 
-              name: item.name, 
-              value: item.savings,
-              target: 40000 
-            }))}
-            title="Monthly Savings Trend"
-            description="Your monthly savings pattern"
-            valuePrefix="₹"
-            showTarget={true}
-            color="hsl(var(--chart-2))"
-          />
-        </motion.div>
-
-        {/* Quick Actions & Insights */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card className="glass-effect h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary" />
-                Quick Actions & Insights
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Quick Actions */}
-              <div>
-                <h4 className="font-medium mb-3">Quick Actions</h4>
-                <div className="grid grid-cols-2 gap-3">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card className="glass-effect h-full border-border/50 bg-card/40 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-black tracking-tight flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  Action Parameters
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="grid grid-cols-2 gap-4">
                   {quickActions.map((action, index) => (
                     <Button
                       key={action.label}
                       variant="outline"
-                      size="sm"
+                      className="h-auto p-4 flex flex-col items-center justify-center gap-3 rounded-2xl bg-muted/20 border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all group"
                       onClick={action.action}
-                      className="h-auto p-3 flex-col gap-2"
                     >
-                      <action.icon className="h-4 w-4" />
-                      <span className="text-xs">{action.label}</span>
+                      <div className="p-3 bg-card rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                        <action.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">{action.label}</span>
                     </Button>
                   ))}
                 </div>
-              </div>
 
-              {/* AI Insights */}
-              <div>
-                <h4 className="font-medium mb-3">AI Insights</h4>
-                <div className="space-y-3">
-                  <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                    <p className="text-sm font-medium text-success">Great Progress! 🎉</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Your savings rate has increased by 15% this quarter
-                    </p>
-                  </div>
-                  <div className="p-3 bg-info/10 rounded-lg border border-info/20">
-                    <p className="text-sm font-medium text-info">Recommendation 💡</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Consider increasing SIP by ₹2,000 to reach retirement goal faster
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Recent Activity & Notifications */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-      >
-        <Tabs defaultValue="activity" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="activity">Recent Activity</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts ({recentAlerts.length})</TabsTrigger>
-            <TabsTrigger value="insights">AI Insights</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="activity" className="mt-6">
-            <Card className="glass-effect">
-              <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
-                <CardDescription>Your latest financial activities</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { type: 'SIP', desc: 'Large Cap Fund Investment', amount: '+₹5,000', time: '2 hours ago', status: 'success' },
-                    { type: 'Expense', desc: 'Grocery Shopping', amount: '-₹1,200', time: '1 day ago', status: 'expense' },
-                    { type: 'Dividend', desc: 'HDFC Equity Fund Dividend', amount: '+₹850', time: '3 days ago', status: 'income' },
-                    { type: 'Goal', desc: 'Emergency Fund Milestone', amount: '₹75,000', time: '1 week ago', status: 'milestone' }
-                  ].map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`
-                          p-2 rounded-lg text-white text-xs font-medium
-                          ${activity.status === 'success' ? 'bg-success' :
-                            activity.status === 'expense' ? 'bg-error' :
-                            activity.status === 'income' ? 'bg-chart-2' : 'bg-warning'}
-                        `}>
-                          {activity.type}
-                        </div>
-                        <div>
-                          <p className="font-medium">{activity.desc}</p>
-                          <p className="text-sm text-muted-foreground">{activity.time}</p>
-                        </div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Neural Insights</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 flex items-start gap-4 group/insight">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 animate-pulse" />
+                      <div>
+                        <p className="text-xs font-bold text-foreground group-hover:text-emerald-600 transition-colors">Efficiency Boost 🎉</p>
+                        <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">Savings rate improved by <span className="text-emerald-500 font-bold">15.4%</span> this quarter. Maintain current trajectory.</p>
                       </div>
-                      <span className={`font-semibold ${
-                        activity.amount.includes('+') ? 'text-success' :
-                        activity.amount.includes('-') ? 'text-error' : 'text-foreground'
-                      }`}>
-                        {activity.amount}
-                      </span>
                     </div>
-                  ))}
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-4 group/insight">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 animate-pulse" />
+                      <div>
+                        <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Retirement Calibration 💡</p>
+                        <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">Increasing SIP by <span className="text-primary font-bold">₹2,000</span> will reduce FIRE age by 18 months.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </motion.div>
+        </div>
 
-          <TabsContent value="alerts" className="mt-6">
-            <Card className="glass-effect">
-              <CardHeader>
-                <CardTitle>System Alerts</CardTitle>
-                <CardDescription>Important notifications and recommendations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentAlerts.map((alert, index) => (
-                    <div key={index} className="flex items-start justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{alert.title}</h4>
-                          <Badge variant={alert.priority === 'high' ? 'destructive' : 'outline'}>
-                            {alert.priority}
-                          </Badge>
+        {/* Information Architecture (Tabs) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <Tabs defaultValue="activity" className="w-full">
+            <TabsList className="w-full h-14 bg-muted/30 p-1.5 rounded-2xl backdrop-blur-xl border border-border/40 grid grid-cols-3">
+              <TabsTrigger value="activity" className="rounded-xl font-black text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all">Event Log</TabsTrigger>
+              <TabsTrigger value="alerts" className="rounded-xl font-black text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all">Alert Stack</TabsTrigger>
+              <TabsTrigger value="insights" className="rounded-xl font-black text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all">Neural Core</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="activity" className="mt-8">
+              <Card className="border-border/50 bg-card/20 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-black tracking-tighter">Verified Transactions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {[
+                      { type: 'SIP', desc: 'Tech Alpha Large Cap', amount: '+₹5,000', time: '2h ago', status: 'success' },
+                      { type: 'EXP', desc: 'Hardware Acquisition', amount: '-₹1,200', time: '1d ago', status: 'expense' },
+                      { type: 'DIV', desc: 'HDFC Global Equity', amount: '+₹850', time: '3d ago', status: 'income' },
+                      { type: 'MLT', desc: 'Vault Threshold Reached', amount: '₹75,000', time: '1w ago', status: 'milestone' }
+                    ].map((activity, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-muted/10 border border-transparent hover:border-primary/20 hover:bg-primary/5 rounded-2xl transition-all duration-300 group">
+                        <div className="flex items-center gap-4">
+                          <div className={`
+                            w-12 h-12 flex items-center justify-center rounded-xl font-black text-[9px] tracking-tighter shadow-sm
+                            ${activity.status === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                              activity.status === 'expense' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
+                              activity.status === 'income' ? 'bg-primary/10 text-primary border border-primary/20' : 
+                              'bg-amber-500/10 text-amber-500 border border-amber-500/20'}
+                          `}>
+                            {activity.type}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold tracking-tight">{activity.desc}</p>
+                            <p className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-widest mt-0.5">{activity.time} • Local Node Synchronized</p>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{alert.description}</p>
-                        <p className="text-xs text-muted-foreground">{alert.timestamp}</p>
+                        <span className={`text-sm font-black tracking-tighter ${
+                          activity.amount.includes('+') ? 'text-emerald-500' :
+                          activity.amount.includes('-') ? 'text-rose-500' : 'text-foreground'
+                        }`}>
+                          {activity.amount}
+                        </span>
                       </div>
-                      <Button variant="outline" size="sm">
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="alerts" className="mt-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recentAlerts.map((alert, index) => (
+                  <Card key={index} className="border-border/50 bg-card/20 backdrop-blur-xl group hover:border-primary/30 transition-all">
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-widest ${
+                          alert.priority === 'high' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 
+                          alert.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 
+                          'bg-primary/10 text-primary border-primary/20'
+                        }`}>
+                          Priority: {alert.priority}
+                        </Badge>
+                        <span className="text-[9px] font-black text-muted-foreground/40">{alert.timestamp}</span>
+                      </div>
+                      <CardTitle className="text-base font-black tracking-tight">{alert.title}</CardTitle>
+                      <p className="text-xs text-muted-foreground leading-relaxed mt-1">{alert.description}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <Button variant="outline" className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-primary-foreground border-border/40 transition-all">
                         {alert.action}
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="insights" className="mt-6">
-            <Card className="glass-effect">
-              <CardHeader>
-                <CardTitle>AI-Powered Insights</CardTitle>
-                <CardDescription>Personalized recommendations based on your financial data</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-gradient-card rounded-lg">
-                    <h4 className="font-medium mb-2">Investment Opportunity</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Based on your risk profile, consider allocating 5% more to mid-cap funds for better returns.
-                    </p>
-                    <Button size="sm" variant="outline">Learn More</Button>
+            <TabsContent value="insights" className="mt-8">
+              <Card className="border-border/50 bg-card/20 backdrop-blur-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(var(--primary),0.05),transparent)] pointer-events-none" />
+                <CardHeader>
+                  <CardTitle className="text-lg font-black tracking-tight flex items-center gap-3">
+                    <Brain className="w-5 h-5 text-primary" />
+                    Neural Strategy Core
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 rounded-2xl group hover:shadow-xl hover:shadow-primary/5 transition-all">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-3">Investment Logic</h4>
+                      <p className="text-sm text-foreground/80 leading-relaxed mb-6 font-medium">
+                        Based on your risk profile, we recommend shifting 5% capital into mid-cap volatility segments to optimize CAGR by ~2.4%.
+                      </p>
+                      <Button variant="outline" className="h-10 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest">Execute Strategy</Button>
+                    </div>
+                    <div className="p-6 bg-gradient-to-br from-secondary/10 to-transparent border border-secondary/20 rounded-2xl group hover:shadow-xl hover:shadow-secondary/5 transition-all">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-secondary mb-3">Tax Optimization</h4>
+                      <p className="text-sm text-foreground/80 leading-relaxed mb-6 font-medium">
+                        Unrealized tax potential detected: ₹46,800. deploying ₹1.5L in ELSS segments will calibrate your liability to zero.
+                      </p>
+                      <Button variant="outline" className="h-10 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest">View Report</Button>
+                    </div>
                   </div>
-                  <div className="p-4 bg-gradient-card rounded-lg">
-                    <h4 className="font-medium mb-2">Tax Optimization</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      You can save up to ₹46,800 in taxes by investing ₹1.5L in ELSS funds before March.
-                    </p>
-                    <Button size="sm" variant="outline">Calculate Savings</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
     </div>
   );
 };

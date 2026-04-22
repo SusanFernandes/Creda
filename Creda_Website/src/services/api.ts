@@ -172,6 +172,19 @@ export const DUMMY_DATA = {
     expected_return: 0.12,
     risk_score: 6.5,
   },
+  rebalance: {
+    needs_rebalancing: true,
+    drift_percentage: 8.4,
+    last_rebalanced: '2024-02-15',
+  },
+  budget: {
+    adaptive_allocation: {
+      needs: 0.50,
+      wants: 0.25,
+      savings: 0.25,
+    },
+    confidence_score: 0.92,
+  },
 };
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
