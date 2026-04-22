@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: true, mobileMenu: false }">
+
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300"
+         :class="sidebarOpen ? 'w-72' : 'w-20'">
+
+    <!-- Logo -->
+    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+      <a href="{% url 'dashboard' %}" class="flex items-center gap-3" x-show="sidebarOpen">
+        <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
+          <span class="text-white font-black text-sm">C</span>
+        </div>
+        <span class="text-lg font-black tracking-tight italic">CREDA</span>
+      </a>
+      <div x-show="!sidebarOpen" class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center mx-auto">
+        <span class="text-white font-black text-sm">C</span>
+      </div>
+      <button @click="sidebarOpen = !sidebarOpen" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <p class="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Overview</p>
+
+      {% with nav_items="dashboard:Dashboard:M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4,chat:AI Chat:M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z,portfolio:Portfolio X-Ray:M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z,health:Money Health:M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z,market_pulse:Market Pulse:M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" %}
+      {% endwith %}
+
+      <a href="{% url 'dashboard' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Dashboard</span>
+      </a>
+
+      {% for item in "chat:AI Chat,portfolio:Portfolio,health:Money Health,market_pulse:Market Pulse,fire:FIRE Planner,tax:Tax Wizard,tax_copilot:Tax Copilot,budget:Budget Coach,goals:Goals,goal_simulator:Goal Simulator,stress_test:Stress Test,couples:Couples Finance,sip_calculator:SIP Calculator,money_personality:Personality,social_proof:Peer Insights,research:Research,voice:Voice Agent"|make_list %}
+      {% endfor %}
+
+      <a href="{% url 'chat' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'chat' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'chat' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">AI Chat</span>
+      </a>
+
+      <a href="{% url 'portfolio' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'portfolio' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'portfolio' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Portfolio X-Ray</span>
+      </a>
+
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Intelligence</p>
+
+      <a href="{% url 'health' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'health' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'health' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Money Health</span>
+      </a>
+
+      <a href="{% url 'market_pulse' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Market Pulse</span>
+      </a>
+
+      <a href="{% url 'fire' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'fire' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'fire' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">FIRE Planner</span>
+      </a>
+
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Planning</p>
+
+      <a href="{% url 'tax' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'tax' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'tax' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Tax Wizard</span>
+      </a>
+
+      <a href="{% url 'tax_copilot' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'tax_copilot' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'tax_copilot' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Tax Copilot</span>
+      </a>
+
+      <a href="{% url 'budget' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'budget' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'budget' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Budget Coach</span>
+      </a>
+
+      <a href="{% url 'goals' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'goals' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'goals' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Goals</span>
+      </a>
+
+      <a href="{% url 'goal_simulator' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'goal_simulator' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'goal_simulator' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Goal Simulator</span>
+      </a>
+
+      <a href="{% url 'stress_test' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'stress_test' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'stress_test' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Stress Test</span>
+      </a>
+
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Insights</p>
+
+      <a href="{% url 'money_personality' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'money_personality' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'money_personality' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Money Personality</span>
+      </a>
+
+      <a href="{% url 'social_proof' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'social_proof' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'social_proof' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Peer Insights</span>
+      </a>
+
+      <a href="{% url 'research' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'research' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'research' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Research</span>
+      </a>
+
+      <a href="{% url 'couples' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'couples' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'couples' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Couples Finance</span>
+      </a>
+
+      <a href="{% url 'family' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'family' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'family' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Family Wealth</span>
+      </a>
+
+      <a href="{% url 'compliance' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'compliance' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'compliance' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">SEBI Compliance</span>
+      </a>
+    </nav>
+
+    <!-- Bottom -->
+    <div class="px-3 py-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
+      <a href="{% url 'voice' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Voice Agent</span>
+      </a>
+      <a href="{% url 'notifications' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Notifications</span>
+      </a>
+      <a href="{% url 'settings' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Settings</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Mobile menu button -->
+  <button @click="mobileMenu = !mobileMenu" class="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+
+  <!-- Main content -->
+  <main class="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-10 glass border-b border-slate-200 dark:border-slate-800 px-6 lg:px-10 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight italic">{% block page_title %}Dashboard{% endblock %}</h1>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">{% block page_subtitle %}Financial Dashboard{% endblock %}</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Dark mode toggle -->
+        <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
+                class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <svg x-show="!darkMode" class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg x-show="darkMode" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </button>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+            {{ request.user.first_name|default:request.user.email|truncatechars:1|upper }}
+          </div>
+          <span class="text-sm font-medium hidden md:block">{{ request.user.first_name|default:request.user.email }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <div class="px-6 lg:px-10 pt-8 pb-20 animate-fade-in">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Voice Assistant FAB -->
+  <a href="{% url 'voice' %}" class="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/25 flex items-center justify-center transition-all hover:scale-105 lg:hidden">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+  </a>
+</div>
+{% endblock %}

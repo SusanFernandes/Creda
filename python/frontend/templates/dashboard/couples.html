@@ -1,0 +1,69 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Couples Finance{% endblock %}
+{% block page_title %}Couples Finance{% endblock %}
+{% block page_subtitle %}Joint Financial Planning{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  <!-- Input Form -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h3 class="font-bold mb-1">Partner Financial Details</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Enter your partner's information for joint analysis</p>
+    <form method="POST" class="flex flex-col sm:flex-row gap-4 items-end">
+      {% csrf_token %}
+      <div class="flex-1">
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Income (₹)</label>
+        <input type="number" name="partner_income" value="0"
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+               placeholder="50000">
+      </div>
+      <div class="flex-1">
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Expenses (₹)</label>
+        <input type="number" name="partner_expenses" value="0"
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+               placeholder="30000">
+      </div>
+      <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] whitespace-nowrap">
+        Analyze Together
+      </button>
+    </form>
+  </div>
+
+  {% if couples %}
+  <!-- Joint Summary -->
+  {% if couples.analysis %}
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Combined Income</p>
+      <p class="text-3xl font-black italic tracking-tight text-blue-600">₹{{ couples.analysis.combined_income|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Combined Savings</p>
+      <p class="text-3xl font-black italic tracking-tight text-emerald-500">₹{{ couples.analysis.combined_savings|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Split Strategy</p>
+      <p class="text-xl font-bold capitalize">{{ couples.analysis.recommended_split|default:"Proportional" }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if couples.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Joint Strategy
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ couples.response }}</div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-pink-100 dark:bg-pink-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">Enter your partner's details above to get joint financial planning.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

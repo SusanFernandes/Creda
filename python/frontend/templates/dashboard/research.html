@@ -1,0 +1,84 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Research{% endblock %}
+{% block page_title %}Research Desk{% endblock %}
+{% block page_subtitle %}AI-Powered Financial Research{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  <!-- Search -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <form method="GET" class="flex gap-4">
+      <div class="flex-1 relative">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <input type="text" name="q" value="{{ query }}" placeholder="Research any financial topic — mutual funds, tax laws, insurance, markets..."
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl pl-12 pr-4 py-3.5 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+      </div>
+      <button type="submit" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
+        Research
+      </button>
+    </form>
+  </div>
+
+  {% if research %}
+  {% if research.analysis %}
+  <!-- Confidence -->
+  {% if research.analysis.confidence %}
+  <div class="flex items-center gap-3">
+    <div class="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]
+         {% if research.analysis.confidence >= 0.8 %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
+         {% elif research.analysis.confidence >= 0.5 %}bg-amber-100 dark:bg-amber-900/20 text-amber-600
+         {% else %}bg-red-100 dark:bg-red-900/20 text-red-600{% endif %}">
+      {% if research.analysis.confidence >= 0.8 %}CREDA Verified{% elif research.analysis.confidence >= 0.5 %}Moderate Confidence{% else %}Low Confidence{% endif %}
+    </div>
+    <span class="text-xs text-slate-400">{{ research.analysis.confidence|floatformat:0 }}% match from knowledge base</span>
+  </div>
+  {% endif %}
+
+  <!-- Sources -->
+  {% if research.analysis.sources %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-4">Sources Referenced</h3>
+    <div class="space-y-3">
+      {% for src in research.analysis.sources %}
+      <div class="flex items-start gap-3 p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
+        <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 mt-0.5">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div>
+          <p class="font-semibold text-sm">{{ src.title }}</p>
+          <p class="text-xs text-slate-500 mt-0.5">Relevance: {{ src.score|floatformat:0 }}%</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if research.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      Research Findings
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ research.response }}</div>
+  </div>
+  {% endif %}
+
+  {% elif query %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <p class="text-slate-500 text-sm">No results found for "{{ query }}". Try a different search term.</p>
+  </div>
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm mb-2">Search CREDA's financial knowledge base</p>
+    <p class="text-xs text-slate-400">Covers mutual funds, tax laws, insurance, SEBI regulations, and more</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

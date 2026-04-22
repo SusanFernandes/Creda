@@ -1,475 +1,203 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  Mic, 
-  TrendingUp, 
-  Shield, 
-  Globe, 
+  ArrowRight, 
+  CheckCircle, 
   Zap, 
-  Brain,
+  Brain, 
+  Shield, 
+  BarChart4, 
+  Globe, 
+  Cpu, 
+  LayoutDashboard,
+  Sparkles,
   ChevronRight,
-  Star,
-  CheckCircle,
-  ArrowRight
+  Mic,
+  ArrowUpRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { Progress } from '@/components/ui/progress';
 import ReliableVoiceAssistant from '@/components/ReliableVoiceAssistant';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import LandingFooter from '@/components/layout/LandingFooter';
+import { cn } from '@/lib/utils';
 
 const LandingPage: React.FC = () => {
-  const { t } = useLanguage();
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
   const features = [
-    {
-      icon: <Mic className="w-8 h-8 text-voice-active" />,
-      title: "Multilingual Voice Interface",
-      description: "Speak naturally in Hindi, English, or any of 11+ Indian languages. Our AI understands your accent and dialect perfectly.",
-      stats: "11+ Languages Supported"
-    },
-    {
-      icon: <Brain className="w-8 h-8 text-primary" />,
-      title: "AI-Powered Portfolio Optimization", 
-      description: "Nobel Prize-winning Markowitz theory adapted for Indian markets. Get personalized investment strategies in under 0.1 seconds.",
-      stats: "99.9% Mathematical Accuracy"
-    },
-    {
-      icon: <TrendingUp className="w-8 h-8 text-success" />,
-      title: "Smart Budget Learning",
-      description: "Multi-Armed Bandit algorithm learns your spending patterns and continuously improves your budget recommendations.",
-      stats: "Self-Learning Budget AI"
-    },
-    {
-      icon: <Shield className="w-8 h-8 text-warning" />,
-      title: "Regulatory Compliance",
-      description: "All advice backed by official RBI, SEBI, and IRDAI guidelines. Get authoritative answers from 50+ financial documents.",
-      stats: "50+ Official Documents"
-    },
-    {
-      icon: <Zap className="w-8 h-8 text-secondary" />,
-      title: "Lightning Fast Processing",
-      description: "Sub-3 second voice processing, <0.1s portfolio calculations, <0.5s financial queries. Built for speed.",
-      stats: "<3s Voice Response"
-    },
-    {
-      icon: <Globe className="w-8 h-8 text-accent" />,
-      title: "Indian Market Expertise",
-      description: "Designed specifically for Indian investors. Understands PPF, ELSS, chit funds, and local investment instruments.",
-      stats: "100% Indian-Focused"
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: "Priya Sharma",
-      role: "Software Engineer, Mumbai",
-      content: "Speaking in Hindi and getting perfect investment advice feels magical. Creda understood my Marwari accent better than my bank manager!",
-      rating: 5,
-      language: "Hindi + English"
-    },
-    {
-      name: "Rajesh Kumar",
-      role: "Business Owner, Chennai", 
-      content: "The portfolio optimization is incredible. It suggested exactly what my financial advisor recommended, but in Tamil and instantly.",
-      rating: 5,
-      language: "Tamil"
-    },
-    {
-      name: "Anita Patel",
-      role: "Doctor, Ahmedabad",
-      content: "Finally, a finance app that understands Gujarati financial terms. The voice assistant feels like talking to a knowledgeable friend.",
-      rating: 5,
-      language: "Gujarati"
-    }
-  ];
-
-  const stats = [
-    { value: "11+", label: "Languages Supported" },
-    { value: "<3s", label: "Voice Response Time" },
-    { value: "50+", label: "Official Documents" },
-    { value: "99.9%", label: "Calculation Accuracy" }
+    { icon: <Brain className="w-5 h-5" />, title: "Neural Portfolio Core", description: "Nobel Prize-winning Markowitz theory adapted for local markets. Get personalized strategies instantly.", stats: "0.1s Latency" },
+    { icon: <Zap className="w-5 h-5" />, title: "Linguistic Intelligence", description: "Voice processing across 11+ Indian languages. Our AI understands every nuance of your dialect.", stats: "11+ Dialects" },
+    { icon: <Shield className="w-5 h-5" />, title: "Regulatory Sentinel", description: "Cross-referenced with official RBI and SEBI guidelines for total governance and compliance.", stats: "100% Compliant" }
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white dark:bg-slate-950 font-sans selection:bg-blue-600/10 transition-colors duration-500">
       <LandingNavbar />
       
-      {/* Hero Section */}
-      <section id="hero" className="relative overflow-hidden pt-32 pb-20 px-4">
-        <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
-        <div className="relative container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center space-y-8"
-          >
-            <Badge variant="secondary" className="mb-4 text-sm font-medium">
-              🚀 Powered by Advanced AI & Indian Market Data
+      {/* Refined Hero */}
+      <section className="relative min-h-[90vh] flex items-center justify-center pt-28 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-7xl">
+           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-100/50 dark:bg-blue-900/10 rounded-full blur-[140px] mix-blend-multiply dark:mix-blend-screen animate-pulse" />
+           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-slate-100 dark:bg-slate-800/10 rounded-full blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 container mx-auto text-center max-w-5xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <Badge variant="outline" className="mb-10 px-5 py-2 rounded-full border-slate-200 dark:border-slate-800 font-bold uppercase tracking-[0.2em] text-[10px] bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl transition-all hover:bg-white dark:hover:bg-slate-800">
+              <Sparkles className="w-3 h-3 mr-2" /> Financial Intelligence Matrix v4.2
             </Badge>
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              <span className="text-gradient">{t('hero.title')}</span>
+            <h1 className="text-6xl md:text-9xl font-bold tracking-tight text-slate-900 dark:text-slate-50 italic mb-10 leading-[0.9]">
+              System <br/> <span className="text-blue-600 italic">Optimization</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              {t('hero.subtitle')}
+            <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed mb-16 font-medium italic">
+              Experience the core of financial logic. Nobel-prize winning mathematics integrated with neural linguistic processing.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="xl" variant="hero" asChild>
-                <Link to="/dashboard">
-                  {t('action.getStarted')} <ArrowRight className="ml-2" />
+            <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
+              <Button size="xl" className="h-16 px-12 rounded-2xl bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-900 font-bold uppercase tracking-widest text-sm hover:opacity-90 transition-all shadow-xl shadow-slate-200 dark:shadow-none" asChild>
+                <Link to="/auth/sign-up" className="flex items-center gap-3">
+                  Initialize Core <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
-              <Button size="xl" variant="glass" asChild>
-                <Link to="/voice">
-                  <Mic className="mr-2" /> {t('action.tryDemo')}
-                </Link>
+              <Button size="xl" variant="outline" className="h-16 px-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold uppercase tracking-widest text-sm hover:bg-slate-50 dark:hover:bg-slate-900" asChild>
+                <Link to="/voice">Execute Demo</Link>
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              {t('voice.activate')}
-            </p>
+            <div className="mt-20 flex flex-wrap items-center justify-center gap-12 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+               <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 font-bold" /> SEBI Compliant</span>
+               <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 font-bold" /> AES-256 Encrypted</span>
+               <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 font-bold" /> Zero Mic Protocol</span>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.2, duration: 0.5 }}
-                className="text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-gradient mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Latency Metrics */}
+      <section className="py-40 bg-slate-50/50 dark:bg-slate-900/30 px-6 border-y border-slate-100 dark:border-slate-800">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <Badge className="mb-6 bg-blue-600 text-white uppercase font-bold tracking-widest italic h-7">Latency Threshold</Badge>
+              <h2 className="text-4xl md:text-7xl font-bold tracking-tighter mb-10 italic uppercase font-black">Neural <br/>Performance</h2>
+              <div className="space-y-16">
+                {[
+                  { label: "Execution Speed", value: "< 0.1s", desc: "Markowitz optimization core latency across 10,000 iterations." },
+                  { label: "Sync Protocol", value: "Sub 2s", desc: "Multilingual transcription and intent mapping across dialects." },
+                  { label: "Network Security", value: "Real-time", desc: "Continuous end-to-end cryptographic verification." },
+                ].map((stat, i) => (
+                  <div key={i} className="group border-l-2 border-slate-200 dark:border-slate-800 pl-10 hover:border-blue-600 transition-colors">
+                     <div className="flex justify-between items-baseline mb-3">
+                        <span className="text-lg font-bold tracking-tight uppercase italic text-slate-400">{stat.label}</span>
+                        <span className="text-4xl font-bold tracking-tighter text-slate-900 dark:text-slate-50 italic">{stat.value}</span>
+                     </div>
+                     <p className="text-slate-500 text-sm font-medium italic">{stat.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold text-gradient mb-6">
-              Revolutionary AI Finance Features
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Experience the future of financial management with cutting-edge AI that understands Indian markets and languages.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="h-full glass-effect hover:shadow-glow transition-all duration-300 group">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="p-3 bg-gradient-primary rounded-lg group-hover:scale-110 transition-transform duration-300">
-                        {feature.icon}
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {feature.stats}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Voice Assistant Demo */}
-      <section id="voice-demo" className="py-20 px-4 bg-gradient-card">
-        <div className="container mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gradient mb-6">
-              Meet Creda - Your AI Financial Assistant
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Try our voice assistant right here. Say "Hey Creda" followed by any financial question in your preferred language.
-            </p>
-          </motion.div>
-
-          <ReliableVoiceAssistant isCompact={false} />
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gradient mb-6">
-              Loved by Users Across India
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              See what our multilingual users say about their experience
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
-              >
-                <Card className="h-full glass-effect hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative">
+               <Card className="border-none bg-white dark:bg-slate-900 shadow-2xl rounded-[3rem] overflow-hidden group">
+                  <div className="p-10 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white">
+                           <LayoutDashboard className="w-6 h-6" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-widest text-slate-500">Instance Node Stream</span>
+                     </div>
+                     <Badge variant="outline" className="text-emerald-500 border-emerald-500/20 bg-emerald-50 text-[10px] font-bold">ACTIVE</Badge>
+                  </div>
+                  <CardContent className="p-10 space-y-8">
+                     <div className="space-y-3">
+                        <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                           <span>Optimization Volume</span>
+                           <span>82%</span>
+                        </div>
+                        <Progress value={82} className="h-2 bg-slate-100 dark:bg-slate-800" />
+                     </div>
+                     <div className="space-y-4 pt-6">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="flex items-center justify-between p-5 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/50 dark:border-slate-800 group hover:border-blue-500/30 transition-all">
+                             <div className="flex items-center gap-4">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:scale-150 transition-transform" />
+                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 italic">Node {i * 14} deployed and verified</span>
+                             </div>
+                             <ArrowRight className="w-4 h-4 text-slate-300" />
+                          </div>
                         ))}
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {testimonial.language}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4 italic">
-                      "{testimonial.content}"
-                    </p>
-                    <div>
-                      <p className="font-medium">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
+                     </div>
                   </CardContent>
-                </Card>
-              </motion.div>
+               </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Architecture */}
+      <section className="py-40 px-6">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-28 space-y-4">
+             <h2 className="text-5xl font-bold tracking-tighter text-slate-900 dark:text-slate-50 italic">System <span className="text-blue-600">Architecture</span></h2>
+             <p className="text-slate-500 text-lg font-medium italic">Modular deconstruction of the optimization engine.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {features.map((feature, i) => (
+              <Card key={i} className="border-none shadow-sm bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] hover:shadow-xl transition-all duration-500 group border border-transparent hover:border-slate-100 dark:hover:border-slate-800">
+                 <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-blue-600 mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                    {feature.icon}
+                 </div>
+                 <h3 className="text-2xl font-bold tracking-tight mb-4 text-slate-900 dark:text-slate-50 italic uppercase italic">{feature.title}</h3>
+                 <p className="text-slate-500 font-medium leading-relaxed italic mb-8">{feature.description}</p>
+                 <Badge variant="outline" className="text-[11px] font-bold text-slate-400 border-slate-200 dark:border-slate-800 uppercase tracking-widest">{feature.stats}</Badge>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gradient mb-6">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Choose the plan that works best for your financial journey
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Free Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="relative p-8 glass-effect hover:shadow-lg transition-all duration-300">
-                <CardHeader className="pb-8">
-                  <CardTitle className="text-2xl">Free</CardTitle>
-                  <div className="text-3xl font-bold">₹0<span className="text-lg text-muted-foreground">/month</span></div>
-                  <CardDescription>Perfect for getting started</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Basic voice commands</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Portfolio tracking</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>3 languages supported</span>
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/dashboard">Get Started Free</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Pro Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="relative p-8 glass-effect hover:shadow-glow transition-all duration-300 border-primary">
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-primary dark:text-white text-foreground">
-                  Most Popular
-                </Badge>
-                <CardHeader className="pb-8">
-                  <CardTitle className="text-2xl">Pro</CardTitle>
-                  <div className="text-3xl font-bold">₹299<span className="text-lg text-muted-foreground">/month</span></div>
-                  <CardDescription>Advanced AI-powered features</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>All Free features</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Advanced portfolio optimization</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>11+ Indian languages</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Premium voice responses</span>
-                    </li>
-                  </ul>
-                  <Button className="w-full bg-gradient-primary" asChild>
-                    <Link to="/dashboard">Start Pro Trial</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Enterprise Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card className="relative p-8 glass-effect hover:shadow-lg transition-all duration-300">
-                <CardHeader className="pb-8">
-                  <CardTitle className="text-2xl">Enterprise</CardTitle>
-                  <div className="text-3xl font-bold">₹999<span className="text-lg text-muted-foreground">/month</span></div>
-                  <CardDescription>For institutions & businesses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>All Pro features</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Custom integrations</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>Priority support</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <span>White-label options</span>
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/dashboard">Contact Sales</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
+      {/* AI Simulation Gateway */}
+      <section className="py-40 px-6 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-blue-500/10 blur-[150px]" />
+        <div className="container mx-auto max-w-4xl relative z-10 flex flex-col items-center">
+           <div className="text-center mb-20 space-y-5">
+              <Badge className="bg-white/10 text-white backdrop-blur-xl border border-white/20 font-bold uppercase tracking-widest">Simulation Interface</Badge>
+              <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter">Gateway to <span className="text-blue-500 italic">Core Intelligence</span></h2>
+              <p className="text-slate-400 font-medium italic text-lg">Initialize a neural handshake with the Poise AI engine.</p>
+           </div>
+           
+           <div className="w-full bg-slate-950/40 p-16 rounded-[4rem] border border-white/5 backdrop-blur-2xl shadow-3xl">
+              <ReliableVoiceAssistant isCompact={false} />
+           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-hero dark:text-white text-foreground">
-        <div className="container mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="space-y-8"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Ready to Transform Your Financial Future?
+      {/* Final Deployment CTA */}
+      <section className="py-48 px-6 text-center">
+         <div className="container mx-auto max-w-4xl">
+            <h2 className="text-6xl md:text-9xl font-bold tracking-tighter mb-16 italic text-slate-900 dark:text-slate-50 leading-[0.85]">
+               Initialize Your <br/><span className="text-blue-600 italic underline">Optimization.</span>
             </h2>
-            <p className="text-xl opacity-90 max-w-2xl mx-auto">
-              Join thousands of Indians already using AI-powered financial advice in their native language.
+            <p className="text-2xl text-slate-500 font-medium mb-20 italic">
+              Stop monitoring. Start scaling. Deploy the neural core today.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Button size="xl" variant="secondary" asChild>
-                <Link to="/dashboard">
-                  Start Your Journey <ChevronRight className="ml-2" />
-                </Link>
+            <div className="flex flex-col sm:flex-row gap-10 justify-center items-center">
+              <Button size="xl" className="h-20 px-16 rounded-full bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-900 font-bold uppercase tracking-widest text-base hover:scale-105 transition-all shadow-2xl shadow-slate-200 dark:shadow-none" asChild>
+                 <Link to="/auth/sign-up">Deploy Nodes</Link>
               </Button>
-              <Button size="xl" variant="glass" asChild>
-                <Link to="/voice">
-                  <Mic className="mr-2" /> Try Voice Assistant
-                </Link>
+              <Button size="xl" variant="ghost" className="h-20 px-16 rounded-full font-bold uppercase tracking-widest text-base group italic" asChild>
+                 <Link to="/help" className="flex items-center gap-3">Technical Logs <ArrowUpRight className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></Link>
               </Button>
             </div>
-
-            <div className="flex items-center justify-center gap-6 mt-8 opacity-90">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm">Free to Start</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm">11+ Languages</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm">SEBI Compliant</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+         </div>
       </section>
       
       <LandingFooter />

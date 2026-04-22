@@ -1,0 +1,15 @@
+<div class="glass rounded-xl border {% if error %}border-red-500/30 bg-red-500/5{% else %}border-emerald-500/30 bg-emerald-500/5{% endif %} p-4">
+  {% if error %}
+  <div class="flex items-center gap-2">
+    <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p class="text-sm text-red-400">Upload failed: {{ error }}</p>
+  </div>
+  {% else %}
+  <div class="flex items-center gap-2 mb-2">
+    <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p class="text-sm font-semibold text-emerald-400">Portfolio parsed successfully!</p>
+  </div>
+  <p class="text-sm text-slate-600 dark:text-slate-300 ml-7">{{ result.funds_count }} funds found · Invested: ₹{{ result.total_invested|floatformat:0 }} · Current: ₹{{ result.current_value|floatformat:0 }}</p>
+  <p class="text-[10px] uppercase tracking-[0.15em] text-emerald-500 ml-7 mt-2">Reload page to see updated data</p>
+  {% endif %}
+</div>

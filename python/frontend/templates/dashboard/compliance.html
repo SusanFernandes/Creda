@@ -1,0 +1,115 @@
+{% extends "base_dashboard.html" %}
+{% block title %}SEBI Compliance{% endblock %}
+{% block page_title %}SEBI Compliance{% endblock %}
+{% block page_subtitle %}Regulatory Audit Trail{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <!-- AI Disclosure -->
+  {% if disclosure %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <div>
+        <h2 class="font-bold text-lg">AI Disclosure</h2>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">SEBI RIA Compliance</p>
+      </div>
+    </div>
+    <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+      <div class="flex items-start gap-3">
+        <div class="w-2 h-2 rounded-full bg-blue-600 mt-1.5 flex-shrink-0"></div>
+        <p><strong>Model:</strong> {{ disclosure.model|default:"Groq LLM (Llama 3.1)" }}</p>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="w-2 h-2 rounded-full bg-blue-600 mt-1.5 flex-shrink-0"></div>
+        <p><strong>Purpose:</strong> {{ disclosure.purpose|default:"AI-assisted financial education and planning" }}</p>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></div>
+        <p><strong>Disclaimer:</strong> {{ disclosure.disclaimer|default:"CREDA provides AI-generated financial guidance. This is NOT personalized investment advice under SEBI RIA regulations. Always consult a SEBI-registered advisor before making investment decisions." }}</p>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0"></div>
+        <p><strong>Data:</strong> {{ disclosure.data_handling|default:"Your data is encrypted, never shared with third parties, and stored in India." }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Generate Report -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold text-lg mb-2">Compliance Report</h2>
+    <p class="text-sm text-slate-500 mb-6">Generate a SEBI-format audit trail of all AI interactions and advice given.</p>
+    <form method="POST" class="flex flex-wrap items-end gap-4">
+      {% csrf_token %}
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-1">Start Date</label>
+        <input type="date" name="start_date" class="glass rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-1">End Date</label>
+        <input type="date" name="end_date" class="glass rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+      <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">
+        Generate Report
+      </button>
+    </form>
+  </div>
+
+  <!-- Report Results -->
+  {% if report %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="font-bold text-lg">Audit Trail</h2>
+      <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+        {{ report.period|default:"All Time" }}
+      </span>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-3xl font-black italic text-blue-600">{{ report.total_interactions|default:"0" }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Interactions</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-3xl font-black italic text-emerald-500">{{ report.suitability_rate|default:"N/A" }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Suitability Rate</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-3xl font-black italic text-amber-500">{{ report.agents_used|default:"0" }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Agents Used</p>
+      </div>
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-3xl font-black italic text-slate-600 dark:text-slate-300">{{ report.avg_response_ms|default:"0" }}ms</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">Avg Response</p>
+      </div>
+    </div>
+
+    <!-- Entries -->
+    {% if report.entries %}
+    <div class="space-y-3">
+      {% for entry in report.entries %}
+      <div class="p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-blue-600">{{ entry.agent }}</span>
+          <span class="text-xs text-slate-400">{{ entry.timestamp }}</span>
+        </div>
+        <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">{{ entry.user_message }}</p>
+        {% if entry.suitability %}
+        <p class="text-xs text-emerald-500 mt-1">✓ {{ entry.suitability }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-sm text-slate-500 py-8">No interactions found in this period.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

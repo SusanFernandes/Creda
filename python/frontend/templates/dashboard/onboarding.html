@@ -1,0 +1,175 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Welcome{% endblock %}
+{% block page_title %}Welcome to CREDA{% endblock %}
+{% block page_subtitle %}Setup Wizard{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto" x-data="onboardingApp()">
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10">
+    <!-- Progress -->
+    <div class="mb-10">
+      <div class="flex justify-between text-sm mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Step <span x-text="step"></span> of 4</span>
+        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600" x-text="Math.round(step/4*100) + '%'"></span>
+      </div>
+      <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2">
+        <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" :style="'width:' + (step/4*100) + '%'"></div>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div x-show="step === 1" x-transition class="space-y-5">
+      <h2 class="text-xl font-black italic">Tell us about yourself</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Name</label>
+          <input x-model="profile.name" type="text" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent" placeholder="Your name">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Age</label>
+          <input x-model.number="profile.age" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">City</label>
+          <input x-model="profile.city" type="text" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent" placeholder="Mumbai">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Language</label>
+          <select x-model="profile.language" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="mr">Marathi</option>
+            <option value="bn">Bengali</option>
+            <option value="gu">Gujarati</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div x-show="step === 2" x-transition class="space-y-5">
+      <h2 class="text-xl font-black italic">Your Financial Picture</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Income (₹)</label>
+          <input x-model.number="profile.monthly_income" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Expenses (₹)</label>
+          <input x-model.number="profile.monthly_expenses" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Employment</label>
+          <select x-model="profile.employment_type" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+            <option value="salaried">Salaried</option>
+            <option value="self-employed">Self-employed</option>
+            <option value="business">Business Owner</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Dependents</label>
+          <input x-model.number="profile.dependents" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div x-show="step === 3" x-transition class="space-y-5">
+      <h2 class="text-xl font-black italic">Your Safety Net</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Emergency Fund (₹)</label>
+          <input x-model.number="profile.emergency_fund" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly EMI (₹)</label>
+          <input x-model.number="profile.monthly_emi" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+        </div>
+        <div class="col-span-2">
+          <label class="flex items-center gap-3 cursor-pointer glass rounded-xl px-4 py-3 border border-slate-200/50 dark:border-slate-700/50">
+            <input x-model="profile.has_health_insurance" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-sm font-medium">I have health insurance</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div x-show="step === 4" x-transition class="space-y-5">
+      <h2 class="text-xl font-black italic">Investment Preferences</h2>
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-3">Risk Appetite</label>
+        <div class="grid grid-cols-3 gap-3">
+          <button type="button" @click="profile.risk_appetite = 'conservative'"
+                  :class="profile.risk_appetite === 'conservative' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-slate-200/50 dark:border-slate-700/50'"
+                  class="p-5 rounded-2xl text-center border-2 transition-all">
+            <p class="font-bold text-sm">Conservative</p>
+            <p class="text-[10px] text-slate-400 mt-1">Safety first</p>
+          </button>
+          <button type="button" @click="profile.risk_appetite = 'moderate'"
+                  :class="profile.risk_appetite === 'moderate' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-slate-200/50 dark:border-slate-700/50'"
+                  class="p-5 rounded-2xl text-center border-2 transition-all">
+            <p class="font-bold text-sm">Moderate</p>
+            <p class="text-[10px] text-slate-400 mt-1">Balanced</p>
+          </button>
+          <button type="button" @click="profile.risk_appetite = 'aggressive'"
+                  :class="profile.risk_appetite === 'aggressive' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-slate-200/50 dark:border-slate-700/50'"
+                  class="p-5 rounded-2xl text-center border-2 transition-all">
+            <p class="font-bold text-sm">Aggressive</p>
+            <p class="text-[10px] text-slate-400 mt-1">Growth focused</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex justify-between mt-10">
+      <button @click="step--" x-show="step > 1"
+              class="px-6 py-3 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+        Back
+      </button>
+      <div class="ml-auto">
+        <button x-show="step < 4" @click="step++"
+                class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition hover:scale-[1.02]">
+          Next
+        </button>
+        <button x-show="step === 4" @click="submit()"
+                class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition hover:scale-[1.02]">
+          Complete Setup
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function onboardingApp() {
+  return {
+    step: 1,
+    profile: {
+      name: '', age: 30, city: '', language: 'en',
+      monthly_income: 0, monthly_expenses: 0, employment_type: 'salaried', dependents: 0,
+      emergency_fund: 0, monthly_emi: 0, has_health_insurance: false,
+      risk_appetite: 'moderate',
+    },
+    async submit() {
+      this.profile.onboarding_complete = true;
+      try {
+        await fetch('/api/profile/upsert/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+          body: JSON.stringify(this.profile),
+        });
+        window.location.href = '/dashboard/';
+      } catch (e) {
+        alert('Something went wrong. Please try again.');
+      }
+    }
+  };
+}
+</script>
+{% endblock %}

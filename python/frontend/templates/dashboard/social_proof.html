@@ -1,0 +1,84 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Peer Insights{% endblock %}
+{% block page_title %}Peer Insights{% endblock %}
+{% block page_subtitle %}Peer Comparison{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  {% if social %}
+  {% if social.analysis %}
+  <!-- Age Group -->
+  {% if social.analysis.age_group %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 text-center">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Your Peer Group</p>
+    <h2 class="text-3xl font-black italic tracking-tight">{{ social.analysis.age_group }}</h2>
+    <p class="text-sm text-slate-500 mt-2">Compared against {{ social.analysis.sample_size|default:"1000+" }} peers in India</p>
+  </div>
+  {% endif %}
+
+  <!-- Benchmarks -->
+  {% if social.analysis.benchmarks %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% for bench in social.analysis.benchmarks %}
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">{{ bench.metric }}</p>
+      <div class="flex items-end gap-4 mb-3">
+        <div>
+          <p class="text-xs text-slate-500">You</p>
+          <p class="text-xl font-black italic {% if bench.status == 'above' %}text-emerald-500{% elif bench.status == 'below' %}text-red-500{% else %}text-blue-600{% endif %}">{{ bench.your_value }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-500">Peer Avg</p>
+          <p class="text-xl font-bold text-slate-400">{{ bench.peer_avg }}</p>
+        </div>
+      </div>
+      <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2.5 relative">
+        <div class="h-2.5 rounded-full {% if bench.status == 'above' %}bg-emerald-500{% elif bench.status == 'below' %}bg-red-500{% else %}bg-blue-600{% endif %} transition-all duration-500"
+             style="width: {{ bench.percentile|default:50 }}%"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">
+        {% if bench.status == 'above' %}Above average — top {{ bench.percentile_rank|default:"30" }}%
+        {% elif bench.status == 'below' %}Below average — room to improve
+        {% else %}On par with peers{% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Rankings -->
+  {% if social.analysis.rankings %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-4">Your Rankings</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {% for rank in social.analysis.rankings %}
+      <div class="text-center p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+        <p class="text-3xl font-black italic text-blue-600">{{ rank.rank }}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-1">{{ rank.category }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if social.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Peer Analysis
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ social.response }}</div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-cyan-100 dark:bg-cyan-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">Complete your profile to see how you compare to peers.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

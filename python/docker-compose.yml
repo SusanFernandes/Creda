@@ -1,0 +1,129 @@
+services:
+  # ── FastAPI Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: creda_backend
+    ports:
+      - "8001:8001"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - creda-network
+    restart: unless-stopped
+
+  # ── Django Frontend ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: creda_frontend
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DJANGO_DEBUG: "false"
+      BACKEND_API_URL: "http://backend:8001"
+    depends_on:
+      - backend
+    networks:
+      - creda-network
+    restart: unless-stopped
+
+  # ── Infrastructure ───────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: creda_postgres
+    environment:
+      POSTGRES_USER: creda_admin
+      POSTGRES_PASSWORD: creda_secure_2025
+      POSTGRES_DB: creda_api
+      # init script creates both databases
+      POSTGRES_MULTIPLE_DATABASES: creda_django,creda_api
+    ports:
+      - "8010:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    networks:
+      - creda-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creda_admin -d creda_api"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: creda_redis
+    ports:
+      - "8020:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - creda-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: creda_chroma
+    ports:
+      - "8030:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - creda-network
+    environment:
+      CHROMA_SERVER_HOST: "0.0.0.0"
+      CHROMA_SERVER_HTTP_PORT: "8000"
+    restart: unless-stopped
+
+  kokoro-tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: creda_kokoro
+    ports:
+      - "8880:8880"
+    volumes:
+      - kokoro_cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8880/health || exit 1"]
+      interval: 30s
+      start_period: 90s
+    networks:
+      - creda-network
+    restart: unless-stopped
+
+  piper-tts:
+    image: rhasspy/wyoming-piper:latest
+    container_name: creda_piper
+    ports:
+      - "8890:10200"
+    volumes:
+      - piper_voices:/data
+    command: --voice en_US-lessac-medium --update-voices
+    restart: unless-stopped
+    networks:
+      - creda-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
+  kokoro_cache:
+  piper_voices:
+
+networks:
+  creda-network:
+    driver: bridge

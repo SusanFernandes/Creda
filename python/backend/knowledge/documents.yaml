@@ -1,0 +1,261 @@
+# CREDA Knowledge Base — curated Indian financial documents
+# Loaded into ChromaDB on FastAPI startup.
+# Each document is embedded and searchable via the RAG agent.
+
+documents:
+  # ── Government Schemes ───────────────────────────────────
+  - id: pmjjby
+    title: "Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)"
+    category: government_scheme
+    source: "Ministry of Finance, Government of India"
+    content: |
+      PMJJBY is a life insurance scheme for ages 18-50. Premium: ₹436/year for ₹2 lakh cover.
+      Auto-debit from bank account. Covers death due to any cause. Enrolled via bank.
+      Eligibility: 18-50 years, savings bank account, Aadhaar linked.
+      Renewal: Annual auto-renewal on 1st June each year.
+
+  - id: pmsby
+    title: "Pradhan Mantri Suraksha Bima Yojana (PMSBY)"
+    category: government_scheme
+    source: "Ministry of Finance, Government of India"
+    content: |
+      PMSBY is an accident insurance scheme. Premium: ₹20/year.
+      Cover: ₹2 lakh for accidental death, ₹1 lakh for partial permanent disability.
+      Eligibility: 18-70 years, savings bank account. Auto-debit from bank.
+
+  - id: sukanya_samriddhi
+    title: "Sukanya Samriddhi Yojana (SSY)"
+    category: government_scheme
+    source: "Ministry of Finance, Government of India"
+    content: |
+      SSY is a savings scheme for girl child. Current interest rate: 8.2% (FY2024-25).
+      Max deposit: ₹1.5 lakh/year. Maturity: 21 years from opening or marriage after 18.
+      Tax benefit: 80C deduction. Interest and maturity amount are tax-free (EEE status).
+      Min deposit: ₹250/year. Account for girls below 10 years.
+
+  - id: nps
+    title: "National Pension System (NPS)"
+    category: government_scheme
+    source: "PFRDA"
+    content: |
+      NPS is a voluntary retirement savings scheme. Two tiers: Tier I (mandatory lock-in till 60), Tier II (flexible).
+      Asset classes: E (equity max 75%), C (corporate bonds), G (government securities), A (alternative).
+      Tax benefits: 80CCD(1) within 80C limit of ₹1.5L, 80CCD(1B) additional ₹50,000, 80CCD(2) employer 14% of salary.
+      At 60: 40% must buy annuity, 60% lump sum (tax-free).
+      Fund managers: SBI, LIC, UTI, HDFC, ICICI, Kotak, Aditya Birla.
+
+  - id: ppf
+    title: "Public Provident Fund (PPF)"
+    category: government_scheme
+    source: "Ministry of Finance"
+    content: |
+      PPF is a 15-year savings scheme. Current rate: 7.1% (FY2024-25), compounded annually.
+      Max deposit: ₹1.5 lakh/year. Min: ₹500/year. EEE tax status (exempt-exempt-exempt).
+      Partial withdrawal from 7th year. Loan facility from 3rd to 6th year.
+      80C deduction on deposits. Available at post offices and designated banks.
+
+  - id: sgb
+    title: "Sovereign Gold Bonds (SGB)"
+    category: government_scheme
+    source: "Reserve Bank of India"
+    content: |
+      SGBs are government securities denominated in grams of gold. 2.5% annual interest on issue price.
+      Tenure: 8 years, exit option after 5th year on interest payment dates.
+      Tax: Interest taxable, capital gains on redemption exempt. LTCG with indexation if sold before maturity.
+      Issue price: Based on simple average of closing gold price of last 3 working days.
+      ₹50/gram discount for online application. Max: 4kg/individual/fiscal year.
+
+  - id: apy
+    title: "Atal Pension Yojana (APY)"
+    category: government_scheme
+    source: "PFRDA"
+    content: |
+      APY guarantees minimum pension of ₹1,000-₹5,000/month after age 60.
+      Eligibility: 18-40 years, bank account. Contribution based on age and pension amount.
+      Government co-contributes 50% of premium for 5 years (for those without other social security).
+      Spouse continues to receive same pension after subscriber's death.
+
+  - id: scss
+    title: "Senior Citizens Savings Scheme (SCSS)"
+    category: government_scheme
+    source: "Ministry of Finance"
+    content: |
+      SCSS for 60+ (55+ for retired defence, 50+ for VRS). Interest: 8.2% (FY2024-25), quarterly.
+      Max deposit: ₹30 lakh. Tenure: 5 years, extendable by 3 years.
+      80C deduction on investment. TDS if interest > ₹50,000/year.
+
+  # ── Tax Rules ────────────────────────────────────────────
+  - id: section_80c
+    title: "Section 80C Deductions"
+    category: tax
+    source: "Income Tax Act, 1961"
+    content: |
+      Section 80C allows deduction up to ₹1.5 lakh from gross total income.
+      Eligible investments: ELSS (3yr lock-in), PPF, EPF, NSC, SCSS, 5-year FD, life insurance premium,
+      tuition fees (max 2 children), home loan principal repayment, Sukanya Samriddhi.
+      Available only under Old Tax Regime. New regime does not allow 80C deductions.
+
+  - id: ltcg_stcg
+    title: "Capital Gains Tax on Mutual Funds (FY2024-25)"
+    category: tax
+    source: "Income Tax Act"
+    content: |
+      Equity mutual funds: LTCG (>1 year) at 12.5% above ₹1.25 lakh exemption. STCG at 20%.
+      Debt mutual funds (bought after April 2023): Taxed at slab rate regardless of holding period.
+      ELSS: 3-year lock-in, LTCG applies after lock-in.
+      Equity = >65% in equity. Hybrid (35-65%) treated as equity if >65%.
+
+  - id: hra_exemption
+    title: "HRA Exemption Rules"
+    category: tax
+    source: "Income Tax Act, Section 10(13A)"
+    content: |
+      HRA exemption = minimum of: (1) Actual HRA received, (2) 50% of salary for metro / 40% for non-metro,
+      (3) Rent paid minus 10% of salary. Salary = basic + DA.
+      Must actually pay rent. Rent > ₹1 lakh/year requires landlord PAN.
+      Available only in Old Regime.
+
+  # ── Investment Guidelines ────────────────────────────────
+  - id: asset_allocation
+    title: "Asset Allocation Guidelines for Indian Investors"
+    category: investment
+    source: "AMFI, SEBI Guidelines"
+    content: |
+      Age-based thumb rule: Equity % = 100 - Age (aggressive) or 80 - Age (conservative).
+      Young (20-35): 70-80% equity, 10-15% debt, 5-10% gold. Target: wealth creation.
+      Mid (35-50): 50-60% equity, 25-35% debt, 10% gold. Target: balance growth + stability.
+      Pre-retirement (50-60): 30-40% equity, 40-50% debt, 10-20% gold/FD. Target: capital preservation.
+      Rebalance annually. Review every 6 months. Emergency fund in liquid/FD (not equity).
+
+  - id: sip_guide
+    title: "SIP Investment Guide"
+    category: investment
+    source: "AMFI"
+    content: |
+      SIP (Systematic Investment Plan) invests fixed amount monthly in mutual funds.
+      Benefits: Rupee cost averaging, power of compounding, disciplined investing.
+      Step-up SIP: Increase SIP by 10% annually to match salary hikes.
+      SIP in index funds (Nifty 50, Nifty Next 50) for low-cost passive equity exposure.
+      Historical: Nifty 50 SIP for 15+ years has never given negative returns.
+      Start early: ₹5,000/month at 12% for 30 years = ~₹1.76 crore.
+
+  - id: index_funds
+    title: "Index Fund Investing in India"
+    category: investment
+    source: "SEBI, AMFI"
+    content: |
+      Index funds replicate a market index (Nifty 50, Sensex, Nifty Next 50).
+      Expense ratio: 0.1-0.3% (vs 1-2% for active funds). No fund manager risk.
+      Key metrics: Tracking error (lower = better), AUM (higher = better liquidity).
+      Popular: UTI Nifty 50, HDFC Nifty 50, Motilal Oswal Nifty 500.
+      Over 10+ years, ~65% of active large-cap funds underperform the index.
+
+  # ── Insurance ────────────────────────────────────────────
+  - id: term_insurance
+    title: "Term Life Insurance Guidelines"
+    category: insurance
+    source: "IRDAI"
+    content: |
+      Recommended cover: 15-20x annual income. Buy before 35 for lower premiums.
+      Pure term plan (no return of premium) = lowest cost for highest cover.
+      Features to look for: Critical illness rider, accidental death benefit, waiver of premium.
+      Claim settlement ratio: Choose insurer with >95% CSR.
+      Avoid: ULIP, endowment, money-back plans (poor returns, high charges).
+
+  - id: health_insurance
+    title: "Health Insurance Guidelines"
+    category: insurance
+    source: "IRDAI"
+    content: |
+      Minimum: ₹5 lakh cover for individual. Family floater for married with kids.
+      Super top-up for high cover at low cost (e.g., base ₹5L + super top-up ₹50L).
+      Check: Room rent cap (prefer no cap), co-pay, waiting period (2-4 years), sub-limits.
+      80D deduction: ₹25,000 for self (<60), ₹50,000 for senior citizen parents.
+      Portability: Can switch insurer without losing credit for waiting period.
+
+  # ── Market Intelligence ──────────────────────────────────
+  - id: market_pulse_guide
+    title: "Indian Market Pulse & Macro Indicators"
+    category: market
+    source: "NSE, BSE, RBI"
+    content: |
+      Key indices: Nifty 50, Sensex, Nifty Bank, Nifty Midcap 150, Nifty Smallcap 250.
+      FII/DII flows: Foreign and domestic institutional flows drive short-term momentum.
+      Macro indicators: RBI repo rate, CPI inflation, GDP growth, INR/USD, crude oil price.
+      Sector rotation: Cyclical (banks, auto, infra) vs defensive (pharma, FMCG, IT).
+      Volatility: India VIX > 20 = high fear. VIX < 13 = complacency.
+      Market cap classification: Large (1-100), Mid (101-250), Small (251+) by SEBI.
+
+  - id: tax_planning_advanced
+    title: "Advanced Tax Planning Strategies for India"
+    category: tax
+    source: "Income Tax Act, CBDT Circulars"
+    content: |
+      Tax loss harvesting: Book losses to offset capital gains before March 31.
+      ELSS vs PPF vs NPS: ELSS shortest lock-in (3yr), NPS extra ₹50k deduction under 80CCD(1B).
+      Section 54/54F: Reinvest property sale proceeds to save LTCG on real estate.
+      Section 87A rebate: Tax payable = 0 if total income < ₹7 lakh under new regime.
+      Quarterly advance tax deadlines: June 15 (15%), Sep 15 (45%), Dec 15 (75%), Mar 15 (100%).
+      Salary structuring: HRA, LTA, food coupons, NPS employer contribution (80CCD2) reduce tax.
+      Agricultural income: Fully exempt. Partial integration with non-agricultural income above ₹5,000.
+
+  - id: money_personality
+    title: "Money Personality Archetypes & Behavioral Finance"
+    category: behavioral
+    source: "Behavioral Finance Research"
+    content: |
+      Common archetypes: The Saver (frugal, risk-averse), The Spender (impulsive, FOMO-driven),
+      The Investor (analytical, growth-focused), The Avoider (ignores finances, anxiety-driven),
+      The Giver (generous, may neglect own goals), The Risk-Taker (high-risk appetite, concentrated bets).
+      Key biases: Loss aversion (losses feel 2x worse), anchoring, recency bias, herd mentality.
+      Dimensions: Risk tolerance, savings discipline, spending impulse, planning horizon, money anxiety.
+      Intervention: Match investment strategy to personality. Automate for Avoiders. Set limits for Spenders.
+      Indian context: Gold bias (cultural), real estate fixation, insurance-as-investment trap.
+
+  - id: goal_planning
+    title: "Goal-Based Financial Planning for Indians"
+    category: planning
+    source: "SEBI, CFP Board India"
+    content: |
+      Goal categories: Emergency fund (6 months), child education (15-18 yrs), marriage,
+      first home (5-7 yrs), retirement (FIRE or traditional), wealth transfer.
+      Inflation assumptions: Education 10-12%, healthcare 8-10%, general 6-7%, real estate 5-8%.
+      SIP formula: FV = P × [((1+r)^n - 1) / r] × (1+r). Use step-up 10% annually.
+      Monte Carlo simulation: Run 1000+ scenarios with variable returns to estimate success probability.
+      FIRE targets: 25x annual expenses (4% rule), adjust for India (3-3.5% SWR due to higher inflation).
+
+  - id: peer_benchmarks
+    title: "Indian Household Financial Benchmarks by Age Group"
+    category: benchmark
+    source: "AMFI, RBI Household Survey, NSO"
+    content: |
+      Savings rate benchmark: 20-30% of gross income is healthy.
+      25-30 age group: Median savings 15-20%, avg MF SIP ₹5,000-10,000, net worth 2-5 lakh.
+      30-35 age group: Median savings 20-25%, SIP ₹10,000-20,000, net worth 10-25 lakh.
+      35-45 age group: Target 60-80% equity, insurance cover 15x income, emergency fund 6 months.
+      45-55 age group: Start de-risking to 40-50% equity, maximize NPS, plan retirement drawdown.
+      Debt-to-income: Keep EMIs < 40% of take-home pay. Home loan < 5x annual income.
+      Indian households: 77% in real estate, 11% in gold, 5% in equities (vs global 40%+ equity).
+
+  - id: research_methodology
+    title: "Financial Research & Fact-Checking Methodology"
+    category: research
+    source: "SEBI, RBI, MOSPI"
+    content: |
+      Primary sources: SEBI circulars, RBI bulletins, CBDT notifications, NSE/BSE data, MOSPI stats.
+      Trusted aggregators: Value Research, Morningstar India, AMFI NAV data, Moneycontrol.
+      Verification: Cross-reference at least 2 sources. Check date currency. Note regulatory changes.
+      Confidence scoring: 90%+ = RBI/SEBI primary source, 70-89% = trusted aggregator, <70% = single source.
+      Common misinformation: Guaranteed return promises, unregulated schemes, crypto as alternative investment.
+
+  - id: human_handoff_criteria
+    title: "When to Escalate to a Human Financial Advisor"
+    category: advisory
+    source: "CFP Board, SEBI RIA Guidelines"
+    content: |
+      Escalation triggers: Complex tax situations (NRI, ESOP, business income), estate planning,
+      high net worth (>₹2 crore investable), concentrated stock positions, insurance claims,
+      life events (divorce, inheritance, disability), emotional distress about money.
+      SEBI-registered Investment Advisors (RIA) vs Mutual Fund Distributors (MFD): RIA = fee-only fiduciary.
+      Red flags that need human review: conflicting goals, debt spiral, potential fraud victim.
+      CREDA limitation: AI provides general guidance, not personalized licensed advice.

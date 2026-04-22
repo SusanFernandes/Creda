@@ -20,8 +20,7 @@ import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { router } from 'expo-router';
 
-const GATEWAY_URL      = process.env.EXPO_PUBLIC_GATEWAY_URL  ?? 'http://localhost:8080';
-const MULTILINGUAL_URL = process.env.EXPO_PUBLIC_MULTILINGUAL_URL ?? 'http://localhost:8000';
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://localhost:8001';
 
 // ── Voice Activity Detection config ─────────────────────────────────────────
 const SILENCE_DB_THRESHOLD  = -35;   // dB — below this = silence (typical background ≈ -60)
@@ -139,7 +138,7 @@ export function useVoiceController(
     formData.append('user_id', userId);
 
     try {
-      const res = await fetch(`${GATEWAY_URL}/voice/command`, {
+      const res = await fetch(`${BACKEND_URL}/voice/pipeline`, {
         method: 'POST',
         body: formData,
       });
@@ -214,7 +213,7 @@ export function useVoiceController(
     setStatus('speaking');
     // Try CREDA TTS (better Indian voices)
     try {
-      const res = await fetch(`${MULTILINGUAL_URL}/tts_only`, {
+      const res = await fetch(`${BACKEND_URL}/voice/speak`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language_code: language }),

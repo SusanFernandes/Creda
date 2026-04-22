@@ -1,0 +1,103 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Money Personality{% endblock %}
+{% block page_title %}Money Personality{% endblock %}
+{% block page_subtitle %}Behavioral Finance Assessment{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  {% if personality %}
+  {% if personality.analysis %}
+  <!-- Personality Result -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent"></div>
+    <div class="relative">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Your Financial Archetype</p>
+      <h2 class="text-4xl font-black italic tracking-tight mb-3">{{ personality.analysis.archetype }}</h2>
+      <p class="text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">{{ personality.analysis.description }}</p>
+
+      {% if personality.analysis.traits %}
+      <div class="flex flex-wrap gap-2 justify-center mt-6">
+        {% for trait in personality.analysis.traits %}
+        <span class="px-3 py-1.5 glass rounded-xl border border-slate-200/50 dark:border-slate-700/50 text-xs font-medium">{{ trait }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Dimensions -->
+  {% if personality.analysis.dimensions %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% for dim in personality.analysis.dimensions %}
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5">
+      <div class="flex justify-between items-center mb-3">
+        <p class="text-sm font-semibold">{{ dim.name }}</p>
+        <span class="text-sm font-black italic text-blue-600">{{ dim.score }}/10</span>
+      </div>
+      <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2.5">
+        <div class="h-2.5 rounded-full bg-blue-600 transition-all duration-500" style="width: {{ dim.score }}0%"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Strengths / Blind Spots -->
+  {% if personality.analysis.strengths or personality.analysis.blind_spots %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% if personality.analysis.strengths %}
+    <div class="glass rounded-2xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-6">
+      <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        Strengths
+      </h3>
+      <ul class="space-y-2">
+        {% for s in personality.analysis.strengths %}
+        <li class="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+          <svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {{ s }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if personality.analysis.blind_spots %}
+    <div class="glass rounded-2xl border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-6">
+      <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+        Blind Spots
+      </h3>
+      <ul class="space-y-2">
+        {% for b in personality.analysis.blind_spots %}
+        <li class="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+          <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+          {{ b }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if personality.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      Personalized Recommendations
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ personality.response }}</div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    </div>
+    <p class="text-slate-500 text-sm">Complete your profile to discover your money personality.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Your Financial Overview{% endblock %}
+
+{% block content %}
+<!-- Nudges -->
+{% if nudges %}
+<div class="mb-8 space-y-3">
+  {% for nudge in nudges %}
+  <div class="glass rounded-2xl p-4 flex items-center justify-between border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10"
+       id="nudge-{{ nudge.id }}">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      </div>
+      <div>
+        <p class="font-semibold text-sm">{{ nudge.title }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">{{ nudge.body }}</p>
+      </div>
+    </div>
+    <button hx-post="/api/nudges/{{ nudge.id }}/read" hx-target="#nudge-{{ nudge.id }}" hx-swap="outerHTML"
+            class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">&times;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Metric Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Income</p>
+    <p class="text-3xl font-black italic tracking-tight">₹{{ profile.monthly_income|floatformat:0|default:"—" }}</p>
+    <div class="mt-3 flex items-center gap-1.5 text-emerald-500 text-xs font-medium">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+      Active
+    </div>
+  </div>
+  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Savings</p>
+    {% with savings=profile.monthly_income|add:profile.monthly_expenses|default:0 %}
+    <p class="text-3xl font-black italic tracking-tight text-blue-600">₹{{ savings|floatformat:0 }}</p>
+    {% endwith %}
+    <div class="mt-3 flex items-center gap-1.5 text-blue-500 text-xs font-medium">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      Tracking
+    </div>
+  </div>
+  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Emergency Fund</p>
+    <p class="text-3xl font-black italic tracking-tight">₹{{ profile.emergency_fund|floatformat:0|default:"0" }}</p>
+    <div class="mt-3 flex items-center gap-1.5 text-slate-400 text-xs font-medium">Safety Net</div>
+  </div>
+  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Risk Profile</p>
+    <p class="text-3xl font-black italic tracking-tight capitalize">{{ profile.risk_appetite|default:"—" }}</p>
+    <div class="mt-3 flex items-center gap-1.5 text-slate-400 text-xs font-medium">Calibrated</div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-4 flex items-center justify-between">
+  <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Quick Actions</h2>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+  <a href="{% url 'chat' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+    </div>
+    <p class="font-semibold text-sm">AI Chat</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">AI Financial Advisor</p>
+  </a>
+  <a href="{% url 'portfolio' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    </div>
+    <p class="font-semibold text-sm">Portfolio X-Ray</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">Upload CAMS PDF</p>
+  </a>
+  <a href="{% url 'health' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+    </div>
+    <p class="font-semibold text-sm">Money Health</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">Financial Health Score</p>
+  </a>
+  <a href="{% url 'market_pulse' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    </div>
+    <p class="font-semibold text-sm">Market Pulse</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">Live Markets</p>
+  </a>
+</div>
+
+<!-- ET Intelligence Grid -->
+<div class="mb-4 flex items-center justify-between">
+  <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Tools & Insights</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <a href="{% url 'money_personality' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+        <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <p class="font-semibold text-sm">Money Personality</p>
+    </div>
+    <p class="text-xs text-slate-500">Discover your financial archetype</p>
+  </a>
+  <a href="{% url 'social_proof' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+        <svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <p class="font-semibold text-sm">Peer Insights</p>
+    </div>
+    <p class="text-xs text-slate-500">How you compare to your age group</p>
+  </a>
+  <a href="{% url 'research' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      </div>
+      <p class="font-semibold text-sm">Research Desk</p>
+    </div>
+    <p class="text-xs text-slate-500">AI-powered financial research</p>
+  </a>
+</div>
+{% endblock %}
