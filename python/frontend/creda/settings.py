@@ -92,6 +92,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # ── FastAPI Backend ────────────────────────────────────────
 BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:8001")
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 
 # ── Static ─────────────────────────────────────────────────
 STATIC_URL = "/static/"

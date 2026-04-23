@@ -50,6 +50,7 @@ help: ## Show this help
 	@Write-Host '    make install           Install all Python dependencies'
 	@Write-Host '    make env               Create .env from .env.example'
 	@Write-Host '    make download-model    Download MiniLM to local models/ (offline embeddings)'
+	@Write-Host '    make postgres-volume-reset  Fix DB password mismatch (removes Postgres volume; wipes DB)'
 	@Write-Host '    make migrate           Run Django + Alembic migrations'
 	@Write-Host '    make superuser         Create Django admin superuser'
 	@Write-Host '    make seed              Seed demo data (2 users with full data)'
@@ -99,6 +100,15 @@ venv: ## Create Python virtual environment
 .PHONY: env
 env: ## Create .env from .env.example if missing
 	@if (-not (Test-Path '.env')) { if (Test-Path '.env.example') { Copy-Item '.env.example' '.env'; Write-Host 'Created .env from .env.example — edit it with your GROQ_API_KEY' -ForegroundColor Yellow } else { Write-Host '.env.example not found — create .env manually.' -ForegroundColor Red } } else { Write-Host '.env already exists — skipping.' -ForegroundColor Gray }
+
+.PHONY: postgres-volume-reset
+postgres-volume-reset: ## Remove Postgres volume and recreate container (fixes stale password; destroys DB data)
+	@Write-Host 'Removing Postgres container and volume (all Postgres data for this compose project)...' -ForegroundColor Yellow
+	docker compose stop postgres
+	docker compose rm -f postgres
+	@$$proj = Split-Path '$(CURDIR)' -Leaf; $$vol = $$proj + '_postgres_data'; docker volume rm $$vol 2>$$null; if ($$LASTEXITCODE -ne 0) { Write-Host ('Note: could not remove volume ' + $$vol + ' (missing or in use). Try: docker volume ls') -ForegroundColor Gray }
+	docker compose up -d postgres
+	@Write-Host 'Postgres is starting. Wait ~10s, then run: make migrate' -ForegroundColor Green
 
 # ─── INSTALL ──────────────────────────────────────────────────────
 

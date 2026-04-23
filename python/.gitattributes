@@ -1,0 +1,2 @@
+# Shell scripts mounted into Linux containers must use LF (CRLF breaks shebang).
+*.sh text eol=lf

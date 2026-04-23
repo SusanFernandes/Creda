@@ -159,14 +159,25 @@ function onboardingApp() {
     async submit() {
       this.profile.onboarding_complete = true;
       try {
-        await fetch('/api/profile/upsert/', {
+        const res = await fetch('/api/profile/upsert/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Accept': 'application/json',
+          },
           body: JSON.stringify(this.profile),
         });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = body.error || body.detail || res.statusText || 'Save failed';
+          alert('Could not save your profile: ' + msg + '\n\nCheck that the FastAPI backend is running (port 8001) and try again.');
+          return;
+        }
         window.location.href = '/dashboard/';
       } catch (e) {
-        alert('Something went wrong. Please try again.');
+        alert('Could not reach the server. Check your connection and that the app is running.');
       }
     }
   };

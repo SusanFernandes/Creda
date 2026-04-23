@@ -6,17 +6,25 @@ import json
 import logging
 
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
+from creda.middleware import _fastapi_user_id_for_request
+
 logger = logging.getLogger("creda.dashboard")
+
+
+def _fastapi_user_id(request) -> str:
+    """FastAPI users.id (UUID); JWT/session from middleware helper, else Django pk."""
+    uid = _fastapi_user_id_for_request(request)
+    return uid if uid else str(request.user.id)
 
 
 @login_required
 async def dashboard_view(request):
     """Main dashboard — summary cards, nudges, quick actions."""
     try:
-        profile = await request.backend.get_profile(str(request.user.id))
+        profile = await request.backend.get_profile(_fastapi_user_id(request))
         nudges = await request.backend.get_nudges()
     except Exception:
         profile = None
@@ -130,6 +138,9 @@ async def stress_test_view(request):
 @login_required
 async def settings_view(request):
     """User settings page."""
+    settings_error = None
+    settings_saved = False
+
     if request.method == "POST":
         data = {}
         for key in ("name", "age", "monthly_income", "monthly_expenses", "language",
@@ -144,14 +155,37 @@ async def settings_view(request):
                     data[key] = val
         try:
             await request.backend.upsert_profile(data)
+            settings_saved = True
         except Exception as e:
-            logger.error("Settings update error: %s", e)
+            logger.exception("Settings update error: %s", e)
+            settings_error = (
+                "Could not save to the backend. Ensure FastAPI is running (e.g. port 8001) "
+                "and you are still logged in."
+            )
+
+        if request.headers.get("HX-Request"):
+            if settings_error:
+                return HttpResponse(
+                    f'<p class="text-sm text-red-600">{settings_error}</p>',
+                    status=500,
+                )
+            return HttpResponse(
+                '<p class="text-sm text-emerald-600 font-medium">Saved to your profile.</p>'
+            )
 
     try:
-        profile = await request.backend.get_profile(str(request.user.id))
+        profile = await request.backend.get_profile(_fastapi_user_id(request))
     except Exception:
         profile = None
-    return render(request, "dashboard/settings.html", {"profile": profile})
+    return render(
+        request,
+        "dashboard/settings.html",
+        {
+            "profile": profile,
+            "settings_error": settings_error,
+            "settings_saved": settings_saved,
+        },
+    )
 
 
 @login_required
@@ -350,8 +384,12 @@ async def api_profile_upsert(request):
         result = await request.backend.upsert_profile(data)
         return JsonResponse(result)
     except Exception as e:
-        logger.error("Profile upsert proxy error: %s", e)
-        return JsonResponse({"error": str(e)}, status=500)
+        logger.exception("Profile upsert proxy error: %s", e)
+        hint = (
+            " Ensure the FastAPI backend is running (e.g. make backend) and Postgres is up; "
+            "avoid `docker compose down -v` if you want to keep saved profiles."
+        )
+        return JsonResponse({"error": str(e) + hint}, status=500)
 
 
 @login_required
