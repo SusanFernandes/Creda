@@ -91,4 +91,8 @@ async def is_onboarded(
 
 
 def _serialize(p: UserProfile) -> dict[str, Any]:
-    return {c.name: getattr(p, c.name) for c in UserProfile.__table__.columns}
+    d: dict[str, Any] = {c.name: getattr(p, c.name) for c in UserProfile.__table__.columns}
+    income = float(d.get("monthly_income") or 0)
+    expenses = float(d.get("monthly_expenses") or 0)
+    d["monthly_surplus"] = income - expenses
+    return d

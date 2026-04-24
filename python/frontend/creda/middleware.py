@@ -2,6 +2,7 @@
 Middleware: BackendClient + async user resolution.
 """
 import httpx
+import jwt as pyjwt
 from asgiref.sync import iscoroutinefunction, sync_to_async
 from django.conf import settings
 from django.contrib.auth import get_user as _get_user
@@ -54,6 +55,22 @@ def backend_client_middleware(get_response):
     return middleware
 
 
+def _fastapi_user_id_for_request(request) -> str | None:
+    """UUID of the row in creda_api.users — session, else JWT claims, else None."""
+    sid = request.session.get("backend_user_id")
+    if sid:
+        return str(sid)
+    token = request.session.get("backend_jwt")
+    if not token or not getattr(settings, "JWT_SECRET", None):
+        return None
+    try:
+        payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        uid = payload.get("user_id")
+        return str(uid) if uid else None
+    except pyjwt.PyJWTError:
+        return None
+
+
 class BackendClient:
     """
     Typed wrapper around httpx.AsyncClient for FastAPI backend calls.
@@ -69,7 +86,9 @@ class BackendClient:
         user = self._request.user
         headers = {}
         if user.is_authenticated:
-            headers["x-user-id"] = str(user.id)
+            # FastAPI users.id is a UUID; Django User.pk is an integer.
+            backend_uid = _fastapi_user_id_for_request(self._request)
+            headers["x-user-id"] = backend_uid if backend_uid else str(user.id)
             headers["x-user-email"] = user.email or ""
         # Optionally pass JWT from session
         jwt_token = self._request.session.get("backend_jwt")

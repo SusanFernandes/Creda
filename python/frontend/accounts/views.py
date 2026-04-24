@@ -26,25 +26,38 @@ async def login_view(request):
         return redirect("dashboard")
 
     error = ""
+    signup_required = False
+    email_prefill = ""
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
+        email_prefill = email
 
         try:
             user = await User.objects.aget(email=email)
             if user.check_password(password):
                 await django_login(request, user)
                 # Get JWT from FastAPI
-                jwt_token = await _get_backend_jwt(email, password)
+                jwt_token, backend_uid = await _get_backend_jwt(email, password)
                 if jwt_token:
                     request.session["backend_jwt"] = jwt_token
+                if backend_uid:
+                    request.session["backend_user_id"] = str(backend_uid)
                 return redirect("dashboard")
             else:
                 error = "Invalid password"
         except User.DoesNotExist:
-            error = "No account with this email"
+            signup_required = True
 
-    return render(request, "accounts/login.html", {"error": error})
+    return render(
+        request,
+        "accounts/login.html",
+        {
+            "error": error,
+            "signup_required": signup_required,
+            "email_prefill": email_prefill,
+        },
+    )
 
 
 async def register_view(request):
@@ -63,7 +76,7 @@ async def register_view(request):
             error = "Password must be at least 8 characters"
         else:
             # Register with FastAPI backend FIRST (atomic: don't create Django user if backend fails)
-            jwt_token = await _register_backend(email, password, name)
+            jwt_token, backend_uid = await _register_backend(email, password, name)
             if jwt_token is None:
                 error = "Registration failed — please try again"
             else:
@@ -72,18 +85,22 @@ async def register_view(request):
                 await user.asave()
                 await django_login(request, user)
                 request.session["backend_jwt"] = jwt_token
+                if backend_uid:
+                    request.session["backend_user_id"] = str(backend_uid)
                 return redirect("dashboard")
 
     return render(request, "accounts/register.html", {"error": error})
 
 
 async def logout_view(request):
+    request.session.pop("backend_jwt", None)
+    request.session.pop("backend_user_id", None)
     await django_logout(request)
     return redirect("landing")
 
 
-async def _get_backend_jwt(email: str, password: str) -> str | None:
-    """Get JWT token from FastAPI backend."""
+async def _get_backend_jwt(email: str, password: str) -> tuple[str | None, str | None]:
+    """Get JWT and FastAPI user id from backend (TokenResponse)."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(
@@ -91,14 +108,15 @@ async def _get_backend_jwt(email: str, password: str) -> str | None:
                 json={"email": email, "password": password},
             )
             if resp.status_code == 200:
-                return resp.json().get("token")
+                data = resp.json()
+                return data.get("token"), data.get("user_id")
     except Exception:
         pass
-    return None
+    return None, None
 
 
-async def _register_backend(email: str, password: str, name: str) -> str | None:
-    """Register user on FastAPI backend and return JWT."""
+async def _register_backend(email: str, password: str, name: str) -> tuple[str | None, str | None]:
+    """Register user on FastAPI backend; return JWT and FastAPI users.id (UUID)."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(
@@ -106,7 +124,8 @@ async def _register_backend(email: str, password: str, name: str) -> str | None:
                 json={"email": email, "password": password, "name": name},
             )
             if resp.status_code == 200:
-                return resp.json().get("token")
+                data = resp.json()
+                return data.get("token"), data.get("user_id")
     except Exception:
         pass
-    return None
+    return None, None
