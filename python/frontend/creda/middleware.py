@@ -213,6 +213,41 @@ class BackendClient:
     async def expense_analytics(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/expense-analytics", language)
 
+    async def list_budget_expenses(self, month: str = "", limit: int = 100) -> list:
+        params: dict[str, str | int] = {"limit": limit}
+        if month:
+            params["month"] = month
+        resp = await self._client.get("/budget/expenses", params=params, headers=self._headers())
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, list) else []
+
+    async def post_budget_expense(
+        self,
+        category: str,
+        amount: float,
+        description: str = "",
+        expense_date: str = "",
+        payment_method: str = "upi",
+        is_recurring: bool = False,
+    ) -> dict:
+        payload = {
+            "category": category,
+            "amount": amount,
+            "description": description,
+            "expense_date": expense_date,
+            "payment_method": payment_method,
+            "is_recurring": is_recurring,
+        }
+        resp = await self._client.post("/budget/expense", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def delete_budget_expense(self, expense_id: str) -> dict:
+        resp = await self._client.delete(f"/budget/expense/{expense_id}", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Nudges ─────────────────────────────────────────────
     async def generate_nudges(self) -> dict:
         resp = await self._client.post("/nudges/generate", headers=self._headers())

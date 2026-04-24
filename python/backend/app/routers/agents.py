@@ -319,11 +319,12 @@ async def expense_analytics(
     # Fetch actual expenses from DB (last 30 days)
     from app.models import Expense, Budget
     from datetime import date, timedelta
-    thirty_days_ago = date.today() - timedelta(days=30)
+    # Rolling window so seeded / older line items still power charts after demo time passes
+    expense_since = date.today() - timedelta(days=120)
     exp_result = await db.execute(
         select(Expense).where(
             Expense.user_id == auth.user_id,
-            Expense.expense_date >= thirty_days_ago,
+            Expense.expense_date >= expense_since,
         )
     )
     expenses = list(exp_result.scalars().all())

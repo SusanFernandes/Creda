@@ -59,8 +59,9 @@
           <input x-model.number="profile.monthly_income" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
         </div>
         <div>
-          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Expenses (₹)</label>
-          <input x-model.number="profile.monthly_expenses" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly expenses total (₹)</label>
+          <input x-model.number="profile.monthly_expenses" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent" placeholder="Or leave 0 and use lines below">
+          <p class="text-[10px] text-slate-400 mt-1">If you add categories below, we set this to their sum automatically.</p>
         </div>
         <div>
           <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Employment</label>
@@ -74,6 +75,46 @@
           <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Dependents</label>
           <input x-model.number="profile.dependents" type="number" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent">
         </div>
+      </div>
+      <div class="rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-slate-50/40 dark:bg-slate-800/20 p-5 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <p class="text-sm font-bold text-slate-800 dark:text-slate-100">Monthly spending by category</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">Optional — each line is saved as a real expense for analytics</p>
+          </div>
+          <p class="text-xs font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">Total <span x-text="expenseLines.reduce((s,l)=>s+(Number(l.amount)>0?Number(l.amount):0),0)"></span> ₹</p>
+        </div>
+        <template x-for="(line, idx) in expenseLines" :key="idx">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+            <div class="md:col-span-6">
+              <label class="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-1">Category</label>
+              <input x-model="line.category" type="text" list="onb-cat-suggestions" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-3 py-2.5 text-sm bg-transparent" placeholder="Rent/Housing">
+            </div>
+            <div class="md:col-span-4">
+              <label class="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-1">Amount (₹)</label>
+              <input x-model.number="line.amount" type="number" min="0" step="1" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-3 py-2.5 text-sm bg-transparent" placeholder="0" @input="syncExpenseTotalFromLines()">
+            </div>
+            <div class="md:col-span-2 flex gap-1">
+              <button type="button" @click="removeExpenseLine(idx)" class="flex-1 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl border border-transparent" x-show="expenseLines.length > 1">Remove</button>
+            </div>
+          </div>
+        </template>
+        <datalist id="onb-cat-suggestions">
+          <option value="Rent/Housing"></option>
+          <option value="Groceries"></option>
+          <option value="Transport"></option>
+          <option value="Dining Out"></option>
+          <option value="Utilities"></option>
+          <option value="Shopping"></option>
+          <option value="Entertainment"></option>
+          <option value="Health & Fitness"></option>
+          <option value="Subscriptions"></option>
+          <option value="Miscellaneous"></option>
+          <option value="EMI / Loans"></option>
+        </datalist>
+        <button type="button" @click="addExpenseLine()" class="w-full py-2.5 text-sm font-semibold text-blue-600 border border-dashed border-blue-300 dark:border-blue-700 rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/10">
+          + Add another category
+        </button>
       </div>
     </div>
 
@@ -156,7 +197,23 @@ function onboardingApp() {
       emergency_fund: 0, monthly_emi: 0, has_health_insurance: false,
       risk_appetite: 'moderate',
     },
+    expenseLines: [
+      { category: 'Rent/Housing', amount: 0 },
+      { category: 'Groceries', amount: 0 },
+    ],
+    addExpenseLine() {
+      this.expenseLines.push({ category: '', amount: 0 });
+    },
+    removeExpenseLine(i) {
+      if (this.expenseLines.length > 1) this.expenseLines.splice(i, 1);
+      this.syncExpenseTotalFromLines();
+    },
+    syncExpenseTotalFromLines() {
+      const t = this.expenseLines.reduce((s, l) => s + (Number(l.amount) > 0 ? Number(l.amount) : 0), 0);
+      if (t > 0) this.profile.monthly_expenses = t;
+    },
     async submit() {
+      this.syncExpenseTotalFromLines();
       this.profile.onboarding_complete = true;
       try {
         const res = await fetch('/api/profile/upsert/', {
@@ -174,6 +231,33 @@ function onboardingApp() {
           const msg = body.error || body.detail || res.statusText || 'Save failed';
           alert('Could not save your profile: ' + msg + '\n\nCheck that the FastAPI backend is running (port 8001) and try again.');
           return;
+        }
+        const today = new Date().toISOString().slice(0, 10);
+        for (const line of this.expenseLines) {
+          const amt = Number(line.amount);
+          const cat = (line.category || '').trim();
+          if (amt > 0 && cat) {
+            const er = await fetch('/api/budget/expense/', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({
+                category: cat.slice(0, 100),
+                amount: amt,
+                description: 'Onboarding',
+                expense_date: today,
+                payment_method: 'upi',
+                is_recurring: false,
+              }),
+            });
+            if (!er.ok) {
+              console.warn('Expense line not saved', cat, await er.text());
+            }
+          }
         }
         window.location.href = '/dashboard/';
       } catch (e) {

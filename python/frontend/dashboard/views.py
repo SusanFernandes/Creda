@@ -4,6 +4,7 @@ Each view calls FastAPI via request.backend (BackendClient) without blocking.
 """
 import json
 import logging
+from datetime import date
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth.decorators import login_required
@@ -460,13 +461,82 @@ async def voice_view(request):
 
 @login_required
 async def expense_analytics_view(request):
-    """Expense Analytics — smart spending breakdown."""
+    """Expense Analytics — log expenses, list recent rows, charts from aggregated data."""
+    if request.method == "POST":
+        action = (request.POST.get("action") or "add").strip()
+        if action == "delete":
+            eid = (request.POST.get("expense_id") or "").strip()
+            if eid:
+                try:
+                    await request.backend.delete_budget_expense(eid)
+                    request.session["expense_flash"] = {
+                        "kind": "ok",
+                        "text": "Expense removed.",
+                    }
+                except Exception as e:
+                    logger.exception("Delete expense: %s", e)
+                    request.session["expense_flash"] = {
+                        "kind": "err",
+                        "text": "Could not remove that expense. Check the API is running.",
+                    }
+        else:
+            category = (request.POST.get("category") or "").strip()
+            try:
+                amount = float(request.POST.get("amount") or 0)
+            except ValueError:
+                amount = 0.0
+            desc = (request.POST.get("description") or "").strip()
+            exp_date = (request.POST.get("expense_date") or "").strip()
+            pay = (request.POST.get("payment_method") or "upi").strip() or "upi"
+            recurring = request.POST.get("is_recurring") == "on"
+            if not category or amount <= 0:
+                request.session["expense_flash"] = {
+                    "kind": "err",
+                    "text": "Choose a category and enter an amount greater than zero.",
+                }
+            else:
+                try:
+                    await request.backend.post_budget_expense(
+                        category=category[:100],
+                        amount=amount,
+                        description=desc[:500],
+                        expense_date=exp_date,
+                        payment_method=pay[:50],
+                        is_recurring=recurring,
+                    )
+                    request.session["expense_flash"] = {
+                        "kind": "ok",
+                        "text": "Expense saved. Charts update from your logged entries.",
+                    }
+                except Exception as e:
+                    logger.exception("Log expense: %s", e)
+                    request.session["expense_flash"] = {
+                        "kind": "err",
+                        "text": "Could not save expense. Ensure the FastAPI backend is running.",
+                    }
+        return redirect("expense_analytics")
+
+    expense_flash = request.session.pop("expense_flash", None)
+    recent_expenses: list = []
+    try:
+        recent_expenses = await request.backend.list_budget_expenses("", 100)
+    except Exception:
+        pass
+    result = None
     try:
         result = await request.backend.expense_analytics()
     except Exception as e:
         logger.error("Expense analytics error: %s", e)
-        result = None
-    return render(request, "dashboard/expense_analytics.html", {"expense": result})
+    return render(
+        request,
+        "dashboard/expense_analytics.html",
+        {
+            "expense": result,
+            "recent_expenses": recent_expenses,
+            "expense_flash": expense_flash,
+            "today_iso": date.today().isoformat(),
+        },
+    )
 
 
 @login_required

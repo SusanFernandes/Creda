@@ -422,6 +422,31 @@ DEMO_USERS = [
             },
         ],
 
+        # Priya — logged expenses + budgets (same pattern as Arjun; powers Expense Analytics)
+        "budgets": [
+            {"category": "Groceries", "planned_amount": 12000, "actual_amount": 11800},
+            {"category": "Transport", "planned_amount": 7000, "actual_amount": 6400},
+            {"category": "Dining Out", "planned_amount": 8000, "actual_amount": 7200},
+            {"category": "Shopping", "planned_amount": 10000, "actual_amount": 8500},
+            {"category": "Utilities", "planned_amount": 3000, "actual_amount": 2900},
+            {"category": "Subscriptions", "planned_amount": 2500, "actual_amount": 2499},
+            {"category": "Miscellaneous", "planned_amount": 4000, "actual_amount": 3600},
+        ],
+        "expenses": [
+            {"category": "Groceries", "amount": 4200, "description": "BigBasket + local market", "days_ago": 2, "payment_method": "upi"},
+            {"category": "Groceries", "amount": 3800, "description": "Weekly stock-up", "days_ago": 9, "payment_method": "upi"},
+            {"category": "Transport", "amount": 2200, "description": "Metro + Uber", "days_ago": 3, "payment_method": "upi"},
+            {"category": "Transport", "amount": 2100, "description": "Cab to office", "days_ago": 11, "payment_method": "upi"},
+            {"category": "Dining Out", "amount": 2800, "description": "Dinner with team", "days_ago": 4, "payment_method": "card"},
+            {"category": "Dining Out", "amount": 1600, "description": "Cafe weekend", "days_ago": 14, "payment_method": "upi"},
+            {"category": "Shopping", "amount": 4500, "description": "Wedding outfit prep", "days_ago": 6, "payment_method": "card"},
+            {"category": "Utilities", "amount": 1200, "description": "Mobile + broadband", "days_ago": 1, "payment_method": "upi", "is_recurring": True},
+            {"category": "Utilities", "amount": 900, "description": "Electric share at parents", "days_ago": 5, "payment_method": "upi"},
+            {"category": "Subscriptions", "amount": 999, "description": "Streaming bundle", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Subscriptions", "amount": 800, "description": "Notion + tools", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Miscellaneous", "amount": 2000, "description": "Gifts", "days_ago": 12, "payment_method": "upi"},
+        ],
+
         "life_events": [
             {
                 "event_type": "marriage",

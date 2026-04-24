@@ -5,7 +5,7 @@ from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
@@ -108,6 +108,47 @@ async def log_expense(
 
     await db.refresh(expense)
     return {"status": "ok", "expense_id": expense.id}
+
+
+@router.delete("/expense/{expense_id}")
+async def delete_expense(
+    expense_id: str,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a logged expense (owner only). Updates budget actual if a budget row exists."""
+    result = await db.execute(
+        select(Expense).where(Expense.id == expense_id, Expense.user_id == auth.user_id)
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    month = row.expense_date.strftime("%Y-%m")
+    category = row.category
+    await db.execute(delete(Expense).where(Expense.id == expense_id, Expense.user_id == auth.user_id))
+    await db.commit()
+
+    bud_result = await db.execute(
+        select(Budget).where(
+            Budget.user_id == auth.user_id,
+            Budget.month == month,
+            Budget.category == category,
+        )
+    )
+    budget = bud_result.scalars().first()
+    if budget:
+        actual_sum = (await db.execute(
+            select(func.sum(Expense.amount)).where(
+                Expense.user_id == auth.user_id,
+                Expense.category == category,
+                func.to_char(Expense.expense_date, "YYYY-MM") == month,
+            )
+        )).scalar() or 0
+        budget.actual_amount = float(actual_sum)
+        await db.commit()
+
+    return {"status": "ok", "deleted": expense_id}
 
 
 @router.get("/summary")
