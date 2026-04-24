@@ -107,6 +107,21 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def patch_profile(self, data: dict) -> dict:
+        resp = await self._client.patch("/profile/upsert", json=data, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_assumptions(self) -> dict:
+        resp = await self._client.get("/assumptions", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def patch_assumptions(self, data: dict) -> dict:
+        resp = await self._client.patch("/assumptions", json=data, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     async def is_onboarded(self, user_id: str) -> bool:
         resp = await self._client.get(f"/profile/{user_id}/is-onboarded", headers=self._headers())
         resp.raise_for_status()

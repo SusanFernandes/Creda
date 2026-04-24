@@ -32,8 +32,8 @@ class CouplesRequest(AgentRequest):
 
 
 class GoalSimulatorRequest(AgentRequest):
-    target_amount: float = 5000000
-    years: int = 10
+    target_amount: float | None = None
+    years: int | None = None
 
 
 class ResearchRequest(AgentRequest):

@@ -18,10 +18,16 @@ Be specific with ₹ amounts. Keep it encouraging, not judgmental."""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = profile.get("monthly_income")
+    expenses = profile.get("monthly_expenses")
     emi = profile.get("monthly_emi", 0)
     savings = income - expenses
 

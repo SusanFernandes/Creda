@@ -140,10 +140,16 @@ def _salary_restructuring_suggestions(profile: dict) -> list[dict]:
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
-    income = profile.get("monthly_income", 50000) * 12
+    income = float(profile["monthly_income"]) * 12
     investments_80c = profile.get("investments_80c", 0)
     nps_80ccd = profile.get("nps_contribution", 0)
     health_premium = profile.get("health_insurance_premium", 0)

@@ -38,6 +38,9 @@ async def synthesize(
     voice_mode: bool = False,
 ) -> str:
     """Convert raw agent output dict into user-facing natural language response."""
+    if agent_output.get("status") == "PROFILE_INCOMPLETE":
+        return agent_output.get("message") or ""
+
     prompt = _SYNTH_PROMPT.format(
         language=language,
         voice_instruction=_VOICE_LINE if voice_mode else _TEXT_LINE,

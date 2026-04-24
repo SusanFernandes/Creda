@@ -1,5 +1,6 @@
 from django.urls import path
 from dashboard import views
+from views import onboarding as onboarding_views
 
 urlpatterns = [
     path("dashboard/", views.dashboard_view, name="dashboard"),
@@ -13,7 +14,15 @@ urlpatterns = [
     path("goals/", views.goals_view, name="goals"),
     path("stress-test/", views.stress_test_view, name="stress_test"),
     path("settings/", views.settings_view, name="settings"),
+    path("settings/assumptions/", views.assumptions_view, name="settings_assumptions"),
     path("onboarding/", views.onboarding_view, name="onboarding"),
+    path("onboarding/wizard/", onboarding_views.onboarding_wizard_view, name="onboarding_wizard"),
+    path(
+        "onboarding/save-step/<int:step_number>/",
+        onboarding_views.onboarding_save_step_view,
+        name="onboarding_save_step",
+    ),
+    path("onboarding/resume/", onboarding_views.onboarding_resume_view, name="onboarding_resume"),
     path("notifications/", views.notifications_view, name="notifications"),
     # New pages
     path("couples/", views.couples_view, name="couples"),

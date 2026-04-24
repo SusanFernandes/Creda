@@ -30,14 +30,22 @@ async def dashboard_view(request):
         profile = None
         nudges = []
 
-    # Redirect to onboarding if profile incomplete
     if not profile or not profile.get("onboarding_complete"):
-        return redirect("onboarding")
+        return redirect("onboarding_wizard")
 
-    return render(request, "dashboard/dashboard.html", {
-        "profile": profile,
-        "nudges": nudges,
-    })
+    show_banner = request.session.pop("show_first_report_banner", False)
+
+    return render(
+        request,
+        "dashboard/dashboard.html",
+        {
+            "profile": profile,
+            "nudges": nudges,
+            "first_report_banner": show_banner,
+            "missing_profile_fields": (profile or {}).get("missing_profile_fields") or [],
+            "completeness_pct": (profile or {}).get("completeness_pct") or 0,
+        },
+    )
 
 
 @login_required
@@ -185,6 +193,44 @@ async def settings_view(request):
             "settings_error": settings_error,
             "settings_saved": settings_saved,
         },
+    )
+
+
+@login_required
+async def assumptions_view(request):
+    """Return & edit user_assumptions via FastAPI."""
+    wants_json = "application/json" in (request.headers.get("Accept") or "")
+    if request.method == "GET" and wants_json:
+        try:
+            data = await request.backend.get_assumptions()
+            return JsonResponse(data)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    err = None
+    saved = False
+    assumptions = None
+    try:
+        assumptions = await request.backend.get_assumptions()
+    except Exception as e:
+        logger.warning("Assumptions load: %s", e)
+        err = str(e)
+
+    if request.method == "POST":
+        try:
+            import json
+
+            body = json.loads(request.body or b"{}")
+            await request.backend.patch_assumptions(body)
+            saved = True
+            assumptions = await request.backend.get_assumptions()
+        except Exception as e:
+            err = str(e)
+
+    return render(
+        request,
+        "settings/assumptions.html",
+        {"assumptions": assumptions, "error": err, "saved": saved},
     )
 
 

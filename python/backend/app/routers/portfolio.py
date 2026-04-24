@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
-from app.models import Portfolio, PortfolioFund
+from app.models import Portfolio, PortfolioFund, UserProfile
 
 router = APIRouter()
 
@@ -67,8 +67,14 @@ async def upload_cams(
             units=fund_data.get("units", 0),
             xirr=fund_data.get("xirr", 0),
             expense_ratio=fund_data.get("expense_ratio", 0),
+            isin=fund_data.get("isin") or "",
         )
         db.add(fund)
+
+    prof_r = await db.execute(select(UserProfile).where(UserProfile.user_id == auth.user_id))
+    uprof = prof_r.scalar_one_or_none()
+    if uprof:
+        uprof.cams_uploaded = True
 
     await db.commit()
     await db.refresh(portfolio)

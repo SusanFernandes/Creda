@@ -1,28 +1,33 @@
 """
-RAG agent — knowledge base retrieval from ChromaDB (60+ curated financial documents).
+RAG agent — ChromaDB retrieval with distance bands and source metadata in the answer.
 """
 import logging
+import re
+from datetime import date
 from typing import Any
 
 from app.core.llm import primary_llm
+from app.core.rag import partition_chroma_results
 from app.config import settings
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.rag")
 
 _RAG_PROMPT = """You are CREDA, an AI financial coach with access to Indian financial regulations and government scheme documents.
-Use ONLY the retrieved context below to answer the user's question. If the context doesn't contain enough information, say so.
+Use the retrieved context below where helpful; label uncertain claims clearly.
 
-Retrieved context:
-{context}
+Highly relevant context:
+{high_ctx}
+
+Possibly relevant context (verify before relying on):
+{maybe_ctx}
 
 User question: {question}
 
 Rules:
-- Cite specific regulations or scheme names
+- Cite regulations or schemes when grounded in context
 - Use ₹ for currency
-- Mention eligibility criteria if relevant
-- Be factual — don't speculate beyond what's in the context"""
+- Be factual"""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
@@ -33,38 +38,47 @@ async def run(state: FinancialState) -> dict[str, Any]:
         client = chromadb.HttpClient(host=settings.CHROMA_HOST, port=settings.CHROMA_PORT)
         collection = client.get_collection("creda_knowledge")
 
-        results = collection.query(
-            query_texts=[message],
-            n_results=5,
-        )
+        results = collection.query(query_texts=[message], n_results=8)
 
         documents = results.get("documents", [[]])[0]
         metadatas = results.get("metadatas", [[]])[0]
         distances = results.get("distances", [[]])[0]
 
-        # Filter by relevance (distance < 0.5)
-        relevant = []
-        sources = []
-        for doc, meta, dist in zip(documents, metadatas, distances):
-            if dist < 0.5:
-                relevant.append(doc)
-                sources.append(meta.get("source", "unknown"))
+        high_chunks, maybe_chunks, sources, latest_pub = partition_chroma_results(
+            documents, metadatas, distances
+        )
 
-        if not relevant:
+        if not high_chunks and not maybe_chunks:
             return {
-                "answer": "I don't have specific information about that in my knowledge base. Could you rephrase or ask about a specific government scheme or regulation?",
+                "answer": (
+                    "I don't have specific circular context for that in my knowledge base. "
+                    "I can still share general guidance — try naming a scheme (NPS, PPF, ELSS) or regulator."
+                ),
                 "sources": [],
-                "confidence": "low",
+                "knowledge_cutoff_note": "No qualifying knowledge-base matches (distance ≥ 0.75).",
+                "status": "success",
+                "data_quality": "partial",
             }
 
-        context = "\n\n---\n\n".join(relevant)
+        high_ctx = "\n\n---\n\n".join(high_chunks) if high_chunks else "(none)"
+        maybe_ctx = "\n\n---\n\n".join(maybe_chunks) if maybe_chunks else "(none)"
 
-        result = await primary_llm.ainvoke(_RAG_PROMPT.format(context=context, question=message))
+        result = await primary_llm.ainvoke(
+            _RAG_PROMPT.format(high_ctx=high_ctx, maybe_ctx=maybe_ctx, question=message)
+        )
+
+        cutoff = (
+            f"Based on circulars indexed in CREDA through {latest_pub}"
+            if latest_pub
+            else "Based on indexed regulatory snippets in CREDA"
+        )
 
         return {
             "answer": result.content.strip(),
-            "sources": list(set(sources)),
-            "confidence": "high" if distances[0] < 0.3 else "medium",
+            "sources": sources[:12],
+            "knowledge_cutoff_note": cutoff,
+            "status": "success",
+            "data_quality": "live",
         }
 
     except Exception as e:
@@ -72,13 +86,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
         return {
             "answer": "I'm having trouble accessing the knowledge base right now. Please try again.",
             "sources": [],
-            "confidence": "error",
+            "knowledge_cutoff_note": "",
+            "status": "error",
+            "data_quality": "partial",
             "error": str(e),
         }
 
 
 async def load_knowledge_base(chroma_client):
-    """Load knowledge/documents.yaml into ChromaDB. Called on startup."""
+    """Load knowledge/documents.yaml into ChromaDB with required metadata fields."""
     import yaml
     from pathlib import Path
 
@@ -100,18 +116,24 @@ async def load_knowledge_base(chroma_client):
     documents = []
     metadatas = []
 
+    today = date.today().isoformat()
     for i, doc in enumerate(data["documents"]):
         doc_id = doc.get("id", f"doc_{i}")
         ids.append(doc_id)
         documents.append(doc.get("content", ""))
-        metadatas.append({
-            "source": doc.get("source", ""),
-            "category": doc.get("category", ""),
-            "title": doc.get("title", ""),
-        })
+        metadatas.append(
+            {
+                "source": doc.get("source", "IRDAI"),
+                "circular_no": doc.get("circular_no", ""),
+                "published": doc.get("published", today),
+                "last_updated": doc.get("last_updated", today),
+                "url": doc.get("url", ""),
+                "title": doc.get("title", ""),
+                "category": doc.get("category", ""),
+            }
+        )
 
     if documents:
-        # Batch upsert (ChromaDB handles embedding via default model)
         batch_size = 50
         for start in range(0, len(documents), batch_size):
             end = start + batch_size

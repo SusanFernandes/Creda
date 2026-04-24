@@ -92,16 +92,20 @@ Valid type keys: {type_keys}"""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
     # Heuristic pre-classification
     risk = profile.get("risk_appetite", "moderate")
-    savings_rate = 0
-    income = profile.get("monthly_income", 0)
-    expenses = profile.get("monthly_expenses", 0)
-    if income > 0:
-        savings_rate = (income - expenses) / income * 100
+    income = float(profile["monthly_income"])
+    expenses = float(profile["monthly_expenses"])
+    savings_rate = (income - expenses) / income * 100 if income else 0.0
 
     has_insurance = profile.get("has_health_insurance", False)
     emergency = profile.get("emergency_fund", 0)

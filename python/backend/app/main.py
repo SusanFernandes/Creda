@@ -64,8 +64,11 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(run_nudge_checks, "cron", hour=9, minute=0, id="daily_nudges")
     scheduler.add_job(run_nudge_checks, "interval", hours=6, id="periodic_nudges")
     scheduler.add_job(run_premarket_briefing, "cron", hour=9, minute=15, id="premarket_briefing")
+    from app.core.scheduler import register_data_jobs
+
+    register_data_jobs(scheduler)
     scheduler.start()
-    logger.info("Nudge scheduler: started (daily 9AM + every 6h + pre-market 9:15AM)")
+    logger.info("Nudge scheduler: started (daily 9AM + every 6h + pre-market 9:15AM + data crawlers)")
 
     yield
 
@@ -93,10 +96,11 @@ app.add_middleware(
 )
 
 # ── Mount routers ──────────────────────────────────────────────────────
-from app.routers import auth, profile, chat, voice, portfolio, agents, nudges, whatsapp, compliance, family  # noqa: E402
+from app.routers import auth, profile, chat, voice, portfolio, agents, nudges, whatsapp, compliance, family, assumptions  # noqa: E402
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
+app.include_router(assumptions.router, prefix="/assumptions", tags=["assumptions"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])
 app.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])

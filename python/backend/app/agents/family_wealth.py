@@ -80,19 +80,25 @@ async def _get_family_members(user_id: str, db: AsyncSession) -> list[dict]:
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
-    user_income = profile.get("monthly_income", 0)
+    user_income = profile["monthly_income"]
     user_portfolio = portfolio.get("current_value", 0)
     user_emergency = profile.get("emergency_fund", 0)
 
     # Build primary user data
     primary = {
         "role": "primary",
-        "age": profile.get("age", 30),
+        "age": profile.get("age"),
         "income": user_income,
-        "expenses": profile.get("monthly_expenses", 0),
+        "expenses": profile["monthly_expenses"],
         "emergency_fund": user_emergency,
         "portfolio_value": user_portfolio,
         "has_insurance": profile.get("has_health_insurance", False),

@@ -123,10 +123,16 @@ def _get_age_group(age: int) -> str:
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
-    age = profile.get("age", 30)
+    age = profile.get("age")
     age_group = _get_age_group(age)
 
     # Try real DB aggregation first, fall back to curated benchmarks
@@ -140,8 +146,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
     if peers is None:
         peers = _FALLBACK_BENCHMARKS.get(age_group, _FALLBACK_BENCHMARKS["30-40"])
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = profile.get("monthly_income")
+    expenses = profile.get("monthly_expenses")
     savings_rate = ((income - expenses) / income * 100) if income > 0 else 0
     emergency = profile.get("emergency_fund", 0)
     emergency_months = emergency / expenses if expenses > 0 else 0

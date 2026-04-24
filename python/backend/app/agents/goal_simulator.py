@@ -2,11 +2,12 @@
 Goal Simulator agent — visual "what-if" scenario modeling for financial goals.
 Drag-slider scenarios: "What if I increase SIP by ₹2,000?" / "What if returns are 8% instead of 12?"
 """
-import math
 from typing import Any
 
 from app.core.llm import primary_llm
+from app.agents.profile_checks import profile_incomplete_payload, require_complete_profile
 from app.agents.state import FinancialState
+from app.database import AsyncSessionLocal
 
 _SIMULATOR_PROMPT = """You are a goal simulation expert. Given the user's goal scenarios below, provide:
 1. Which scenario is most realistic and why
@@ -36,20 +37,31 @@ def _required_sip(target: float, annual_return: float, years: int) -> float:
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     message = state.get("message", "")
 
-    # Extract scenario parameters from message or use defaults
-    current_sip = profile.get("monthly_income", 50000) - profile.get("monthly_expenses", 30000)
-    current_sip = max(current_sip, 5000)
+    mi = float(profile["monthly_income"])
+    me = float(profile["monthly_expenses"])
+    surplus = mi - me
+    current_sip = max(surplus, 0)
 
-    # Parse goal details
     goal_name = "Financial Goal"
-    target_amount = 5000000  # ₹50 lakh default
-    years = 10
-    base_return = 0.12  # 12% nominal
+    target_amount: float | None = None
+    years: int | None = None
 
     import re
+
+    tm = re.search(r"target ([\d.]+)", message, re.I)
+    if tm:
+        target_amount = float(tm.group(1))
+    ym = re.search(r"in (\d+)\s*years?", message, re.I)
+    if ym:
+        years = int(ym.group(1))
+
     target_match = re.search(r"(\d+[\d,]*)\s*(?:lakh|lac)", message, re.I)
     if target_match:
         target_amount = float(target_match.group(1).replace(",", "")) * 100000
@@ -61,6 +73,31 @@ async def run(state: FinancialState) -> dict[str, Any]:
     if years_match:
         years = int(years_match.group(1))
 
+    if target_amount is None or target_amount == 0:
+        gta = profile.get("goal_target_amount")
+        if gta not in (None, 0):
+            target_amount = float(gta)
+    if years is None or years == 0:
+        gty = profile.get("goal_target_years")
+        if gty not in (None, 0):
+            years = int(gty)
+
+    if target_amount is None or target_amount == 0:
+        return profile_incomplete_payload(
+            {"missing": ["goal_target_amount"], "completeness_pct": 75.0, "is_complete": False}
+        )
+    if years is None or years == 0:
+        return profile_incomplete_payload(
+            {"missing": ["goal_target_years"], "completeness_pct": 80.0, "is_complete": False}
+        )
+
+    async with AsyncSessionLocal() as db:
+        from app.core.assumptions import get_user_assumptions
+
+        assumptions = await get_user_assumptions(db, state["user_id"])
+
+    base_return = float(assumptions["equity_lc_return"])
+
     # Generate 5 scenarios
     scenarios = []
     adjustments = [
@@ -71,18 +108,19 @@ async def run(state: FinancialState) -> dict[str, Any]:
         ("Aggressive (15% return)", 0, 0.15),
     ]
 
+    y = int(years)
     for label, sip_delta, ret in adjustments:
         sip = current_sip + sip_delta
-        fv = _sip_future_value(sip, ret, years)
+        fv = _sip_future_value(sip, ret, y)
         shortfall = max(target_amount - fv, 0)
         on_track = fv >= target_amount
 
         # Year-by-year projection
         yearly = []
-        for y in range(1, years + 1):
+        for yr in range(1, y + 1):
             yearly.append({
-                "year": y,
-                "value": round(_sip_future_value(sip, ret, y)),
+                "year": yr,
+                "value": round(_sip_future_value(sip, ret, yr)),
             })
 
         scenarios.append({
@@ -97,12 +135,12 @@ async def run(state: FinancialState) -> dict[str, Any]:
             "yearly_projection": yearly,
         })
 
-    required = _required_sip(target_amount, base_return, years)
+    required = _required_sip(target_amount, base_return, y)
 
     data = {
         "goal_name": goal_name,
         "target_amount": round(target_amount),
-        "years": years,
+        "years": y,
         "current_sip": round(current_sip),
         "required_sip": round(required),
         "sip_gap": round(max(required - current_sip, 0)),
@@ -120,16 +158,27 @@ async def run(state: FinancialState) -> dict[str, Any]:
     except Exception:
         data["advice"] = ""
 
+    data["data_quality"] = "estimated" if current_sip <= 0 else "live"
     return data
 
 
-async def run_goal_simulator(profile, language: str, voice_mode: bool,
-                              target_amount: float = 5000000, years: int = 10) -> dict:
+async def run_goal_simulator(
+    profile,
+    language: str,
+    voice_mode: bool,
+    target_amount: float | None = None,
+    years: int | None = None,
+) -> dict:
     from app.agents.synthesizer import synthesize
     profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns} if profile else {}
+    parts = ["goal simulator"]
+    if target_amount is not None:
+        parts.append(f"target {target_amount}")
+    if years is not None:
+        parts.append(f"in {years} years")
     state: FinancialState = {
         "user_id": profile.user_id if profile else "",
-        "message": f"goal simulator target {target_amount} in {years} years",
+        "message": " ".join(parts),
         "intent": "goal_simulator",
         "language": language, "voice_mode": voice_mode, "history": [],
         "user_profile": profile_dict,

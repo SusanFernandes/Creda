@@ -33,6 +33,13 @@ async def load_profile_node(state: FinancialState) -> dict:
         profile_dict = None
         if profile:
             profile_dict = {c.name: getattr(profile, c.name) for c in UserProfile.__table__.columns}
+            ov = state.get("profile_overrides") or {}
+            if profile_dict and ov:
+                merged = {**profile_dict}
+                for k, v in ov.items():
+                    if v is not None:
+                        merged[k] = v
+                profile_dict = merged
 
         # Portfolio
         port_result = await db.execute(
@@ -88,18 +95,53 @@ _AGENT_MAP = {
 async def agent_node(state: FinancialState) -> dict:
     """Dynamically dispatch to the correct agent based on intent."""
     intent = state.get("intent", "general_chat")
+    profile = state.get("user_profile") or {}
+
+    from app.agents.profile_checks import profile_incomplete_payload
+    from app.core.profile_guard import guard_for_intent
+
+    guard = guard_for_intent(intent, profile)
+    if not guard["is_complete"]:
+        output = profile_incomplete_payload(guard)
+        return {"agent_outputs": {intent: output}, "agent_used": intent}
+
     module_path = _AGENT_MAP.get(intent, "app.agents.general_chat")
+
+    from app.core.agent_envelope import wrap_agent_response
 
     try:
         import importlib
+
         mod = importlib.import_module(module_path)
         agent_fn = getattr(mod, "run")
         output = await agent_fn(state)
     except Exception as e:
         logger.error("Agent %s failed: %s", intent, e, exc_info=True)
-        output = {"error": str(e)}
+        output = {"error": str(e), "status": "error", "data_quality": "partial"}
+
+    # Part 8 — wrap flat dicts into standard envelope (skip if already wrapped)
+    if isinstance(output, dict):
+        if output.get("status") == "PROFILE_INCOMPLETE":
+            pass
+        elif output.get("agent"):
+            pass
+        elif output.get("error") is not None:
+            err = str(output.get("error", "error"))
+            output = wrap_agent_response(intent, "error", "partial", {}, {"error": err})
+        else:
+            dq = output.pop("data_quality", None) or _infer_data_quality(intent, profile)
+            aus = output.pop("assumptions_used", None) or {}
+            output = wrap_agent_response(intent, "success", dq, aus, output)
 
     return {"agent_outputs": {intent: output}, "agent_used": intent}
+
+
+def _infer_data_quality(intent: str, profile: dict) -> str:
+    if intent == "portfolio_xray" and profile.get("cams_uploaded"):
+        return "live"
+    if intent in ("rag_query", "general_chat", "onboarding"):
+        return "live"
+    return "estimated"
 
 
 # ── Node: synthesizer ────────────────────────────────────────────────
@@ -109,9 +151,13 @@ async def synthesizer_node(state: FinancialState) -> dict:
     agent_used = state.get("agent_used", "general_chat")
     outputs = state.get("agent_outputs", {})
     agent_output = outputs.get(agent_used, {})
+    if isinstance(agent_output, dict) and isinstance(agent_output.get("output"), dict):
+        synth_payload = agent_output["output"]
+    else:
+        synth_payload = agent_output
 
     response = await synthesize(
-        agent_output=agent_output,
+        agent_output=synth_payload,
         agent_used=agent_used,
         message=state.get("message", ""),
         language=state.get("language", "en"),
@@ -148,6 +194,7 @@ async def run_agent(
     language: str = "en",
     voice_mode: bool = False,
     history: list[dict] | None = None,
+    profile_overrides: dict | None = None,
 ) -> dict:
     """Run the full LangGraph pipeline and return result dict."""
     initial_state: FinancialState = {
@@ -158,6 +205,7 @@ async def run_agent(
         "voice_mode": voice_mode,
         "history": history or [],
         "agent_outputs": {},
+        "profile_overrides": profile_overrides or {},
     }
     result = await _compiled.ainvoke(initial_state)
     return {
@@ -174,6 +222,7 @@ async def run_agent_stream(
     language: str = "en",
     voice_mode: bool = False,
     history: list[dict] | None = None,
+    profile_overrides: dict | None = None,
 ) -> AsyncIterator[str]:
     """Stream LangGraph execution — yields intermediate chunks for SSE."""
     initial_state: FinancialState = {
@@ -184,6 +233,7 @@ async def run_agent_stream(
         "voice_mode": voice_mode,
         "history": history or [],
         "agent_outputs": {},
+        "profile_overrides": profile_overrides or {},
     }
     async for event in _compiled.astream(initial_state):
         # Each event is a dict with the node name as key

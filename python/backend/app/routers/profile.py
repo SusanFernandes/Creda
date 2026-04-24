@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
+from app.core.profile_guard import check_profile
 from app.models import UserProfile
 
 router = APIRouter()
@@ -21,8 +22,11 @@ class ProfileUpsertRequest(BaseModel):
     language: Optional[str] = None
     monthly_income: Optional[float] = None
     monthly_expenses: Optional[float] = None
+    monthly_fixed_expenses: Optional[float] = None
+    monthly_variable_expenses: Optional[float] = None
     savings: Optional[float] = None
     risk_appetite: Optional[str] = None
+    risk_tolerance: Optional[str] = None
     employment_type: Optional[str] = None
     dependents: Optional[int] = None
     has_health_insurance: Optional[bool] = None
@@ -35,12 +39,27 @@ class ProfileUpsertRequest(BaseModel):
     nps_balance: Optional[float] = None
     ppf_balance: Optional[float] = None
     investments_80c: Optional[float] = None
+    section_80c_amount: Optional[float] = None
     nps_contribution: Optional[float] = None
     health_insurance_premium: Optional[float] = None
+    self_health_premium: Optional[float] = None
+    parents_health_premium: Optional[float] = None
+    parents_age_above_60: Optional[bool] = None
+    has_nps: Optional[bool] = None
     hra: Optional[float] = None
+    rent_paid: Optional[float] = None
+    basic_salary: Optional[float] = None
     home_loan_interest: Optional[float] = None
+    lta_amount: Optional[float] = None
     fire_target_age: Optional[int] = None
     fire_corpus_target: Optional[float] = None
+    completeness_pct: Optional[float] = None
+    cams_uploaded: Optional[bool] = None
+    is_metro: Optional[bool] = None
+    primary_goal: Optional[str] = None
+    goal_target_amount: Optional[float] = None
+    goal_target_years: Optional[int] = None
+    partner_monthly_income: Optional[float] = None
     onboarding_complete: Optional[bool] = None
 
 
@@ -61,9 +80,27 @@ async def upsert_profile(
     for field, value in req.model_dump(exclude_unset=True).items():
         setattr(profile, field, value)
 
+    await _sync_completeness(profile)
     await db.commit()
     await db.refresh(profile)
     return _serialize(profile)
+
+
+@router.patch("/upsert")
+async def patch_profile(
+    req: ProfileUpsertRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """PATCH alias — partial update same as POST /upsert."""
+    return await upsert_profile(req, auth, db)
+
+
+async def _sync_completeness(profile: UserProfile) -> None:
+    """Recompute completeness_pct from tier_1–tier_3 fields."""
+    d = {c.name: getattr(profile, c.name) for c in UserProfile.__table__.columns}
+    g = check_profile(d, ["tier_1", "tier_2", "tier_3"])
+    profile.completeness_pct = g["completeness_pct"]
 
 
 @router.get("/{user_id}")
@@ -92,7 +129,14 @@ async def is_onboarded(
 
 def _serialize(p: UserProfile) -> dict[str, Any]:
     d: dict[str, Any] = {c.name: getattr(p, c.name) for c in UserProfile.__table__.columns}
-    income = float(d.get("monthly_income") or 0)
-    expenses = float(d.get("monthly_expenses") or 0)
-    d["monthly_surplus"] = income - expenses
+    income = d.get("monthly_income")
+    expenses = d.get("monthly_expenses")
+    if income is not None and expenses is not None:
+        d["monthly_surplus"] = float(income) - float(expenses)
+    else:
+        d["monthly_surplus"] = None
+    if not d.get("risk_tolerance") and d.get("risk_appetite"):
+        d["risk_tolerance"] = d["risk_appetite"]
+    g12 = check_profile(d, ["tier_1", "tier_2"])
+    d["missing_profile_fields"] = g12["missing"]
     return d

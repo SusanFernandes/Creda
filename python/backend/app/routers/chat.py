@@ -7,7 +7,7 @@ Tier 1: follow-up (0ms) → Tier 2: keyword scoring (0ms) → Tier 3: embedding 
 import uuid
 import time
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -31,37 +31,92 @@ class ChatRequest(BaseModel):
     voice_mode: bool = False
 
 
-class ChatResponse(BaseModel):
-    response: str
-    intent: str
-    agent_used: str
-    session_id: str
+# Field ask priority (single field per turn) — Part 4.3
+_FIELD_PRIORITY_DEFAULT = [
+    "monthly_income",
+    "age",
+    "monthly_expenses",
+    "fire_target_age",
+    "rent_paid",
+    "city",
+    "parents_health_premium",
+    "parents_age_above_60",
+    "nps_contribution",
+]
 
 
-@router.post("", response_model=ChatResponse)
+def _next_missing_field(intent: str, missing: list[str]) -> str:
+    if not missing:
+        return ""
+    tax_first = ["rent_paid", "city", "parents_health_premium", "parents_age_above_60", "nps_contribution"]
+    if intent == "tax_wizard":
+        order = _FIELD_PRIORITY_DEFAULT[:3] + tax_first + [
+            m for m in missing if m not in set(_FIELD_PRIORITY_DEFAULT + tax_first)
+        ]
+    elif intent == "fire_planner":
+        order = _FIELD_PRIORITY_DEFAULT[:3] + ["fire_target_age"] + [
+            m for m in missing if m not in _FIELD_PRIORITY_DEFAULT
+        ]
+    elif intent == "couples_finance":
+        order = _FIELD_PRIORITY_DEFAULT + ["partner_monthly_income"] + [
+            m for m in missing if m not in set(_FIELD_PRIORITY_DEFAULT + ["partner_monthly_income"])
+        ]
+    else:
+        order = _FIELD_PRIORITY_DEFAULT + [m for m in missing if m not in _FIELD_PRIORITY_DEFAULT]
+    seen = set()
+    for f in order:
+        if f in missing and f not in seen:
+            return f
+    return missing[0]
+
+
+def _merge_extraction(extracted: dict[str, Any]) -> dict[str, Any]:
+    """Map extractor JSON → profile column overrides."""
+    out: dict[str, Any] = {}
+    if not extracted:
+        return out
+    if extracted.get("fire_target_age") is not None:
+        out["fire_target_age"] = int(extracted["fire_target_age"])
+    if extracted.get("amount") is not None:
+        out["goal_target_amount"] = float(extracted["amount"])
+    if extracted.get("years") is not None:
+        out["goal_target_years"] = int(extracted["years"])
+    if extracted.get("goal_type"):
+        out["primary_goal"] = str(extracted["goal_type"])
+    return out
+
+
+@router.post("")
 async def chat(
     body: ChatRequest,
     auth: AuthContext = Depends(get_auth),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, Any]:
     session_id = body.session_id or str(uuid.uuid4())
     t0 = time.monotonic()
 
-    # Step 1: 4-tier intent classification cascade
     last_intent = await get_last_intent(auth.user_id, session_id)
     intent_result = await classify_intent(body.message, last_intent=last_intent)
     intent = intent_result.intent
     logger.info(
         "Intent: %s (tier=%d/%s, conf=%.2f, %.1fms)",
-        intent, intent_result.tier, intent_result.tier_name,
-        intent_result.confidence, intent_result.latency_ms,
+        intent,
+        intent_result.tier,
+        intent_result.tier_name,
+        intent_result.confidence,
+        intent_result.latency_ms,
     )
 
-    # Step 2: get conversation history from Redis
     history = await get_conversation(auth.user_id, session_id, limit=10)
 
-    # Step 3: build initial state and invoke LangGraph
+    from app.core.extractors import extract_financial_goal
+    from app.core.llm import primary_llm
+
+    extracted = await extract_financial_goal(body.message, primary_llm)
+    profile_overrides = _merge_extraction(extracted)
+
     from app.agents.graph import run_agent
+
     result = await run_agent(
         user_id=auth.user_id,
         message=body.message,
@@ -69,47 +124,83 @@ async def chat(
         language=body.language,
         voice_mode=body.voice_mode,
         history=history,
+        profile_overrides=profile_overrides,
     )
 
-    # Step 4: persist to Redis (conversation history + intent for follow-up detection)
+    ao = result.get("agent_outputs", {}).get(intent, {})
+    if ao.get("status") == "PROFILE_INCOMPLETE":
+        missing = ao.get("missing_fields") or []
+        field = _next_missing_field(intent, missing)
+        return {
+            "type": "field_request",
+            "field": field,
+            "message": ao.get("message", ""),
+            "allow_skip": True,
+            "skip_label": "Use an estimate instead",
+            "completeness_pct": ao.get("completeness_pct"),
+            "intent": intent,
+            "agent_used": intent,
+            "session_id": session_id,
+        }
+
     await save_message(auth.user_id, session_id, "user", body.message)
     await save_message(auth.user_id, session_id, "assistant", result["response"])
     await save_last_intent(auth.user_id, session_id, intent)
 
-    # Step 5: persist to PostgreSQL (permanent record)
     from app.models import ConversationMessage
-    db.add(ConversationMessage(
-        user_id=auth.user_id, session_id=session_id, role="user",
-        content=body.message, language=body.language, intent=intent, agent_used="",
-    ))
-    db.add(ConversationMessage(
-        user_id=auth.user_id, session_id=session_id, role="assistant",
-        content=result["response"], language=body.language, intent=intent,
-        agent_used=result.get("agent_used", intent),
-    ))
+
+    db.add(
+        ConversationMessage(
+            user_id=auth.user_id,
+            session_id=session_id,
+            role="user",
+            content=body.message,
+            language=body.language,
+            intent=intent,
+            agent_used="",
+        )
+    )
+    db.add(
+        ConversationMessage(
+            user_id=auth.user_id,
+            session_id=session_id,
+            role="assistant",
+            content=result["response"],
+            language=body.language,
+            intent=intent,
+            agent_used=result.get("agent_used", intent),
+        )
+    )
     await db.commit()
 
-    # Step 6: compliance — log advice for SEBI audit trail
     try:
         from app.services.compliance import log_advice
+
         await log_advice(
-            db=db, user_id=auth.user_id, session_id=session_id,
-            intent=intent, agent_used=result.get("agent_used", intent),
-            user_message=body.message, response_text=result["response"],
+            db=db,
+            user_id=auth.user_id,
+            session_id=session_id,
+            intent=intent,
+            agent_used=result.get("agent_used", intent),
+            user_message=body.message,
+            response_text=result["response"],
             agent_output=result.get("agent_outputs", {}),
-            language=body.language, channel="web",
+            language=body.language,
+            channel="web",
             response_time_ms=int((time.monotonic() - t0) * 1000),
         )
         await db.commit()
     except Exception:
-        pass  # compliance logging should never break chat
+        pass
 
-    return ChatResponse(
-        response=result["response"],
-        intent=intent,
-        agent_used=result.get("agent_used", intent),
-        session_id=session_id,
-    )
+    return {
+        "type": "message",
+        "response": result["response"],
+        "intent": intent,
+        "agent_used": result.get("agent_used", intent),
+        "session_id": session_id,
+        "agent_outputs": result.get("agent_outputs", {}),
+    }
 
 
 @router.post("/stream")
@@ -128,7 +219,13 @@ async def chat_stream(
     history = await get_conversation(auth.user_id, session_id, limit=10)
 
     async def event_generator():
+        from app.core.extractors import extract_financial_goal
+        from app.core.llm import primary_llm
         from app.agents.graph import run_agent_stream
+
+        extracted = await extract_financial_goal(body.message, primary_llm)
+        profile_overrides = _merge_extraction(extracted)
+
         async for chunk in run_agent_stream(
             user_id=auth.user_id,
             message=body.message,
@@ -136,7 +233,7 @@ async def chat_stream(
             language=body.language,
             voice_mode=body.voice_mode,
             history=history,
-            db=db,
+            profile_overrides=profile_overrides,
         ):
             yield f"data: {chunk}\n\n"
         yield "data: [DONE]\n\n"

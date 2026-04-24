@@ -18,15 +18,27 @@ Be practical and sensitive to relationship dynamics. Use ₹ amounts."""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import profile_incomplete_payload, require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
 
-    income1 = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income1 = profile.get("monthly_income")
+    expenses = profile.get("monthly_expenses")
 
     # Partner data: try structured extraction, then natural language
     message = state.get("message", "")
-    partner_income = _extract_partner_number(message, "income") or income1 * 0.8
-    partner_expenses = _extract_partner_number(message, "expense") or expenses * 0.5
+    partner_income = _extract_partner_number(message, "income") or profile.get("partner_monthly_income")
+    partner_expenses = _extract_partner_number(message, "expense")
+    if partner_income is None:
+        return profile_incomplete_payload(
+            {"missing": ["partner_monthly_income"], "completeness_pct": 70.0, "is_complete": False}
+        )
+    if partner_expenses is None:
+        partner_expenses = 0.0
 
     combined_income = income1 + partner_income
     combined_expenses = expenses + partner_expenses

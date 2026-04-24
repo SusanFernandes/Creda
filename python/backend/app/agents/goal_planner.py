@@ -19,11 +19,17 @@ Be practical and specific with ₹ amounts and timelines."""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
+    from app.agents.profile_checks import require_complete_profile
+
+    inc = require_complete_profile(state)
+    if inc:
+        return inc
+
     profile = state.get("user_profile") or {}
     message = state.get("message", "")
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = profile.get("monthly_income")
+    expenses = profile.get("monthly_expenses")
     available_sip = income - expenses
 
     # Parse goal from message or use common Indian goals

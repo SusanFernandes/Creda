@@ -10,7 +10,7 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, Text,
-    func, JSON,
+    UniqueConstraint, func, JSON,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -39,6 +39,9 @@ class User(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     profile = relationship("UserProfile", back_populates="user", uselist=False)
+    assumptions_row = relationship(
+        "UserAssumptions", back_populates="user", uselist=False
+    )
     portfolios = relationship("Portfolio", back_populates="user")
     conversations = relationship("ConversationMessage", back_populates="user")
     nudges = relationship("Nudge", back_populates="user")
@@ -85,6 +88,28 @@ class UserProfile(Base):
     # ── FIRE ──
     fire_target_age = Column(Integer, default=55)
     fire_corpus_target = Column(Float, default=0)
+    # ── Profile completeness / CAMS ──
+    completeness_pct = Column(Float, default=0)
+    cams_uploaded = Column(Boolean, default=False)
+    # ── Location / metro ──
+    is_metro = Column(Boolean, default=False)
+    risk_tolerance = Column(String(20), default="")  # conservative | moderate | aggressive
+    # ── Tax (explicit FY fields) ──
+    basic_salary = Column(Float, default=0)
+    rent_paid = Column(Float, default=0)
+    has_nps = Column(Boolean, default=False)
+    self_health_premium = Column(Float, default=0)
+    parents_health_premium = Column(Float, default=0)
+    parents_age_above_60 = Column(Boolean, default=False)
+    section_80c_amount = Column(Float, default=0)
+    lta_amount = Column(Float, default=0)
+    # ── Goals ──
+    primary_goal = Column(String(50), default="")
+    goal_target_amount = Column(Float, default=0)
+    goal_target_years = Column(Integer, default=0)
+    monthly_fixed_expenses = Column(Float, default=0)
+    monthly_variable_expenses = Column(Float, default=0)
+    partner_monthly_income = Column(Float, nullable=True)
     # ── Onboarding ──
     onboarding_complete = Column(Boolean, default=False)
 
@@ -133,8 +158,78 @@ class PortfolioFund(Base):
     alpha_vs_benchmark = Column(Float, default=0)
     overlap_score = Column(Float, default=0)
     expense_ratio = Column(Float, default=0)
+    isin = Column(String(20), default="")
 
     portfolio = relationship("Portfolio", back_populates="funds")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  MARKET DATA — NAV / TER / HOLDINGS / BENCHMARKS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class FundNav(Base):
+    __tablename__ = "fund_nav"
+
+    isin = Column(String(20), primary_key=True)
+    scheme_name = Column(Text, default="")
+    nav = Column(Float, nullable=True)
+    nav_date = Column(Date, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class FundTer(Base):
+    __tablename__ = "fund_ter"
+
+    isin = Column(String(20), primary_key=True)
+    scheme_name = Column(Text, default="")
+    ter = Column(Float, default=0)
+    plan_type = Column(String(10), default="")  # direct | regular
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class FundHolding(Base):
+    __tablename__ = "fund_holdings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    fund_isin = Column(String(20), nullable=False, index=True)
+    holding_isin = Column(String(20), nullable=False)
+    holding_name = Column(Text, default="")
+    weight = Column(Float, default=0)
+    month = Column(Date, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("fund_isin", "holding_isin", "month", name="uq_fund_holdings_key"),
+    )
+
+
+class BenchmarkReturns(Base):
+    __tablename__ = "benchmark_returns"
+
+    ticker = Column(String(40), primary_key=True)
+    name = Column(String(80), default="")
+    cagr_1y = Column(Float, nullable=True)
+    cagr_3y = Column(Float, nullable=True)
+    cagr_5y = Column(Float, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class UserAssumptions(Base):
+    """Per-user return assumptions + stress scenarios (JSON)."""
+
+    __tablename__ = "user_assumptions"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    inflation_rate = Column(Float, default=0.06)
+    equity_lc_return = Column(Float, default=0.12)
+    equity_mc_return = Column(Float, default=0.14)
+    equity_sc_return = Column(Float, default=0.16)
+    debt_return = Column(Float, default=0.07)
+    sip_stepup_pct = Column(Float, default=0.10)
+    stress_scenarios = Column(JSON, default=dict)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="assumptions_row", foreign_keys=[user_id])
 
 
 # ═══════════════════════════════════════════════════════════════════════════

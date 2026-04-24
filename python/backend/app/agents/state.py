@@ -13,6 +13,7 @@ class FinancialState(TypedDict, total=False):
     language: str
     voice_mode: bool
     history: list[dict]
+    profile_overrides: Optional[dict]
 
     # ── Profile (loaded by graph) ──
     user_profile: Optional[dict]
