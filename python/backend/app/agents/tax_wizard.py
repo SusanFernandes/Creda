@@ -172,7 +172,45 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     rules = get_tax_rules(fy_override)
 
-    income = profile.get("monthly_income", 50000) * 12
+    monthly_income = float(profile.get("monthly_income") or 0)
+    if monthly_income <= 0:
+        from app.services.profile_completeness import humanize_missing, missing_for_core_planning
+        std_new = rules.new_regime.standard_deduction
+        std_old = rules.old_regime.standard_deduction
+        zded = {"80C": 0, "80CCD(1B)": 0, "80D": 0, "HRA": 0, "24(b)": 0, "standard": std_old}
+        return {
+            "needs_input": True,
+            "missing_fields_detail": humanize_missing(missing_for_core_planning(profile)),
+            "message": "Add your monthly salary/income in Settings first. Then add rent (if claiming HRA), 80C, NPS, and premiums so we can compare regimes on your real numbers — not placeholders.",
+            "fy": rules.fy,
+            "ay": rules.ay,
+            "fy_label": rules.label,
+            "gross_income": 0,
+            "old_regime": {
+                "deductions": zded,
+                "total_deductions": std_old,
+                "taxable_income": 0,
+                "tax": 0,
+            },
+            "new_regime": {
+                "standard_deduction": std_new,
+                "employer_nps_deduction": 0,
+                "taxable_income": 0,
+                "tax": 0,
+            },
+            "better_regime": "new",
+            "savings": 0,
+            "breakdown_80c": None,
+            "capital_gains": None,
+            "advance_tax": None,
+            "missed_deductions": [],
+            "ranked_80c": [],
+            "tax_loss_harvesting": [],
+            "rag_insight": None,
+            "advice": "",
+        }
+
+    income = monthly_income * 12
     age = profile.get("age", 30)
     city = (profile.get("city") or "").strip().lower()
 

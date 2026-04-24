@@ -1,5 +1,17 @@
 {% load creda_filters %}
 {% if health %}
+{% if health.analysis.profile_incomplete %}
+<div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8 mb-8">
+  <h3 class="font-bold text-amber-900 dark:text-amber-100 mb-2">Income &amp; expenses required</h3>
+  <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">We do not guess these numbers. Add them in Settings, then reload.</p>
+  <ul class="text-sm space-y-2 list-disc list-inside text-slate-700 dark:text-slate-300">
+    {% for row in health.analysis.missing_fields_detail %}
+    <li><span class="font-semibold">{{ row.label }}</span> — {{ row.settings_hint }}</li>
+    {% endfor %}
+  </ul>
+  <a href="{% url 'settings' %}" class="inline-block mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">Open Settings</a>
+</div>
+{% endif %}
 <!-- Overall Score -->
 <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center relative overflow-hidden mb-8">
   <div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent"></div>
@@ -8,9 +20,10 @@
                 {% if health.analysis.grade == 'A' %}border-emerald-500
                 {% elif health.analysis.grade == 'B' %}border-blue-500
                 {% elif health.analysis.grade == 'C' %}border-amber-500
+                {% elif health.analysis.grade == 'N/A' %}border-slate-400
                 {% else %}border-red-500{% endif %} mb-5">
       <div>
-        <p class="text-5xl font-black italic tracking-tight">{{ health.analysis.overall_score }}</p>
+        <p class="text-5xl font-black italic tracking-tight">{% if health.analysis.overall_score is not None %}{{ health.analysis.overall_score }}{% else %}—{% endif %}</p>
         <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">/100</p>
       </div>
     </div>

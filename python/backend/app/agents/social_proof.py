@@ -184,6 +184,16 @@ async def run(state: FinancialState) -> dict[str, Any]:
     except Exception:
         insights = ""
 
+    if not insights:
+        cmp_sr = comparisons["savings_rate"]
+        cmp_ef = comparisons["emergency_fund"]
+        insights = (
+            f"Peer snapshot ({age_group}): typical savings rate ~{peers['avg_savings_rate']}%; "
+            f"you are at {user_metrics['savings_rate']}% — {'ahead of' if cmp_sr['status'] == 'above' else 'behind' if cmp_sr['status'] == 'below' else 'aligned with'} the band. "
+            f"Emergency buffer: peers ~{peers['avg_emergency_months']} months vs your ~{user_metrics['emergency_months']} months ({cmp_ef['status']}). "
+            f"Insight: {peers['behavior']}"
+        )
+
     return {
         "age_group": age_group,
         "peer_benchmarks": peers,

@@ -5,6 +5,7 @@ Each view calls FastAPI via request.backend (BackendClient) without blocking.
 import json
 import logging
 
+from asgiref.sync import sync_to_async
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render, redirect
@@ -12,6 +13,22 @@ from django.shortcuts import render, redirect
 from creda.middleware import _fastapi_user_id_for_request
 
 logger = logging.getLogger("creda.dashboard")
+
+# Multipart/POST body: parse in a thread so async views see FILES/body (Django ASGI).
+@sync_to_async
+def _parse_api_voice_request(request):
+    f = request.FILES.get("audio")
+    if f:
+        return ("m", f.read(), f.name, request.POST.get("language", "en"))
+    return ("j", json.loads((request.body or b"{}").decode() or "{}"))
+
+
+@sync_to_async
+def _parse_voice_navigate_request(request):
+    f = request.FILES.get("audio")
+    if not f:
+        return b"", "en", ""
+    return f.read(), request.POST.get("language", "en"), f.name
 
 
 def _fastapi_user_id(request) -> str:
@@ -221,16 +238,26 @@ async def settings_view(request):
 
     if request.method == "POST":
         data = {}
-        for key in ("name", "age", "monthly_income", "monthly_expenses", "language",
-                     "risk_appetite", "employment_type", "city"):
+        for key in (
+            "name", "age", "monthly_income", "monthly_expenses", "language",
+            "risk_appetite", "employment_type", "city", "emergency_fund", "monthly_emi",
+            "hra", "rent_paid", "fire_target_age", "investments_80c", "nps_contribution",
+            "health_insurance_premium", "epf_balance", "nps_balance", "ppf_balance",
+        ):
             val = request.POST.get(key)
             if val is not None and val != "":
-                if key in ("age",):
+                if key in ("age", "fire_target_age"):
                     data[key] = int(val)
-                elif key in ("monthly_income", "monthly_expenses"):
+                elif key in (
+                    "monthly_income", "monthly_expenses", "emergency_fund", "monthly_emi",
+                    "hra", "rent_paid", "investments_80c", "nps_contribution",
+                    "health_insurance_premium", "epf_balance", "nps_balance", "ppf_balance",
+                ):
                     data[key] = float(val)
                 else:
                     data[key] = val
+        if "has_health_insurance" in request.POST:
+            data["has_health_insurance"] = request.POST.get("has_health_insurance") == "on"
         try:
             await request.backend.upsert_profile(data)
             settings_saved = True
@@ -251,17 +278,24 @@ async def settings_view(request):
                 '<p class="text-sm text-emerald-600 font-medium">Saved to your profile.</p>'
             )
 
+    profile_load_error = None
     try:
         profile = await request.backend.get_profile(_fastapi_user_id(request))
     except Exception:
+        logger.exception("Settings: could not load profile from backend")
         profile = None
+        profile_load_error = (
+            "We could not load your saved profile from the server. "
+            "Check that the API is running; fields below show your account name where available."
+        )
     return render(
         request,
         "dashboard/settings.html",
         {
-            "profile": profile,
+            "profile": profile or {},
             "settings_error": settings_error,
             "settings_saved": settings_saved,
+            "profile_load_error": profile_load_error,
         },
     )
 
@@ -371,11 +405,20 @@ async def tax_copilot_view(request):
 @login_required
 async def money_personality_view(request):
     """Money Personality assessment."""
+    profile = None
+    try:
+        profile = await request.backend.get_profile(_fastapi_user_id(request))
+    except Exception:
+        pass
     try:
         result = await request.backend.money_personality()
     except Exception:
         result = None
-    return render(request, "dashboard/money_personality.html", {"personality": result})
+    return render(
+        request,
+        "dashboard/money_personality.html",
+        {"personality": result, "profile": profile},
+    )
 
 
 @login_required
@@ -595,14 +638,12 @@ async def api_voice(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
     try:
-        # Voice sends form data with audio file
-        audio = request.FILES.get("audio")
-        language = request.POST.get("language", "en")
-        if audio:
-            audio_bytes = audio.read()
-            result = await request.backend.voice_chat(audio_bytes, audio.name, language)
+        parsed = await _parse_api_voice_request(request)
+        if parsed[0] == "m":
+            _, audio_bytes, name, language = parsed
+            result = await request.backend.voice_chat(audio_bytes, name, language)
         else:
-            data = json.loads(request.body)
+            data = parsed[1]
             result = await request.backend.post_chat(
                 message=data.get("message", ""),
                 language=data.get("language", "en"),
@@ -610,7 +651,7 @@ async def api_voice(request):
             )
         return JsonResponse(result)
     except Exception as e:
-        logger.error("Voice proxy error: %s", e)
+        logger.error("Voice proxy error: %s", e, exc_info=True)
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -620,15 +661,13 @@ async def api_voice_navigate(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
     try:
-        audio = request.FILES.get("audio")
-        if not audio:
+        audio_bytes, language, name = await _parse_voice_navigate_request(request)
+        if not audio_bytes or not name:
             return JsonResponse({"error": "No audio provided"}, status=400)
-        language = request.POST.get("language", "en")
-        audio_bytes = audio.read()
-        result = await request.backend.voice_navigate(audio_bytes, audio.name, language)
+        result = await request.backend.voice_navigate(audio_bytes, name, language)
         return JsonResponse(result)
     except Exception as e:
-        logger.error("Voice navigate proxy error: %s", e)
+        logger.error("Voice navigate proxy error: %s", e, exc_info=True)
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -755,6 +794,26 @@ async def api_budget_expense(request):
     except Exception as e:
         logger.error("Budget expense proxy error: %s", e)
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+async def api_goals_create(request):
+    """Create a goal via FastAPI POST /portfolio/goals (form POST, then redirect)."""
+    if request.method != "POST":
+        return redirect("goals")
+    name = (request.POST.get("goal_name") or "").strip()
+    try:
+        amt = float(request.POST.get("target_amount") or 0)
+    except ValueError:
+        amt = 0.0
+    td = (request.POST.get("target_date") or "").strip() or None
+    if not name or amt <= 0:
+        return redirect("goals")
+    try:
+        await request.backend.create_goal(name, amt, td if td else None)
+    except Exception as e:
+        logger.error("Create goal error: %s", e)
+    return redirect("goals")
 
 
 @login_required

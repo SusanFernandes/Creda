@@ -437,6 +437,8 @@ DEMO_USERS = [
 # ═══════════════════════════════════════════════════════════════════
 #  Seed FastAPI Database (creda_api)
 # ═══════════════════════════════════════════════════════════════════
+DEMO_EMAILS = {u["email"] for u in DEMO_USERS}
+
 
 async def seed_fastapi_db():
     """Seed the creda_api database with demo data."""
@@ -595,8 +597,11 @@ def seed_django_db():
     from accounts.models import User as DjangoUser
 
     for user_data in DEMO_USERS:
-        if DjangoUser.objects.filter(email=user_data["email"]).exists():
-            print(f"  [skip] {user_data['email']} already exists in creda_django")
+        ex = DjangoUser.objects.filter(email=user_data["email"]).first()
+        if ex:
+            ex.set_password(DEMO_PASSWORD)
+            ex.save()
+            print(f"  [sync] {user_data['email']} — creda_django password resynced to demo value")
             continue
 
         user = DjangoUser(

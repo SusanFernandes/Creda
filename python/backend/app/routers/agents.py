@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
-from app.models import UserProfile
+from app.models import LifeEvent, UserProfile
 
 router = APIRouter()
 
@@ -114,8 +114,20 @@ async def goal_planner(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
+    from app.models import GoalPlan
+    goals_result = await db.execute(select(GoalPlan).where(GoalPlan.user_id == auth.user_id))
+    goals_list = list(goals_result.scalars().all())
+    stored = [
+        {
+            "goal_name": g.goal_name,
+            "target_amount": g.target_amount,
+            "target_date": g.target_date.isoformat() if g.target_date else None,
+            "current_saved": g.current_saved or 0,
+        }
+        for g in goals_list
+    ]
     from app.agents.goal_planner import run_goal_planner
-    return await run_goal_planner(profile, body.language, body.voice_mode)
+    return await run_goal_planner(profile, body.language, body.voice_mode, stored)
 
 
 @router.post("/couples-finance")
@@ -340,6 +352,21 @@ async def life_event_advisor(
     goals_result = await db.execute(select(GoalPlan).where(GoalPlan.user_id == auth.user_id))
     goals_list = list(goals_result.scalars().all())
     from app.agents.life_event_advisor import run_life_event_advisor
-    return await run_life_event_advisor(
+    result = await run_life_event_advisor(
         profile, portfolio, goals_list, body.message, body.language, body.voice_mode
     )
+    analysis = result.get("analysis") or {}
+    if analysis.get("event_type") == "bonus" and float(analysis.get("event_amount") or 0) > 0:
+        amt = float(analysis["event_amount"])
+        profile.ytd_bonus_income = float(profile.ytd_bonus_income or 0) + amt
+        db.add(LifeEvent(
+            user_id=auth.user_id,
+            event_type="bonus",
+            financial_impact=amt,
+            notes=(body.message or "")[:2000],
+        ))
+        await db.commit()
+        await db.refresh(profile)
+        result["bonus_recorded"] = True
+        result["ytd_bonus_income"] = profile.ytd_bonus_income
+    return result

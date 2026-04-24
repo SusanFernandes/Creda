@@ -103,8 +103,10 @@ def _build_deployment_plan(
     goals: list,
 ) -> dict:
     """Build a structured deployment plan based on event type and user context."""
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if expenses <= 0:
+        expenses = 1.0
     emergency = profile.get("emergency_fund", 0)
     target_emergency = expenses * 6
     emergency_gap = max(target_emergency - emergency, 0)
@@ -311,8 +313,8 @@ def _build_deployment_plan(
 
 def _estimate_health_score(profile: dict, portfolio: dict) -> int:
     """Quick health score estimation matching money_health.py logic."""
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = float(profile.get("monthly_income") or 0) or 1.0
+    expenses = float(profile.get("monthly_expenses") or 0) or 1.0
     emergency = profile.get("emergency_fund", 0)
     life_cover = profile.get("life_insurance_cover", 0)
     has_health = profile.get("has_health_insurance", False)

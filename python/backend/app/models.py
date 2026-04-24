@@ -81,7 +81,10 @@ class UserProfile(Base):
     nps_contribution = Column(Float, default=0)
     health_insurance_premium = Column(Float, default=0)
     hra = Column(Float, default=0)
+    rent_paid = Column(Float, default=0)  # monthly rent — HRA exemption (old regime)
     home_loan_interest = Column(Float, default=0)
+    # One-time / variable pay tracked for tax planning (not annualized into monthly_income)
+    ytd_bonus_income = Column(Float, default=0)
     # ── FIRE ──
     fire_target_age = Column(Integer, default=55)
     fire_corpus_target = Column(Float, default=0)

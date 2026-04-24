@@ -1,6 +1,11 @@
 """
 STT service — faster-whisper (CPU) with Groq Whisper API fallback.
 """
+# `audioop` is stdlib on 3.12-; 3.13+ needs the `audioop-lts` package (see requirements.txt) for pydub.
+try:
+    import audioop  # noqa: F401
+except ImportError:
+    pass
 import io
 import logging
 import tempfile

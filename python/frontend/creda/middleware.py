@@ -277,6 +277,26 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def create_goal(
+        self,
+        goal_name: str,
+        target_amount: float,
+        target_date: str | None = None,
+        current_saved: float = 0,
+        monthly_investment: float = 0,
+    ) -> dict:
+        payload: dict = {
+            "goal_name": goal_name,
+            "target_amount": target_amount,
+            "current_saved": current_saved,
+            "monthly_investment": monthly_investment,
+        }
+        if target_date:
+            payload["target_date"] = target_date
+        resp = await self._client.post("/portfolio/goals", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     async def link_funds_to_goal(self, goal_id: str, fund_ids: list) -> dict:
         resp = await self._client.post("/portfolio/goals/link", json={
             "goal_id": goal_id, "fund_ids": fund_ids,

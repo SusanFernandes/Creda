@@ -49,6 +49,7 @@ urlpatterns = [
     path("api/export/<str:export_type>/csv/", views.api_export_proxy, {"fmt": "csv"}, name="api_export_csv"),
     path("api/export/<str:export_type>/pdf/", views.api_export_proxy, {"fmt": "pdf"}, name="api_export_pdf"),
     path("api/budget/expense/", views.api_budget_expense, name="api_budget_expense"),
+    path("api/goals/create/", views.api_goals_create, name="api_goals_create"),
     path("api/goals/funds/", views.api_goals_funds, name="api_goals_funds"),
     path("api/goals/link/", views.api_link_funds, name="api_link_funds"),
 ]

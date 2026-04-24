@@ -20,7 +20,18 @@
     </div>
   </div>
 
-  {% if budget %}
+  {% if budget and budget.analysis.input_required %}
+  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8">
+    <h3 class="font-bold text-amber-900 dark:text-amber-100 mb-2">Income &amp; expenses needed</h3>
+    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">{{ budget.analysis.message }}</p>
+    <ul class="text-sm space-y-2 list-disc list-inside text-slate-700 dark:text-slate-300">
+      {% for row in budget.analysis.missing_fields_detail %}
+      <li><span class="font-semibold">{{ row.label }}</span> — {{ row.settings_hint }}</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'settings' %}" class="inline-block mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">Open Settings</a>
+  </div>
+  {% elif budget %}
   <!-- KPI Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
@@ -162,7 +173,8 @@
     <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
       <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
     </div>
-    <p class="text-slate-500 text-sm">Complete your profile to get budget analysis.</p>
+    <p class="text-slate-500 text-sm">Budget Coach did not load. Ensure the FastAPI backend is running and you are logged in, then refresh. If income and expenses are still zero, fill them in Settings.</p>
+    <a href="{% url 'settings' %}" class="inline-block mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">Open Settings</a>
   </div>
   {% endif %}
 </div>

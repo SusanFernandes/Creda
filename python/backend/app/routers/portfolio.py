@@ -1,10 +1,11 @@
 """
 Portfolio router — CAMS PDF upload, X-ray analysis, fund details.
 """
+from datetime import date, datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -223,6 +224,50 @@ async def refresh_portfolio_navs(
 class LinkFundsRequest(BaseModel):
     goal_id: str
     fund_ids: list[str]
+
+
+class GoalCreateRequest(BaseModel):
+    goal_name: str = Field(..., max_length=200)
+    target_amount: float = Field(..., gt=0)
+    target_date: Optional[str] = None  # YYYY-MM-DD
+    current_saved: float = 0
+    monthly_investment: float = 0
+
+
+@router.post("/goals")
+async def create_goal(
+    body: GoalCreateRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a saved financial goal (shown in Goal Planner and life-event flows)."""
+    td: Optional[date] = None
+    if body.target_date:
+        try:
+            td = datetime.strptime(body.target_date[:10], "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(400, "target_date must be YYYY-MM-DD")
+
+    goal = GoalPlan(
+        user_id=auth.user_id,
+        goal_name=body.goal_name.strip(),
+        target_amount=body.target_amount,
+        target_date=td,
+        monthly_investment=body.monthly_investment,
+        current_saved=body.current_saved or 0,
+    )
+    if goal.target_amount > 0:
+        goal.progress_pct = min(100.0, round((goal.current_saved or 0) / goal.target_amount * 100, 1))
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return {
+        "id": goal.id,
+        "goal_name": goal.goal_name,
+        "target_amount": goal.target_amount,
+        "target_date": goal.target_date.isoformat() if goal.target_date else None,
+        "current_saved": goal.current_saved,
+    }
 
 
 @router.get("/goals")

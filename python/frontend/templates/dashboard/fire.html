@@ -35,6 +35,18 @@
   </div>
 
   {% if fire %}
+  {% if fire.analysis.input_required %}
+  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8">
+    <h3 class="font-bold text-amber-800 dark:text-amber-200 mb-2">Finish these fields to unlock FIRE math</h3>
+    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">{{ fire.analysis.message }}</p>
+    <ul class="text-sm space-y-2 list-disc list-inside text-slate-700 dark:text-slate-300">
+      {% for row in fire.analysis.missing_fields_detail %}
+      <li><span class="font-semibold">{{ row.label }}</span> — {{ row.settings_hint }}</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'settings' %}" class="inline-block mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">Open Settings</a>
+  </div>
+  {% else %}
   <!-- KPI Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50 relative overflow-hidden">
@@ -220,6 +232,8 @@
       {% endfor %}
     </div>
   </div>
+  {% endif %}
+
   {% endif %}
 
   {% if fire.response %}

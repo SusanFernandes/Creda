@@ -51,6 +51,11 @@
   </div>
 
   {% if result %}
+  {% if result.bonus_recorded %}
+  <div class="glass rounded-[2rem] border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-5 text-sm text-emerald-900 dark:text-emerald-100">
+    This bonus was added to your profile as <strong>one-time income</strong> (not recurring salary). Running YTD bonus total on file: <strong>₹{{ result.ytd_bonus_income|floatformat:0 }}</strong>. You can see tax and planning agents use your monthly income separately from this field.
+  </div>
+  {% endif %}
   {% with analysis=result.analysis %}
   <!-- Health Score Before/After -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">

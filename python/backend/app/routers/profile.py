@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import AuthContext, get_auth
 from app.database import get_db
 from app.models import UserProfile
+from app.services.profile_completeness import profile_extensions
 
 router = APIRouter()
 
@@ -38,7 +39,9 @@ class ProfileUpsertRequest(BaseModel):
     nps_contribution: Optional[float] = None
     health_insurance_premium: Optional[float] = None
     hra: Optional[float] = None
+    rent_paid: Optional[float] = None
     home_loan_interest: Optional[float] = None
+    ytd_bonus_income: Optional[float] = None
     fire_target_age: Optional[int] = None
     fire_corpus_target: Optional[float] = None
     onboarding_complete: Optional[bool] = None
@@ -95,4 +98,5 @@ def _serialize(p: UserProfile) -> dict[str, Any]:
     income = float(d.get("monthly_income") or 0)
     expenses = float(d.get("monthly_expenses") or 0)
     d["monthly_surplus"] = income - expenses
+    d.update(profile_extensions(d))
     return d

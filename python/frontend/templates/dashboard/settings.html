@@ -11,29 +11,47 @@
     {% elif settings_saved %}
     <p class="text-sm text-emerald-600 mb-4">Saved to your profile (stored in Postgres).</p>
     {% endif %}
+    {% if profile_load_error %}
+    <div class="rounded-xl border border-amber-200/60 bg-amber-50/50 dark:bg-amber-900/20 px-4 py-3 mb-6 text-sm text-amber-950 dark:text-amber-100">
+      {{ profile_load_error }}
+    </div>
+    {% endif %}
+    <div class="rounded-xl border border-slate-200/60 dark:border-slate-600/60 bg-slate-50/50 dark:bg-slate-800/30 px-4 py-3 mb-6">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">Signed in as</p>
+      <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ request.user.get_full_name|default:request.user.first_name|default:"—" }}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ request.user.email }}</p>
+    </div>
     <h3 class="font-bold mb-1">Profile Settings</h3>
     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Personal & Financial Information</p>
+    {% if profile and profile.profile_gaps_core %}
+    <div class="rounded-xl border border-amber-200/60 bg-amber-50/40 dark:bg-amber-900/15 px-4 py-3 mb-6 text-sm text-amber-950 dark:text-amber-100">
+      <p class="font-semibold mb-1">Agents are waiting on these fields</p>
+      <p class="text-xs opacity-90">FIRE, stress tests, budget, tax, and health score use your real numbers — not defaults. Missing: {{ profile.profile_gaps_core|join:", " }}.</p>
+    </div>
+    {% endif %}
     <form hx-post="{% url 'settings' %}" hx-target="#settings-result" class="space-y-5">
       {% csrf_token %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Name</label>
-          <input type="text" name="name" value="{{ profile.name|default:'' }}"
-                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Display name</label>
+          <input type="text" name="name" value="{% firstof profile.name request.user.get_full_name request.user.first_name '' %}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+                 placeholder="How agents should address you">
         </div>
         <div>
           <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Age</label>
-          <input type="number" name="age" value="{{ profile.age|default:30 }}"
-                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+          <input type="number" name="age" min="18" max="120" value="{{ profile.age|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+                 placeholder="Years">
         </div>
         <div>
           <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Income (₹)</label>
-          <input type="number" name="monthly_income" value="{{ profile.monthly_income|default:0 }}"
+          <input type="number" name="monthly_income" step="1" value="{{ profile.monthly_income|default_if_none:'' }}"
                  class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
         </div>
         <div>
           <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly Expenses (₹)</label>
-          <input type="number" name="monthly_expenses" value="{{ profile.monthly_expenses|default:0 }}"
+          <input type="number" name="monthly_expenses" step="1" value="{{ profile.monthly_expenses|default_if_none:'' }}"
                  class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
         </div>
         <div>
@@ -57,6 +75,61 @@
             <option value="moderate" {% if profile.risk_appetite == 'moderate' %}selected{% endif %}>Moderate</option>
             <option value="aggressive" {% if profile.risk_appetite == 'aggressive' %}selected{% endif %}>Aggressive</option>
           </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">City</label>
+          <input type="text" name="city" value="{{ profile.city|default:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+                 placeholder="e.g. Bengaluru">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Employment</label>
+          <select name="employment_type" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+            <option value="salaried" {% if profile.employment_type == 'salaried' %}selected{% endif %}>Salaried</option>
+            <option value="self-employed" {% if profile.employment_type == 'self-employed' %}selected{% endif %}>Self-employed</option>
+            <option value="business" {% if profile.employment_type == 'business' %}selected{% endif %}>Business</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Emergency fund (₹)</label>
+          <input type="number" name="emergency_fund" step="1" value="{{ profile.emergency_fund|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Monthly EMI (₹)</label>
+          <input type="number" name="monthly_emi" step="1" value="{{ profile.monthly_emi|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">HRA from payslip (₹/mo)</label>
+          <input type="number" name="hra" step="1" value="{{ profile.hra|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Rent paid (₹/mo)</label>
+          <input type="number" name="rent_paid" step="1" value="{{ profile.rent_paid|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">80C invested this FY (₹)</label>
+          <input type="number" name="investments_80c" step="1" value="{{ profile.investments_80c|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">NPS 80CCD(1B) (₹)</label>
+          <input type="number" name="nps_contribution" step="1" value="{{ profile.nps_contribution|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">FIRE target age</label>
+          <input type="number" name="fire_target_age" min="30" max="80" value="{{ profile.fire_target_age|default_if_none:'' }}"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
+                 placeholder="e.g. 55">
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3 pt-2">
+          <input type="checkbox" name="has_health_insurance" id="has_health" class="rounded border-slate-300 text-blue-600"
+                 {% if profile.has_health_insurance %}checked{% endif %}>
+          <label for="has_health" class="text-sm text-slate-600 dark:text-slate-300">I have personal health insurance (80D)</label>
         </div>
       </div>
       <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">

@@ -30,11 +30,11 @@
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-10">
   <!-- Health Score Banner -->
   <a href="{% url 'health' %}" class="lg:col-span-2 group glass rounded-[2rem] p-6 border-2 transition-all hover:-translate-y-0.5
-    {% if health and health.analysis %}
+    {% if health and health.analysis and health.analysis.overall_score is not None %}
       {% if health.analysis.overall_score >= 70 %}border-emerald-400 hover:border-emerald-500{% elif health.analysis.overall_score >= 40 %}border-amber-400 hover:border-amber-500{% else %}border-red-400 hover:border-red-500{% endif %}
     {% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">Money Health Score</p>
-    {% if health and health.analysis %}
+    {% if health and health.analysis and health.analysis.overall_score is not None %}
     <div class="flex items-end gap-3">
       <span class="text-6xl font-black italic tracking-tight
         {% if health.analysis.overall_score >= 70 %}text-emerald-500{% elif health.analysis.overall_score >= 40 %}text-amber-500{% else %}text-red-500{% endif %}">
@@ -42,11 +42,14 @@
       </span>
       <span class="text-2xl font-bold text-slate-300 mb-2">/100</span>
       <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-bold mb-2
-        {% if health.analysis.grade == 'A' %}bg-emerald-100 text-emerald-700{% elif health.analysis.grade == 'B' %}bg-blue-100 text-blue-700{% elif health.analysis.grade == 'C' %}bg-amber-100 text-amber-700{% else %}bg-red-100 text-red-700{% endif %}">
+        {% if health.analysis.grade == 'A' %}bg-emerald-100 text-emerald-700{% elif health.analysis.grade == 'B' %}bg-blue-100 text-blue-700{% elif health.analysis.grade == 'C' %}bg-amber-100 text-amber-700{% elif health.analysis.grade == 'N/A' %}bg-slate-100 text-slate-600{% else %}bg-red-100 text-red-700{% endif %}">
         Grade {{ health.analysis.grade }}
       </span>
     </div>
     <p class="text-xs text-slate-500 mt-2">Click to see detailed breakdown →</p>
+    {% elif health and health.analysis %}
+    <p class="text-2xl font-bold text-amber-600 mt-2">Add income &amp; expenses in Settings</p>
+    <p class="text-xs text-slate-500 mt-2">Then refresh the dashboard →</p>
     {% else %}
     <p class="text-2xl font-bold text-slate-300 mt-2">Loading...</p>
     {% endif %}

@@ -20,6 +20,12 @@ class FinancialState(TypedDict, total=False):
     real_expenses: Optional[dict]      # category → total amount (from DB)
     budget_data: Optional[dict]        # category → {planned, actual}
 
+    # ── Stress test: explicit event keys from UI (not parsed from message) ──
+    stress_event_keys: Optional[list[str]]
+
+    # ── Goal planner: DB-backed goals ──
+    stored_goals: Optional[list[dict]]
+
     # ── Misc (DB session for agents that need it) ──
     db: Optional[Any]
 

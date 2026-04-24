@@ -34,14 +34,25 @@ async def run(state: FinancialState) -> dict[str, Any]:
     portfolio = state.get("portfolio_data") or {}
     message = state.get("message", "")
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        return {
+            "input_required": True,
+            "profile_message": "Add monthly income and expenses in Settings to simulate realistic stress outcomes.",
+            "events_tested": [],
+            "results": {},
+            "mitigation_strategies": "",
+        }
     savings_rate = (income - expenses) / income if income > 0 else 0.2
     emergency = profile.get("emergency_fund", 0)
     portfolio_value = portfolio.get("current_value", 0) or 0
 
-    # Detect which events to test from message
-    events_to_test = _detect_events(message)
+    # Prefer explicit keys from the stress-test UI; else parse natural language
+    explicit = state.get("stress_event_keys") or []
+    events_to_test = [e for e in explicit if e in _EVENTS]
+    if not events_to_test:
+        events_to_test = _detect_events(message)
     if not events_to_test:
         events_to_test = ["market_crash_30", "baby", "job_loss"]
 
@@ -74,6 +85,19 @@ async def run(state: FinancialState) -> dict[str, Any]:
     except Exception:
         mitigation = ""
 
+    if not mitigation and results:
+        lines = [
+            "Mitigation (automated):",
+            "1. Keep 6+ months of expenses in a liquid fund before adding risk.",
+            "2. If a scenario shows a large P10 drop, increase monthly surplus and delay large discretionary spends.",
+            "3. Maintain term + health insurance so a shock does not force equity redemptions at the bottom.",
+        ]
+        for ek, r in results.items():
+            lines.append(
+                f"- {r['label']}: median outcome ~₹{r['p50']:,} vs worst sample ~₹{r['worst_case']:,}."
+            )
+        mitigation = "\n".join(lines)
+
     return {
         "events_tested": events_to_test,
         "results": results,
@@ -92,6 +116,7 @@ async def run_stress_test(profile, events: list[str], language: str, voice_mode:
         "voice_mode": voice_mode,
         "history": [],
         "user_profile": {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns},
+        "stress_event_keys": events,
     }
     output = await run(state)
     response = await synthesize(output, "stress_test", state["message"], language, voice_mode)

@@ -24,6 +24,8 @@ faster-whisper>=1.1.0
 edge-tts>=7.0.0
 gtts>=2.5.0
 pydub>=0.25.1
+# Python 3.13+ removed stdlib `audioop`; pydub needs it for format conversion
+audioop-lts>=0.2.0; python_version>="3.13"
 
 # Finance
 casparser>=0.8.0

@@ -24,10 +24,23 @@ Be specific with ₹ amounts and timelines."""
 async def run(state: FinancialState) -> dict[str, Any]:
     profile = state.get("user_profile") or {}
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
-    age = profile.get("age", 30)
-    fire_target_age = profile.get("fire_target_age", 55)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    age = int(profile.get("age") or 0)
+    fire_target_age = int(profile.get("fire_target_age") or 0)
+
+    if income <= 0 or expenses <= 0 or age <= 0 or fire_target_age <= 0 or fire_target_age <= age:
+        from app.services.profile_completeness import humanize_missing, missing_for_core_planning
+        miss = list(missing_for_core_planning(profile))
+        if age <= 0 and "age" not in miss:
+            miss.append("age")
+        if (fire_target_age <= 0 or fire_target_age <= age) and "fire_target_age" not in miss:
+            miss.append("fire_target_age")
+        return {
+            "input_required": True,
+            "missing_fields_detail": humanize_missing(list(dict.fromkeys(miss))),
+            "message": "FIRE needs your real monthly income, monthly expenses, age, and a target retirement age after your current age — all saved in Settings. We do not fabricate these numbers.",
+        }
     savings = profile.get("savings", 0)
     epf = profile.get("epf_balance", 0)
     nps = profile.get("nps_balance", 0)

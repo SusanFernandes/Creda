@@ -21,8 +21,20 @@ async def run(state: FinancialState) -> dict[str, Any]:
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        from app.services.profile_completeness import humanize_missing, missing_for_core_planning
+        miss = missing_for_core_planning(profile)
+        return {
+            "profile_incomplete": True,
+            "missing_fields_detail": humanize_missing(miss),
+            "overall_score": None,
+            "grade": "N/A",
+            "dimensions": None,
+            "benchmark": None,
+            "top_actions": "Save monthly income and expenses in Settings, then refresh this page.",
+        }
     emergency = profile.get("emergency_fund", 0)
     life_cover = profile.get("life_insurance_cover", 0)
     has_health = profile.get("has_health_insurance", False)

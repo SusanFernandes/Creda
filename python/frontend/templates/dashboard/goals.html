@@ -21,7 +21,39 @@
 
   <!-- TAB 1: My Goals -->
   <div x-show="tab === 'goals'" x-transition class="space-y-8">
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h3 class="font-bold mb-1">Add a goal</h3>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-5">Saved goals power the Goal Planner and Life Event advisor</p>
+      <form method="post" action="{% url 'api_goals_create' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        {% csrf_token %}
+        <div class="md:col-span-2">
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Goal name</label>
+          <input type="text" name="goal_name" required placeholder="e.g. Wedding, Emergency fund"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Target (₹)</label>
+          <input type="number" name="target_amount" required min="1" step="1000" placeholder="800000"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Target date</label>
+          <input type="date" name="target_date"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+        </div>
+        <div class="md:col-span-4">
+          <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm">Save goal</button>
+        </div>
+      </form>
+    </div>
+
     {% if goals %}
+    {% if goals.analysis.needs_goals %}
+    <div class="glass rounded-[2rem] border border-blue-200/50 dark:border-blue-900/30 bg-blue-50/20 dark:bg-blue-900/10 p-6 mb-6">
+      <p class="text-sm text-slate-600 dark:text-slate-300">{{ goals.analysis.message }}</p>
+      <p class="text-xs text-slate-500 mt-2">Add at least one goal above, then reload this page to see required SIPs.</p>
+    </div>
+    {% endif %}
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
       <div class="flex justify-between items-center mb-6">
         <div>
