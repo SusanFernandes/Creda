@@ -1,0 +1,110 @@
+{
+  "scenario": "arjun_story",
+  "version": "2.0",
+  "description": "8-minute hackathon demo: Meet Arjun — ₹1.8L/mo, no financial plan → complete financial life in 8 minutes",
+  "title": "Meet Arjun. He earns ₹1.8 lakh a month and has no idea where it goes.",
+
+  "users": {
+    "primary": {
+      "django_id": 100,
+      "email": "arjun@demo.creda.in",
+      "password": "demo1234",
+      "name": "Arjun Mehta",
+      "age": 29,
+      "city": "Bengaluru",
+      "monthly_income": 180000,
+      "monthly_expenses": 95000,
+      "risk_tolerance": "moderate"
+    },
+    "secondary": {
+      "django_id": 101,
+      "email": "priya@demo.creda.in",
+      "password": "demo1234",
+      "name": "Priya Sharma",
+      "age": 27,
+      "city": "Bengaluru",
+      "monthly_income": 140000,
+      "monthly_expenses": 65000,
+      "relationship": "spouse"
+    }
+  },
+
+  "portfolio": {
+    "total_invested": 730000,
+    "current_value": 830500,
+    "overall_xirr": 13.2,
+    "funds_count": 6,
+    "nifty_benchmark_xirr": 15.8,
+    "alpha_vs_nifty": -2.6,
+    "deliberate_problems": [
+      "3 large-cap funds = massive overlap (Mirae, ICICI Bluechip, Axis Bluechip)",
+      "Axis Bluechip is dead weight (6.2% XIRR)",
+      "0% debt allocation — 100% equity",
+      "Underperforming Nifty 50 by 2.6%"
+    ]
+  },
+
+  "expected_outputs": {
+    "scene_1_dashboard": {
+      "money_health_score": 42,
+      "health_grade": "D",
+      "red_dimensions": ["emergency_preparedness", "insurance_coverage"],
+      "nudges_minimum": 3,
+      "nudge_types": ["sip_reminder", "emergency_alert", "tax_deadline"]
+    },
+    "scene_2_portfolio_xray": {
+      "overlap_categories_with_3_plus_funds": ["large_cap"],
+      "weakest_fund": "Axis Bluechip Fund - Direct Growth (6.2% XIRR)",
+      "benchmark_comparison": "13.2% vs 15.8% Nifty 50",
+      "recommendation": "Exit Axis Bluechip, redirect to Nifty index fund"
+    },
+    "scene_3_tax_wizard": {
+      "80c_remaining": 105000,
+      "recommended_actions": ["₹55,000 ELSS", "₹50,000 NPS 80CCD(1B)"],
+      "tax_savings": 32760,
+      "better_regime": "old"
+    },
+    "scene_4_life_event": {
+      "bonus_amount": 300000,
+      "allocation_categories": ["emergency_fund", "tax_optimization", "wedding_fund", "home_down_payment"],
+      "projected_score_improvement": "42 → ~61"
+    },
+    "scene_5_couples": {
+      "combined_income": 320000,
+      "combined_savings_rate_pct": 50,
+      "hra_routing": "Arjun claims all HRA (₹28K rent, metro Bengaluru)",
+      "hra_annual_savings": 40320
+    },
+    "scene_6_fire": {
+      "fire_number": 72000000,
+      "target_age": 50,
+      "years_remaining": 21,
+      "required_sip": 42000,
+      "current_sip": 15000,
+      "sip_gap": 27000,
+      "roadmap_years": 21,
+      "glide_path_phases": ["accumulation", "transition", "preservation"]
+    },
+    "scene_7_voice": {
+      "language": "hi",
+      "expected_intent": "portfolio_xray",
+      "tts_response": true
+    },
+    "scene_8_market_pulse": {
+      "indices": ["nifty_50", "sensex", "bank_nifty"],
+      "portfolio_impact": true
+    },
+    "scene_10_compliance": {
+      "audit_trail": true,
+      "logged_fields": ["timestamp", "agent", "intent", "user_id"]
+    }
+  },
+
+  "ports": {
+    "django": 8000,
+    "fastapi": 8001,
+    "postgres": 8010,
+    "redis": 8020,
+    "chromadb": 8030
+  }
+}

@@ -1,6 +1,6 @@
 """
 Tax Copilot agent — year-round tax optimization, tax-loss harvesting, continuous monitoring.
-Goes beyond one-time regime comparison to proactive tax management.
+Uses versioned tax_config for all slab/limit references.
 """
 import logging
 from datetime import datetime
@@ -8,6 +8,7 @@ from typing import Any
 
 from app.core.llm import primary_llm
 from app.agents.state import FinancialState
+from app.tax_config import get_tax_rules, compute_tax
 
 logger = logging.getLogger("creda.agents.tax_copilot")
 
@@ -64,31 +65,14 @@ def _next_tax_deadline() -> str:
 
 
 def _compute_advance_tax(gross_income: float, sec80c: float, nps: float, health: float) -> dict:
-    """Compute quarterly advance tax schedule under old regime."""
-    total_deductions = min(sec80c, 150000) + min(nps, 50000) + min(health, 25000) + 50000  # std deduction
+    """Compute quarterly advance tax schedule using versioned config."""
+    rules = get_tax_rules()
+    dl = rules.deductions
+    std_ded = rules.old_regime.standard_deduction
+    total_deductions = min(sec80c, dl.sec_80c) + min(nps, dl.sec_80ccd_1b) + min(health, dl.sec_80d_self) + std_ded
     taxable = max(gross_income - total_deductions, 0)
 
-    # Old regime slab (FY 2025-26)
-    tax = 0
-    if taxable > 1500000:
-        tax += (taxable - 1500000) * 0.30
-        taxable = 1500000
-    if taxable > 1250000:
-        tax += (taxable - 1250000) * 0.25
-        taxable = 1250000
-    if taxable > 1000000:
-        tax += (taxable - 1000000) * 0.20
-        taxable = 1000000
-    if taxable > 750000:
-        tax += (taxable - 750000) * 0.15
-        taxable = 750000
-    if taxable > 500000:
-        tax += (taxable - 500000) * 0.10
-        taxable = 500000
-    if taxable > 300000:
-        tax += (taxable - 300000) * 0.05
-
-    tax = round(tax * 1.04)  # 4% cess
+    tax = compute_tax(taxable, rules.old_regime, gross_income)
 
     return {
         "estimated_annual_tax": tax,

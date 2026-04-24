@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block body %}
-<div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: true, mobileMenu: false }">
+<div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: true, mobileMenu: false }"
+     @keydown.window="
+       if ((event.ctrlKey || event.metaKey) && event.key === 'k') { event.preventDefault(); window.location='/chat/'; }
+       if ((event.ctrlKey || event.metaKey) && event.key === '/') { event.preventDefault(); window.location='/research/'; }
+     ">
 
   <!-- Sidebar -->
   <aside class="hidden lg:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300"
@@ -25,7 +30,7 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-      <p class="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Overview</p>
+      <p class="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Overview" %}</p>
 
       {% with nav_items="dashboard:Dashboard:M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4,chat:AI Chat:M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z,portfolio:Portfolio X-Ray:M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z,health:Money Health:M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z,market_pulse:Market Pulse:M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" %}
       {% endwith %}
@@ -34,7 +39,7 @@
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
         </div>
-        <span x-show="sidebarOpen">Dashboard</span>
+        <span x-show="sidebarOpen">{% trans "Dashboard" %}</span>
       </a>
 
       {% for item in "chat:AI Chat,portfolio:Portfolio,health:Money Health,market_pulse:Market Pulse,fire:FIRE Planner,tax:Tax Wizard,tax_copilot:Tax Copilot,budget:Budget Coach,goals:Goals,goal_simulator:Goal Simulator,stress_test:Stress Test,couples:Couples Finance,sip_calculator:SIP Calculator,money_personality:Personality,social_proof:Peer Insights,research:Research,voice:Voice Agent"|make_list %}
@@ -44,84 +49,98 @@
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'chat' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </div>
-        <span x-show="sidebarOpen">AI Chat</span>
+        <span x-show="sidebarOpen">{% trans "AI Chat" %}</span>
       </a>
 
       <a href="{% url 'portfolio' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'portfolio' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'portfolio' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Portfolio X-Ray</span>
+        <span x-show="sidebarOpen">{% trans "Portfolio X-Ray" %}</span>
       </a>
 
-      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Intelligence</p>
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Intelligence" %}</p>
 
       <a href="{% url 'health' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'health' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'health' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Money Health</span>
+        <span x-show="sidebarOpen">{% trans "Money Health" %}</span>
       </a>
 
-      <a href="{% url 'market_pulse' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      <a href="{% url 'tax' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'tax' or request.resolver_match.url_name == 'tax_copilot' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'tax' or request.resolver_match.url_name == 'tax_copilot' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Market Pulse</span>
+        <span x-show="sidebarOpen">{% trans "Tax Wizard" %}</span>
+      </a>
+
+      <a href="{% url 'life_events' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'life_events' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'life_events' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">{% trans "Life Events" %}</span>
+      </a>
+
+      <a href="{% url 'couples' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'couples' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'couples' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">{% trans "Couples Finance" %}</span>
       </a>
 
       <a href="{% url 'fire' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'fire' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'fire' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
         </div>
-        <span x-show="sidebarOpen">FIRE Planner</span>
+        <span x-show="sidebarOpen">{% trans "FIRE Planner" %}</span>
       </a>
 
-      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Planning</p>
-
-      <a href="{% url 'tax' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'tax' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'tax' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+      <a href="{% url 'market_pulse' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </div>
-        <span x-show="sidebarOpen">Tax Wizard</span>
+        <span x-show="sidebarOpen">{% trans "Market Pulse" %}</span>
       </a>
 
-      <a href="{% url 'tax_copilot' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'tax_copilot' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'tax_copilot' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <span x-show="sidebarOpen">Tax Copilot</span>
-      </a>
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Planning" %}</p>
 
       <a href="{% url 'budget' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'budget' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'budget' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Budget Coach</span>
+        <span x-show="sidebarOpen">{% trans "Budget Coach" %}</span>
       </a>
 
-      <a href="{% url 'goals' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'goals' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'goals' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+      <a href="{% url 'expense_analytics' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'expense_analytics' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'expense_analytics' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6m6 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0h6m6-10v10"/></svg>
+        </div>
+        <span x-show="sidebarOpen">Expense Analytics</span>
+      </a>
+
+      <a href="{% url 'goals' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'goals' or request.resolver_match.url_name == 'goal_simulator' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'goals' or request.resolver_match.url_name == 'goal_simulator' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Goals</span>
-      </a>
-
-      <a href="{% url 'goal_simulator' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'goal_simulator' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'goal_simulator' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
-        </div>
-        <span x-show="sidebarOpen">Goal Simulator</span>
+        <span x-show="sidebarOpen">{% trans "Goals" %}</span>
       </a>
 
       <a href="{% url 'stress_test' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'stress_test' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'stress_test' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Stress Test</span>
+        <span x-show="sidebarOpen">{% trans "Stress Test" %}</span>
       </a>
 
-      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">Insights</p>
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Insights" %}</p>
+
+      <a href="{% url 'compliance' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'compliance' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'compliance' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">SEBI Compliance</span>
+      </a>
 
       <a href="{% url 'money_personality' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'money_personality' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'money_personality' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
@@ -134,21 +153,14 @@
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'social_proof' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Peer Insights</span>
+        <span x-show="sidebarOpen">{% trans "Peer Insights" %}</span>
       </a>
 
       <a href="{% url 'research' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'research' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'research' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
         </div>
-        <span x-show="sidebarOpen">Research</span>
-      </a>
-
-      <a href="{% url 'couples' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'couples' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'couples' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        </div>
-        <span x-show="sidebarOpen">Couples Finance</span>
+        <span x-show="sidebarOpen">{% trans "Research" %}</span>
       </a>
 
       <a href="{% url 'family' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'family' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
@@ -156,13 +168,6 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
         </div>
         <span x-show="sidebarOpen">Family Wealth</span>
-      </a>
-
-      <a href="{% url 'compliance' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'compliance' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'compliance' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        </div>
-        <span x-show="sidebarOpen">SEBI Compliance</span>
       </a>
     </nav>
 
@@ -172,27 +177,77 @@
         <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Voice Agent</span>
+        <span x-show="sidebarOpen">{% trans "Voice Agent" %}</span>
       </a>
       <a href="{% url 'notifications' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         </div>
-        <span x-show="sidebarOpen">Notifications</span>
+        <span x-show="sidebarOpen">{% trans "Notifications" %}</span>
       </a>
       <a href="{% url 'settings' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-        <span x-show="sidebarOpen">Settings</span>
+        <span x-show="sidebarOpen">{% trans "Settings" %}</span>
       </a>
+      <!-- Language Switcher -->
+      <div x-show="sidebarOpen" class="px-3 py-2">
+        <form method="POST" action="{% url 'set_language' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <select name="language" onchange="this.form.submit()"
+                  class="w-full text-xs bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-slate-500 dark:text-slate-400 focus:border-blue-500 outline-none">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_available_languages as LANGUAGES %}
+            {% for lang_code, lang_name in LANGUAGES %}
+            <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
     </div>
   </aside>
 
   <!-- Mobile menu button -->
   <button @click="mobileMenu = !mobileMenu" class="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <svg x-show="!mobileMenu" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <svg x-show="mobileMenu" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
   </button>
+
+  <!-- Mobile sidebar overlay -->
+  <div x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+       class="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" @click="mobileMenu = false"></div>
+  <aside x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full"
+         x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+         @keydown.escape.window="mobileMenu = false"
+         class="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+      <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center"><span class="text-white font-black text-sm">C</span></div>
+      <span class="text-lg font-black tracking-tight italic">CREDA</span>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      {% with links="dashboard:Dashboard,chat:AI Chat,portfolio:Portfolio,health:Money Health,market_pulse:Market Pulse,fire:FIRE Planner,tax:Tax Wizard,budget:Budget Coach,expense_analytics:Expense Analytics,goals:Goals,stress_test:Stress Test,money_personality:Personality,social_proof:Peer Insights,research:Research,couples:Couples Finance,family:Family Wealth,compliance:SEBI Compliance" %}
+      {% for link in links|make_list %}{% endfor %}
+      {% endwith %}
+      <a href="{% url 'dashboard' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Dashboard</a>
+      <a href="{% url 'chat' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'chat' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">AI Chat</a>
+      <a href="{% url 'portfolio' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'portfolio' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Portfolio X-Ray</a>
+      <a href="{% url 'health' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'health' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Money Health</a>
+      <a href="{% url 'tax' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'tax' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Tax Wizard</a>
+      <a href="{% url 'life_events' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'life_events' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Life Events</a>
+      <a href="{% url 'couples' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'couples' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Couples Finance</a>
+      <a href="{% url 'fire' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'fire' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">FIRE Planner</a>
+      <a href="{% url 'market_pulse' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'market_pulse' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Market Pulse</a>
+      <a href="{% url 'compliance' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'compliance' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">SEBI Compliance</a>
+      <a href="{% url 'voice' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'voice' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Voice Agent</a>
+      <a href="{% url 'notifications' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'notifications' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Notifications</a>
+      <a href="{% url 'settings' %}" @click="mobileMenu=false" class="block px-3 py-2.5 rounded-xl text-sm font-medium {% if request.resolver_match.url_name == 'settings' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400{% endif %}">Settings</a>
+    </nav>
+  </aside>
 
   <!-- Main content -->
   <main class="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950">
@@ -203,6 +258,19 @@
         <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">{% block page_subtitle %}Financial Dashboard{% endblock %}</p>
       </div>
       <div class="flex items-center gap-4">
+        <!-- Language Switcher (Global) -->
+        <form method="POST" action="{% url 'set_language' %}" class="hidden md:block">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <select name="language" onchange="this.form.submit()"
+                  class="text-xs bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-slate-500 dark:text-slate-400 focus:border-blue-500 outline-none cursor-pointer">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_available_languages as LANGUAGES %}
+            {% for lang_code, lang_name in LANGUAGES %}
+            <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+            {% endfor %}
+          </select>
+        </form>
         <!-- Dark mode toggle -->
         <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
                 class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -218,15 +286,285 @@
       </div>
     </header>
 
+    <!-- Hidden CSRF token for all AJAX requests (voice FAB, HTMX, fetch) -->
+    {% csrf_token %}
+
     <!-- Page content -->
     <div class="px-6 lg:px-10 pt-8 pb-20 animate-fade-in">
       {% block content %}{% endblock %}
     </div>
   </main>
 
-  <!-- Voice Assistant FAB -->
-  <a href="{% url 'voice' %}" class="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/25 flex items-center justify-center transition-all hover:scale-105 lg:hidden">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-  </a>
+  <!-- Global Voice Navigation FAB (Hero Feature) -->
+  <div x-data="globalVoiceMic()" class="fixed bottom-8 right-8 z-50" @keydown.escape.window="cancelRecording()">
+    <!-- Status overlay -->
+    <div x-show="state !== 'idle'" x-transition
+         class="absolute bottom-20 right-0 w-72 glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-4 shadow-2xl">
+      <div x-show="state === 'recording'" class="text-center">
+        <div class="flex items-center justify-center gap-2 mb-2">
+          <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+          <p class="text-xs font-bold uppercase tracking-[0.15em] text-red-500">Listening...</p>
+        </div>
+        <p class="text-[10px] text-slate-400">Speak naturally — auto-stops on silence</p>
+        <!-- Volume meter -->
+        <div class="mt-3 h-1.5 bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+          <div class="h-full bg-red-500 rounded-full transition-all duration-100" :style="'width:' + volumePct + '%'"></div>
+        </div>
+      </div>
+      <div x-show="state === 'processing'" class="text-center">
+        <div class="flex items-center justify-center gap-2">
+          <svg class="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <p class="text-xs font-bold uppercase tracking-[0.15em] text-blue-500">Processing...</p>
+        </div>
+      </div>
+      <div x-show="state === 'navigating'" class="text-center">
+        <p class="text-xs font-semibold text-emerald-600" x-text="transcript"></p>
+        <p class="text-[10px] text-slate-400 mt-1">Navigating to <span class="font-bold" x-text="pageLabel"></span>...</p>
+      </div>
+      <div x-show="state === 'error'" class="text-center">
+        <p class="text-xs text-red-500" x-text="errorMsg"></p>
+      </div>
+    </div>
+
+    <!-- Main FAB button -->
+    <button @click="toggle()"
+            :class="{
+              'bg-red-500 hover:bg-red-600 shadow-red-500/25 scale-110': state === 'recording',
+              'bg-blue-500 hover:bg-blue-600 shadow-blue-500/25 animate-pulse': state === 'processing',
+              'bg-emerald-500 shadow-emerald-500/25': state === 'navigating',
+              'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25': state === 'idle' || state === 'error'
+            }"
+            class="w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 relative">
+      <!-- Pulse ring while recording -->
+      <div x-show="state === 'recording'" class="absolute inset-0 rounded-full bg-red-500/30 animate-ping"></div>
+      <!-- Mic icon -->
+      <svg x-show="state !== 'recording'" class="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+      <!-- Stop icon -->
+      <svg x-show="state === 'recording'" class="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+    </button>
+  </div>
+
+  <script>
+  function globalVoiceMic() {
+    return {
+      state: 'idle',         // idle | recording | processing | navigating | error
+      transcript: '',
+      pageLabel: '',
+      errorMsg: '',
+      volumePct: 0,
+      _recorder: null,
+      _chunks: [],
+      _stream: null,
+      _audioCtx: null,
+      _analyser: null,
+      _silenceTimer: null,
+      _silenceThreshold: 15,   // RMS below this = silence
+      _silenceDelay: 1800,     // ms of silence before auto-stop
+      _rafId: null,
+
+      toggle() {
+        if (this.state === 'recording') {
+          this._stopRecording();
+        } else if (this.state === 'idle' || this.state === 'error') {
+          this._startRecording();
+        }
+      },
+
+      cancelRecording() {
+        if (this.state === 'recording') {
+          this._recorder?.stop();
+          this._cleanup();
+          this.state = 'idle';
+        }
+      },
+
+      async _startRecording() {
+        try {
+          this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          this._chunks = [];
+
+          // Audio analysis for silence detection + volume meter
+          this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = this._audioCtx.createMediaStreamSource(this._stream);
+          this._analyser = this._audioCtx.createAnalyser();
+          this._analyser.fftSize = 512;
+          source.connect(this._analyser);
+
+          this._recorder = new MediaRecorder(this._stream);
+          this._recorder.ondataavailable = (e) => { if (e.data.size > 0) this._chunks.push(e.data); };
+          this._recorder.onstop = () => this._processAudio();
+          this._recorder.start();
+
+          this.state = 'recording';
+          this.transcript = '';
+          this.errorMsg = '';
+
+          // Start monitoring volume + silence
+          this._monitorAudio();
+        } catch (e) {
+          this.state = 'error';
+          this.errorMsg = 'Mic access denied. Check browser permissions.';
+        }
+      },
+
+      _monitorAudio() {
+        const data = new Uint8Array(this._analyser.frequencyBinCount);
+        let silenceStart = null;
+
+        const check = () => {
+          if (this.state !== 'recording') return;
+          this._analyser.getByteTimeDomainData(data);
+
+          // Compute RMS volume
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length) * 100;
+          this.volumePct = Math.min(rms * 3, 100);
+
+          // Silence detection
+          if (rms < this._silenceThreshold / 100) {
+            if (!silenceStart) silenceStart = Date.now();
+            if (Date.now() - silenceStart > this._silenceDelay) {
+              this._stopRecording();
+              return;
+            }
+          } else {
+            silenceStart = null;
+          }
+
+          this._rafId = requestAnimationFrame(check);
+        };
+        this._rafId = requestAnimationFrame(check);
+      },
+
+      _stopRecording() {
+        if (this._recorder && this._recorder.state === 'recording') {
+          this._recorder.stop();
+        }
+        this._cleanup();
+      },
+
+      _cleanup() {
+        if (this._rafId) cancelAnimationFrame(this._rafId);
+        if (this._stream) this._stream.getTracks().forEach(t => t.stop());
+        if (this._audioCtx) this._audioCtx.close().catch(() => {});
+        this._rafId = null;
+        this._stream = null;
+        this._audioCtx = null;
+        this._analyser = null;
+      },
+
+      async _processAudio() {
+        this.state = 'processing';
+        const blob = new Blob(this._chunks, { type: 'audio/webm' });
+        if (blob.size < 1000) {
+          this.state = 'idle';
+          return;  // too short, ignore
+        }
+        const fd = new FormData();
+        fd.append('audio', blob, 'nav_recording.webm');
+
+        try {
+          const resp = await fetch('/api/voice/navigate/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}' },
+            body: fd,
+          });
+          if (!resp.ok) throw new Error('Server error');
+          const data = await resp.json();
+
+          this.transcript = data.transcript || '';
+          this.pageLabel = data.page_label || 'AI Chat';
+          this.state = 'navigating';
+
+          // Play the short acknowledgement audio while navigating
+          if (data.audio_b64) {
+            const audio = new Audio('data:audio/wav;base64,' + data.audio_b64);
+            audio.play().catch(() => {});
+          }
+
+          // Navigate after brief delay so user sees the acknowledgement
+          const targetUrl = data.page_url || '/chat/';
+          setTimeout(() => { window.location.href = targetUrl; }, 600);
+        } catch (e) {
+          this.state = 'error';
+          this.errorMsg = 'Voice processing failed. Try again.';
+          setTimeout(() => { this.state = 'idle'; }, 3000);
+        }
+      }
+    };
+  }
+  </script>
+
+  <!-- Global HTMX Loading Bar + Toast Error System -->
+  <div id="global-loading-bar" class="fixed top-0 left-0 right-0 h-1 z-[9999] pointer-events-none" style="display:none;">
+    <div class="h-full bg-blue-600 rounded-r-full animate-pulse" style="width:100%;animation:loading-bar 1.5s ease-in-out infinite;"></div>
+  </div>
+  <style>@keyframes loading-bar { 0% { width:0; } 50% { width:70%; } 100% { width:100%; } }</style>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="fixed top-20 right-6 z-[9999] space-y-3" style="max-width:360px;"></div>
+
+  <script>
+  // Global loading bar for HTMX requests
+  document.addEventListener('htmx:beforeRequest', () => {
+    document.getElementById('global-loading-bar').style.display = 'block';
+  });
+  document.addEventListener('htmx:afterRequest', () => {
+    document.getElementById('global-loading-bar').style.display = 'none';
+  });
+
+  // Global error handler for HTMX
+  document.addEventListener('htmx:responseError', (e) => {
+    showToast('Request failed. The server may be unavailable.', 'error');
+  });
+  document.addEventListener('htmx:sendError', () => {
+    showToast('Network error. Please check your connection.', 'error');
+  });
+
+  // Toast helper
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const colors = {
+      error: 'bg-red-50 dark:bg-red-900/40 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400',
+      success: 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400',
+      info: 'bg-blue-50 dark:bg-blue-900/40 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400',
+    };
+    const icons = {
+      error: '<path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+      success: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+      info: '<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+    };
+    const toast = document.createElement('div');
+    toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border text-sm shadow-xl backdrop-blur-xl animate-slide-up ${colors[type] || colors.info}`;
+    toast.innerHTML = `
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${icons[type] || icons.info}</svg>
+      <span class="flex-1">${message.replace(/</g,'&lt;')}</span>
+      <button onclick="this.parentElement.remove()" class="opacity-50 hover:opacity-100">✕</button>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 5000);
+  }
+
+  // Global fetch error wrapper — enhances fetch with toast on failure
+  const _origFetch = window.fetch;
+  window.fetch = async function(...args) {
+    try {
+      const resp = await _origFetch.apply(this, args);
+      if (resp.status === 502 || resp.status === 503) {
+        showToast('Backend service is starting up. Please retry in a moment.', 'error');
+      }
+      return resp;
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        showToast('Network error. Check your connection.', 'error');
+      }
+      throw e;
+    }
+  };
+  </script>
 </div>
 {% endblock %}

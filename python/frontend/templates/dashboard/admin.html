@@ -1,0 +1,140 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Admin{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block page_subtitle %}Platform Analytics & User Management{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Total Users</p>
+      <p class="text-3xl font-black italic tracking-tight text-blue-600">{{ stats.total_users|default:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Chat Messages</p>
+      <p class="text-3xl font-black italic tracking-tight">{{ stats.total_chats|default:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Portfolios</p>
+      <p class="text-3xl font-black italic tracking-tight text-emerald-500">{{ stats.total_portfolios|default:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Advice Logs</p>
+      <p class="text-3xl font-black italic tracking-tight text-purple-500">{{ stats.total_advice_logs|default:0 }}</p>
+    </div>
+  </div>
+
+  <!-- Users + Activity Side by Side -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Users Table -->
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200/50 dark:border-slate-700/50">
+        <h3 class="font-bold">Users</h3>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Recent registrations</p>
+      </div>
+      <div class="overflow-x-auto max-h-96 overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 glass">
+            <tr class="border-b border-slate-100 dark:border-slate-800">
+              <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">User</th>
+              <th class="text-center px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Status</th>
+              <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Messages</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr class="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+              <td class="px-4 py-3">
+                <p class="font-medium text-sm">{{ u.name|default:u.email }}</p>
+                <p class="text-[10px] text-slate-400">{{ u.email }}</p>
+              </td>
+              <td class="text-center px-4 py-3">
+                {% if u.onboarded %}
+                <span class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600">Active</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase bg-amber-100 dark:bg-amber-900/20 text-amber-600">Pending</span>
+                {% endif %}
+              </td>
+              <td class="text-right px-4 py-3 font-medium">{{ u.message_count }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center py-6 text-slate-400 text-sm">No users yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200/50 dark:border-slate-700/50">
+        <h3 class="font-bold">Activity Feed</h3>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Recent platform events</p>
+      </div>
+      <div class="max-h-96 overflow-y-auto px-6 py-4 space-y-3">
+        {% for event in activity %}
+        <div class="flex items-start gap-3 text-sm">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                {% if event.action == 'login' %}bg-blue-100 dark:bg-blue-900/20 text-blue-600
+                {% elif event.action == 'chat' %}bg-purple-100 dark:bg-purple-900/20 text-purple-600
+                {% elif event.action == 'portfolio_upload' %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
+                {% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+            {% if event.action == 'login' %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            {% elif event.action == 'chat' %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            {% else %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {% endif %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium truncate">{{ event.action }}</p>
+            <p class="text-[10px] text-slate-400 truncate">{{ event.detail|truncatechars:60 }}</p>
+          </div>
+          <span class="text-[10px] text-slate-400 whitespace-nowrap">{{ event.created_at|truncatechars:16 }}</span>
+        </div>
+        {% empty %}
+        <p class="text-center text-slate-400 text-sm py-6">No activity recorded yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Nudge Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Total Nudges Sent</p>
+      <p class="text-2xl font-black italic">{{ stats.total_nudges|default:0 }}</p>
+    </div>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Unread Nudges</p>
+      <p class="text-2xl font-black italic text-amber-500">{{ stats.unread_nudges|default:0 }}</p>
+    </div>
+  </div>
+
+  <!-- Export Links -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+    <h3 class="font-bold mb-4">Data Exports</h3>
+    <div class="flex flex-wrap gap-3">
+      <a href="/api/export/compliance/csv/" target="_blank"
+         class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Compliance Audit Trail (CSV)
+      </a>
+      <a href="/api/export/portfolio/csv/" target="_blank"
+         class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Portfolio Holdings (CSV)
+      </a>
+      <a href="/api/export/goals/csv/" target="_blank"
+         class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Goals (CSV)
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

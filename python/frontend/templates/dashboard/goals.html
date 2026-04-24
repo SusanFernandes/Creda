@@ -1,62 +1,377 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Goals{% endblock %}
 {% block page_title %}Goal Planner{% endblock %}
-{% block page_subtitle %}Financial Target Tracking{% endblock %}
+{% block page_subtitle %}Financial Target Tracking & Simulation{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
-  {% if goals %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h3 class="font-bold">Your Goals</h3>
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">Active financial targets</p>
+<div class="max-w-4xl mx-auto space-y-8" x-data="{ tab: '{{ active_tab|default:'goals' }}', target: {{ sim_target|default:'5000000' }}, years: {{ sim_years|default:'10' }} }">
+
+  <!-- Tabs -->
+  <div class="flex gap-2 glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-1.5">
+    <button @click="tab = 'goals'" :class="tab === 'goals' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
+      My Goals
+    </button>
+    <button @click="tab = 'simulator'" :class="tab === 'simulator' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
+      Goal Simulator
+    </button>
+  </div>
+
+  <!-- TAB 1: My Goals -->
+  <div x-show="tab === 'goals'" x-transition class="space-y-8">
+    {% if goals %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h3 class="font-bold">Your Goals</h3>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">Active financial targets</p>
+        </div>
+        <div class="glass rounded-xl px-4 py-2 border border-slate-200/50 dark:border-slate-700/50">
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Monthly SIP Budget</p>
+          <p class="text-lg font-black italic text-blue-600">₹{{ goals.analysis.available_monthly_sip|floatformat:0 }}</p>
+        </div>
       </div>
-      <div class="glass rounded-xl px-4 py-2 border border-slate-200/50 dark:border-slate-700/50">
-        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Monthly SIP Budget</p>
-        <p class="text-lg font-black italic text-blue-600">₹{{ goals.analysis.available_monthly_sip|floatformat:0 }}</p>
+      <div class="space-y-4">
+        {% for goal in goals.analysis.goals %}
+        <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 hover:border-blue-500/20 transition-all">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <p class="font-bold">{{ goal.name }}</p>
+              <p class="text-xs text-slate-500 mt-0.5">₹{{ goal.target_amount|floatformat:0 }} in {{ goal.years }} years</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]
+                  {% if goal.affordable %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600{% else %}bg-red-100 dark:bg-red-900/20 text-red-600{% endif %}">
+              {% if goal.affordable %}On Track{% else %}Needs Attention{% endif %}
+            </span>
+          </div>
+          <div class="flex items-center gap-4">
+            <p class="text-sm">Required SIP: <span class="font-black italic text-blue-600">₹{{ goal.required_sip|floatformat:0 }}</span>/mo</p>
+            <div class="w-1 h-1 rounded-full bg-slate-300"></div>
+            <p class="text-sm text-slate-500">{{ goal.pct_of_savings }}% of savings</p>
+          </div>
+          <!-- Quick simulate link -->
+          <button @click="target = {{ goal.target_amount }}; years = {{ goal.years }}; tab = 'simulator'"
+                  class="mt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-blue-500 hover:text-blue-600 transition-colors">
+            Simulate scenarios &rarr;
+          </button>
+        </div>
+        {% endfor %}
       </div>
     </div>
-    <div class="space-y-4">
-      {% for goal in goals.analysis.goals %}
-      <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 hover:border-blue-500/20 transition-all">
-        <div class="flex justify-between items-start mb-3">
-          <div>
-            <p class="font-bold">{{ goal.name }}</p>
-            <p class="text-xs text-slate-500 mt-0.5">₹{{ goal.target_amount|floatformat:0 }} in {{ goal.years }} years</p>
-          </div>
-          <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]
-                {% if goal.affordable %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600{% else %}bg-red-100 dark:bg-red-900/20 text-red-600{% endif %}">
-            {% if goal.affordable %}On Track{% else %}Needs Attention{% endif %}
-          </span>
+
+    <!-- Goal-Fund Linking Section -->
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8"
+         x-data="goalFundLinker()" x-init="loadData()">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h3 class="font-bold">Link Funds to Goals</h3>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">Tag portfolio funds to your financial goals</p>
         </div>
-        <div class="flex items-center gap-4">
-          <p class="text-sm">Required SIP: <span class="font-black italic text-blue-600">₹{{ goal.required_sip|floatformat:0 }}</span>/mo</p>
-          <div class="w-1 h-1 rounded-full bg-slate-300"></div>
-          <p class="text-sm text-slate-500">{{ goal.pct_of_savings }}% of savings</p>
+      </div>
+      <template x-if="loading">
+        <div class="text-center py-8 text-slate-400 text-sm">Loading funds &amp; goals...</div>
+      </template>
+      <template x-if="!loading && goals.length === 0">
+        <div class="text-center py-8 text-slate-400 text-sm">No saved goals found. Goals are created through the AI chat.</div>
+      </template>
+      <template x-if="!loading && goals.length > 0">
+        <div class="space-y-4">
+          <template x-for="goal in goals" :key="goal.id">
+            <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <p class="font-bold" x-text="goal.goal_name"></p>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Target: ₹<span x-text="Number(goal.target_amount).toLocaleString('en-IN')"></span>
+                    &bull; Progress: <span x-text="goal.progress_pct + '%'"></span>
+                  </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]"
+                      :class="goal.is_on_track ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600' : 'bg-red-100 dark:bg-red-900/20 text-red-600'"
+                      x-text="goal.is_on_track ? 'On Track' : 'Off Track'"></span>
+              </div>
+              <!-- Linked Funds Tags -->
+              <div class="flex flex-wrap gap-2 mb-3">
+                <template x-for="fid in goal.linked_fund_ids" :key="fid">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-xs font-medium">
+                    <span x-text="fundName(fid)"></span>
+                    <button @click="unlinkFund(goal.id, fid)" class="ml-1 text-blue-400 hover:text-red-500">&times;</button>
+                  </span>
+                </template>
+                <span x-show="goal.linked_fund_ids.length === 0" class="text-xs text-slate-400 italic">No funds linked</span>
+              </div>
+              <!-- Fund Selector -->
+              <div class="flex gap-2 items-center">
+                <select x-model="selectedFund[goal.id]"
+                        class="flex-1 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-3 py-2 text-xs bg-transparent focus:border-blue-500 outline-none">
+                  <option value="">Select a fund to link...</option>
+                  <template x-for="fund in availableFunds(goal)" :key="fund.id">
+                    <option :value="fund.id" x-text="fund.fund_name + ' (₹' + Number(fund.current_value).toLocaleString('en-IN') + ')'"></option>
+                  </template>
+                </select>
+                <button @click="linkFund(goal.id)"
+                        :disabled="!selectedFund[goal.id]"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
+                  Link
+                </button>
+              </div>
+            </div>
+          </template>
         </div>
+      </template>
+    </div>
+    <script>
+    function goalFundLinker() {
+      return {
+        loading: true,
+        goals: [],
+        funds: [],
+        selectedFund: {},
+        async loadData() {
+          try {
+            const resp = await fetch('/api/goals/funds/');
+            if (resp.ok) {
+              const data = await resp.json();
+              this.goals = data.goals || [];
+              this.funds = data.funds || [];
+              this.goals.forEach(g => {
+                this.selectedFund[g.id] = '';
+                g.linked_fund_ids = g.linked_fund_ids || [];
+              });
+            }
+          } catch(e) { console.error('Failed to load goal-fund data', e); }
+          this.loading = false;
+        },
+        fundName(fid) {
+          const f = this.funds.find(x => x.id === fid);
+          return f ? f.fund_name.substring(0, 30) : 'Unknown';
+        },
+        availableFunds(goal) {
+          return this.funds.filter(f => !(goal.linked_fund_ids || []).includes(f.id));
+        },
+        async linkFund(goalId) {
+          const fid = this.selectedFund[goalId];
+          if (!fid) return;
+          const goal = this.goals.find(g => g.id === goalId);
+          if (!goal) return;
+          const newIds = [...(goal.linked_fund_ids || []), fid];
+          await this._saveLinks(goalId, newIds);
+        },
+        async unlinkFund(goalId, fid) {
+          const goal = this.goals.find(g => g.id === goalId);
+          if (!goal) return;
+          const newIds = (goal.linked_fund_ids || []).filter(x => x !== fid);
+          await this._saveLinks(goalId, newIds);
+        },
+        async _saveLinks(goalId, fundIds) {
+          try {
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                          document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+            const resp = await fetch('/api/goals/link/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+              body: JSON.stringify({ goal_id: goalId, fund_ids: fundIds }),
+            });
+            if (resp.ok) {
+              const result = await resp.json();
+              const goal = this.goals.find(g => g.id === goalId);
+              if (goal) {
+                goal.linked_fund_ids = result.linked_fund_ids || fundIds;
+                goal.progress_pct = result.progress_pct || goal.progress_pct;
+              }
+              this.selectedFund[goalId] = '';
+              if (typeof showToast === 'function') showToast('Funds linked successfully', 'success');
+            }
+          } catch(e) {
+            console.error('Link error', e);
+            if (typeof showToast === 'function') showToast('Failed to link funds', 'error');
+          }
+        },
+      };
+    }
+    </script>
+    {% if goals.response %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h2 class="font-bold mb-4 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        CREDA Goal Strategy
+      </h2>
+      <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ goals.response|strip_markdown }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Goal Progress Chart -->
+    {% if goals.analysis.goals %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <h3 class="text-sm font-bold mb-4">Goal Progress Overview</h3>
+      <div class="relative" style="height: 220px;">
+        <canvas id="goalProgressChart"></canvas>
+      </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Chart === 'undefined') return;
+      const goalData = [
+        {% for goal in goals.analysis.goals %}
+        { name: "{{ goal.name|truncatechars:20 }}", sip: {{ goal.required_sip|default:0 }}, affordable: {{ goal.affordable|yesno:"true,false" }} },
+        {% endfor %}
+      ];
+      const ctx = document.getElementById('goalProgressChart')?.getContext('2d');
+      if (ctx && goalData.length > 0) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: goalData.map(g=>g.name),
+            datasets: [{
+              label: 'Required SIP',
+              data: goalData.map(g=>g.sip),
+              backgroundColor: goalData.map(g=>g.affordable ? '#059669' : '#dc2626'),
+              borderRadius: 8,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { ticks: { callback: v=>'₹'+v.toLocaleString('en-IN'), font: { size: 10 } }, grid: { display: false } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+          }
+        });
+      }
+    });
+    </script>
+    {% endif %}
+    {% else %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <p class="text-slate-500 text-sm">Complete your profile to start goal planning.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 2: Goal Simulator -->
+  <div x-show="tab === 'simulator'" x-transition class="space-y-8">
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h3 class="font-bold mb-1">Simulation Parameters</h3>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Adjust and simulate different scenarios</p>
+      <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+        <input type="hidden" name="tab" value="simulator">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Target Amount (₹)</label>
+          <input type="number" name="target" x-model="target"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Time Horizon (Years)</label>
+          <input type="number" name="years" x-model="years" min="1" max="40"
+                 class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition">
+        </div>
+        <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
+          Run Simulation
+        </button>
+      </form>
+    </div>
+
+    {% if sim %}
+    {% if sim.analysis and sim.analysis.scenarios %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {% for scenario in sim.analysis.scenarios %}
+      <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50 {% if scenario.meets_target %}border-emerald-500/30{% endif %}">
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{{ scenario.label }}</p>
+        <p class="text-2xl font-black italic tracking-tight {% if scenario.meets_target %}text-emerald-500{% else %}text-slate-700 dark:text-slate-200{% endif %}">
+          ₹{{ scenario.final_value|floatformat:0 }}
+        </p>
+        <p class="text-xs text-slate-500 mt-2">
+          SIP: ₹{{ scenario.monthly_sip|floatformat:0 }}/mo @ {{ scenario.return_rate }}%
+        </p>
+        {% if scenario.meets_target %}
+        <div class="flex items-center gap-1.5 mt-2">
+          <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-500">Target Met</p>
+        </div>
+        {% else %}
+        <p class="text-xs text-red-500 mt-2">Shortfall: ₹{{ scenario.shortfall|floatformat:0 }}</p>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
-  </div>
-
-  {% if goals.response %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h2 class="font-bold mb-4 flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-      CREDA Goal Strategy
-    </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ goals.response }}</div>
-  </div>
-  {% endif %}
-
-  {% else %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-900/20 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    {% if sim.analysis.year_by_year %}
+    <!-- Year-by-Year Growth Chart -->
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <h3 class="text-sm font-bold mb-4">Growth Trajectory</h3>
+      <div class="relative" style="height:260px;">
+        <canvas id="simGrowthChart"></canvas>
+      </div>
     </div>
-    <p class="text-slate-500 text-sm">Complete your profile to start goal planning.</p>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Chart === 'undefined') return;
+      const yrData = [
+        {% for yr in sim.analysis.year_by_year %}
+        { year: {{ yr.year }}, invested: {{ yr.total_invested|default:0 }}, value: {{ yr.value|default:0 }} },
+        {% endfor %}
+      ];
+      const ctx = document.getElementById('simGrowthChart')?.getContext('2d');
+      if (ctx && yrData.length > 0) {
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: yrData.map(y=>'Year '+y.year),
+            datasets: [
+              { label: 'Portfolio Value', data: yrData.map(y=>y.value), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 },
+              { label: 'Total Invested', data: yrData.map(y=>y.invested), borderColor: '#94a3b8', backgroundColor: 'transparent', borderDash: [5,5], tension: 0.1, pointRadius: 2, borderWidth: 1.5 },
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } } },
+            scales: { y: { ticks: { callback: v=>'₹'+(v/100000).toFixed(1)+'L', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.1)' } }, x: { ticks: { font: { size: 9 } }, grid: { display: false } } }
+          }
+        });
+      }
+    });
+    </script>
+
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+      <h3 class="font-bold mb-4">Year-by-Year Projection</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 dark:border-slate-800">
+              <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Year</th>
+              <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Invested</th>
+              <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Value</th>
+              <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Gain</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for yr in sim.analysis.year_by_year %}
+            <tr class="border-b border-slate-50 dark:border-slate-800/50">
+              <td class="px-4 py-3 font-medium">Year {{ yr.year }}</td>
+              <td class="text-right px-4 py-3">₹{{ yr.total_invested|floatformat:0 }}</td>
+              <td class="text-right px-4 py-3 font-semibold">₹{{ yr.value|floatformat:0 }}</td>
+              <td class="text-right px-4 py-3 {% if yr.gain >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">₹{{ yr.gain|floatformat:0 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% if sim.response %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h2 class="font-bold mb-4 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        CREDA Simulation Analysis
+      </h2>
+      <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ sim.response|strip_markdown }}</div>
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 {% endblock %}

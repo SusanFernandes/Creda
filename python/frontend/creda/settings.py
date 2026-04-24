@@ -19,6 +19,13 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+# Ngrok / tunnel support: trust HTTPS behind reverse proxy
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CSRF: trust ngrok origins (populated from env)
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()] if _csrf_origins else []
+
 # ── Apps ───────────────────────────────────────────────────
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -35,6 +42,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -100,10 +108,24 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # ── Internationalization ───────────────────────────────────
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ("en", "English"),
+    ("hi", "हिन्दी"),
+    ("ta", "தமிழ்"),
+    ("te", "తెలుగు"),
+    ("mr", "मराठी"),
+    ("bn", "বাংলা"),
+    ("kn", "ಕನ್ನಡ"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
