@@ -1,3 +1,4 @@
+{% load creda_filters %}
 {% if health %}
 <!-- Overall Score -->
 <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center relative overflow-hidden mb-8">
@@ -88,7 +89,7 @@
   {% for key, dim in health.analysis.dimensions.items %}
   <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5">
     <div class="flex justify-between items-center mb-3">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ key|cut:"_" }}</p>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ key|humanize_key }}</p>
       <span class="text-sm font-black italic {% if dim.score >= 70 %}text-emerald-500{% elif dim.score >= 40 %}text-amber-500{% else %}text-red-500{% endif %}">{{ dim.score }}/100</span>
     </div>
     <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2.5 mb-3">
@@ -108,7 +109,7 @@
     <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
     Top Actions to Improve Your Score
   </h3>
-  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ health.analysis.top_actions }}</div>
+  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ health.analysis.top_actions|strip_markdown }}</div>
 </div>
 {% endif %}
 
@@ -119,14 +120,14 @@
     <div class="w-2 h-2 rounded-full bg-blue-600"></div>
     CREDA Analysis
   </h2>
-  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ health.response }}</div>
+  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ health.response|strip_markdown }}</div>
 </div>
 {% endif %}
 
 {% if health.analysis.dimensions %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const dims = {{ health.analysis.dimensions|safe }};
+  const dims = {{ health.analysis.dimensions|to_json }};
   const labels = Object.keys(dims).map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
   const scores = Object.values(dims).map(d => typeof d === 'object' ? (d.score || 0) : d);
 

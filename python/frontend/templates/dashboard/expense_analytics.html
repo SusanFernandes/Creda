@@ -1,10 +1,25 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Expense Analytics{% endblock %}
 {% block page_title %}Expense Analytics{% endblock %}
 {% block page_subtitle %}Smart Spending Intelligence{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
+  <!-- What is Expense Analytics? -->
+  <div x-data="{ open: false }" class="glass rounded-[2rem] border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/30 dark:bg-amber-900/10 p-6">
+    <button @click="open = !open" class="w-full flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <span class="font-bold text-sm">What is Expense Analytics?</span>
+      </div>
+      <svg :class="open && 'rotate-180'" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+      <p>Expense Analytics uses AI to break down your spending into categories (rent, food, transport, etc.), detect trends, calculate your <strong>spending score</strong>, identify savings opportunities, and project annual impact. All analysis is based on your actual profile data.</p>
+    </div>
+  </div>
+
   {% if expense %}
   {% if expense.analysis %}
 
@@ -170,7 +185,7 @@
       <div class="w-2 h-2 rounded-full bg-blue-600"></div>
       CREDA Expense Analysis
     </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ expense.response }}</div>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ expense.response|strip_markdown }}</div>
   </div>
   {% endif %}
 

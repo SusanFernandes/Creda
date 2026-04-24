@@ -115,7 +115,7 @@ async def get_family_members(
             "link_id": link.id,
             "member_id": member_id,
             "relationship": link.relationship_type,
-            "name": profile.full_name if profile else "Unknown",
+            "name": profile.name if profile else "Unknown",
             "age": profile.age if profile else None,
         })
 

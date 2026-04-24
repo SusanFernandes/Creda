@@ -269,6 +269,48 @@ DEMO_USERS = [
                 "notes": "Performance bonus of ₹3,00,000 received.",
             },
         ],
+
+        # Arjun's monthly budgets (current month)
+        "budgets": [
+            {"category": "Rent/Housing", "planned_amount": 28000, "actual_amount": 28000},
+            {"category": "Groceries", "planned_amount": 12000, "actual_amount": 13500},
+            {"category": "Transport", "planned_amount": 8000, "actual_amount": 7200},
+            {"category": "Dining Out", "planned_amount": 6000, "actual_amount": 8500},
+            {"category": "Utilities", "planned_amount": 4000, "actual_amount": 3800},
+            {"category": "Shopping", "planned_amount": 5000, "actual_amount": 9200},
+            {"category": "Entertainment", "planned_amount": 4000, "actual_amount": 5100},
+            {"category": "Health & Fitness", "planned_amount": 3000, "actual_amount": 2800},
+            {"category": "Subscriptions", "planned_amount": 2000, "actual_amount": 1899},
+            {"category": "Miscellaneous", "planned_amount": 5000, "actual_amount": 4200},
+        ],
+        # Arjun's recent expenses (last 30 days)
+        "expenses": [
+            {"category": "Rent/Housing", "amount": 28000, "description": "April rent - Koramangala 2BHK", "days_ago": 1, "payment_method": "netbanking", "is_recurring": True},
+            {"category": "Groceries", "amount": 3200, "description": "BigBasket weekly order", "days_ago": 2, "payment_method": "upi"},
+            {"category": "Groceries", "amount": 2800, "description": "Zepto vegetables + fruits", "days_ago": 7, "payment_method": "upi"},
+            {"category": "Groceries", "amount": 4500, "description": "Monthly staples - Amazon Fresh", "days_ago": 15, "payment_method": "card"},
+            {"category": "Groceries", "amount": 3000, "description": "BigBasket weekly order", "days_ago": 22, "payment_method": "upi"},
+            {"category": "Transport", "amount": 2400, "description": "Ola/Uber rides (weekly)", "days_ago": 3, "payment_method": "upi"},
+            {"category": "Transport", "amount": 2100, "description": "Metro card recharge", "days_ago": 10, "payment_method": "upi"},
+            {"category": "Transport", "amount": 2700, "description": "Ola rides + fuel", "days_ago": 20, "payment_method": "upi"},
+            {"category": "Dining Out", "amount": 3200, "description": "Team dinner at Toit", "days_ago": 4, "payment_method": "card"},
+            {"category": "Dining Out", "amount": 1800, "description": "Coffee + lunch meetings", "days_ago": 8, "payment_method": "upi"},
+            {"category": "Dining Out", "amount": 2500, "description": "Weekend brunch - Café Azzure", "days_ago": 14, "payment_method": "card"},
+            {"category": "Dining Out", "amount": 1000, "description": "Swiggy orders", "days_ago": 18, "payment_method": "upi"},
+            {"category": "Utilities", "amount": 1800, "description": "BESCOM electricity bill", "days_ago": 5, "payment_method": "upi", "is_recurring": True},
+            {"category": "Utilities", "amount": 1200, "description": "Internet + mobile recharge", "days_ago": 5, "payment_method": "upi", "is_recurring": True},
+            {"category": "Utilities", "amount": 800, "description": "Water + maintenance", "days_ago": 5, "payment_method": "upi", "is_recurring": True},
+            {"category": "Shopping", "amount": 4200, "description": "Myntra haul - wedding shopping", "days_ago": 6, "payment_method": "card"},
+            {"category": "Shopping", "amount": 5000, "description": "Electronics - earbuds + charger", "days_ago": 12, "payment_method": "card"},
+            {"category": "Entertainment", "amount": 1800, "description": "BookMyShow - movie + snacks", "days_ago": 9, "payment_method": "upi"},
+            {"category": "Entertainment", "amount": 1500, "description": "Spotify + Netflix + Hotstar", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Entertainment", "amount": 1800, "description": "Weekend trip to Nandi Hills", "days_ago": 16, "payment_method": "upi"},
+            {"category": "Health & Fitness", "amount": 2800, "description": "Cult.fit gym membership", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Subscriptions", "amount": 999, "description": "Swiggy One annual", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Subscriptions", "amount": 900, "description": "ChatGPT + iCloud", "days_ago": 1, "payment_method": "card", "is_recurring": True},
+            {"category": "Miscellaneous", "amount": 2000, "description": "Gift for friend's birthday", "days_ago": 11, "payment_method": "upi"},
+            {"category": "Miscellaneous", "amount": 2200, "description": "Dry cleaning + laundry", "days_ago": 19, "payment_method": "cash"},
+        ],
     },
 
     # ── PRIYA — Arjun's fiancée ──────────────────────────────
@@ -402,6 +444,7 @@ async def seed_fastapi_db():
     from app.models import (
         Base, User, UserProfile, Portfolio, PortfolioFund,
         GoalPlan, Nudge, ConversationMessage, LifeEvent, FamilyLink,
+        Budget, Expense,
     )
     from app.config import settings
 
@@ -483,7 +526,35 @@ async def seed_fastapi_db():
                 )
                 db.add(life_event)
 
-            print(f"  [seed] {user_data['email']} — profile + {len(user_data['funds'])} funds + {len(user_data['goals'])} goals + {len(user_data['nudges'])} nudges")
+            # Create budgets (current month)
+            current_month = datetime.now().strftime("%Y-%m")
+            for bud in user_data.get("budgets", []):
+                budget = Budget(
+                    user_id=user_id_str,
+                    month=current_month,
+                    category=bud["category"],
+                    planned_amount=bud["planned_amount"],
+                    actual_amount=bud["actual_amount"],
+                )
+                db.add(budget)
+
+            # Create expenses (recent)
+            today = date.today()
+            for exp in user_data.get("expenses", []):
+                expense = Expense(
+                    user_id=user_id_str,
+                    category=exp["category"],
+                    amount=exp["amount"],
+                    description=exp.get("description", ""),
+                    expense_date=today - timedelta(days=exp.get("days_ago", 0)),
+                    payment_method=exp.get("payment_method", "upi"),
+                    is_recurring=exp.get("is_recurring", False),
+                )
+                db.add(expense)
+
+            n_bud = len(user_data.get("budgets", []))
+            n_exp = len(user_data.get("expenses", []))
+            print(f"  [seed] {user_data['email']} — profile + {len(user_data['funds'])} funds + {len(user_data['goals'])} goals + {len(user_data['nudges'])} nudges + {n_bud} budgets + {n_exp} expenses")
 
         # Link Arjun and Priya as spouse pair
         arjun_id = str(DEMO_USERS[0]["django_id"])

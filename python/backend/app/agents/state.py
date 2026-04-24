@@ -17,6 +17,11 @@ class FinancialState(TypedDict, total=False):
     # ── Profile (loaded by graph) ──
     user_profile: Optional[dict]
     portfolio_data: Optional[dict]
+    real_expenses: Optional[dict]      # category → total amount (from DB)
+    budget_data: Optional[dict]        # category → {planned, actual}
+
+    # ── Misc (DB session for agents that need it) ──
+    db: Optional[Any]
 
     # ── Agent outputs (each agent writes its key) ──
     agent_outputs: dict[str, Any]

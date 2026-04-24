@@ -290,6 +290,17 @@ async def couples_view(request):
     """Couples Finance page — auto-detects linked spouse."""
     result = None
     partner = None
+    link_message = ""
+
+    # Handle partner link request
+    if request.method == "POST" and request.POST.get("action") == "link_partner":
+        partner_email = request.POST.get("partner_email", "").strip()
+        if partner_email:
+            try:
+                await request.backend.link_family_member(partner_email, "spouse")
+                link_message = f"Link request sent to {partner_email}. They will need to accept it on their account."
+            except Exception as e:
+                link_message = f"Could not send link request: {e}"
 
     # Auto-detect linked spouse
     try:
@@ -301,14 +312,16 @@ async def couples_view(request):
     except Exception:
         pass
 
-    if request.method == "POST":
+    if request.method == "POST" and request.POST.get("action") != "link_partner":
         try:
             partner_income = float(request.POST.get("partner_income", 0))
             partner_expenses = float(request.POST.get("partner_expenses", 0))
             result = await request.backend.couples_finance(partner_income, partner_expenses)
         except Exception as e:
             logger.error("Couples finance error: %s", e)
-    return render(request, "dashboard/couples.html", {"couples": result, "partner": partner})
+    return render(request, "dashboard/couples.html", {
+        "couples": result, "partner": partner, "link_message": link_message,
+    })
 
 
 @login_required

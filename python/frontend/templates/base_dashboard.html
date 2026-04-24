@@ -258,6 +258,19 @@
         <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">{% block page_subtitle %}Financial Dashboard{% endblock %}</p>
       </div>
       <div class="flex items-center gap-4">
+        <!-- Language Switcher (Global) -->
+        <form method="POST" action="{% url 'set_language' %}" class="hidden md:block">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <select name="language" onchange="this.form.submit()"
+                  class="text-xs bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-slate-500 dark:text-slate-400 focus:border-blue-500 outline-none cursor-pointer">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_available_languages as LANGUAGES %}
+            {% for lang_code, lang_name in LANGUAGES %}
+            <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+            {% endfor %}
+          </select>
+        </form>
         <!-- Dark mode toggle -->
         <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
                 class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">

@@ -38,8 +38,9 @@ _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
     # ── Tax Wizard ──
     (re.compile(r"\b(80c|80d|80ccd|old.?regime|new.?regime|form.?16|elss)\b", re.I), "tax_wizard", 3.0),
     (re.compile(r"\b(hra|home.?loan.?interest|deduction|itr|tax.?saving)\b", re.I), "tax_wizard", 2.0),
-    (re.compile(r"\b(tax)\b", re.I), "tax_wizard", 1.0),
-    (re.compile(r"\b(टैक्स|कर.?बचत|कर.?कटौती|आयकर|வரி|పన్ను|কর|कर)\b", re.I), "tax_wizard", 1.5),
+    (re.compile(r"\b(tax)\b", re.I), "tax_wizard", 1.5),
+    (re.compile(r"\b(टैक्स|कर.?बचत|कर.?कटौती|आयकर|வரி|పన్ను|কর|कर)\b", re.I), "tax_wizard", 2.0),
+    (re.compile(r"(tax.?ka|mera.?tax|mere.?tax|tax.?status|tax.?kitna|tax.?kaise)\b", re.I), "tax_wizard", 3.0),
 
     # ── Money Health Score ──
     (re.compile(r"\b(health.?score|money.?health|financial.?health|financial.?score)\b", re.I), "money_health", 3.0),

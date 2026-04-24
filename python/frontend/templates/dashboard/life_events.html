@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Life Event Advisor{% endblock %}
 {% block page_title %}Life Event Advisor{% endblock %}
 {% block page_subtitle %}Smart Money Moves for Life's Big Moments{% endblock %}
@@ -113,7 +114,7 @@
   {% if result.response %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
     <h3 class="font-bold mb-4">Summary</h3>
-    <div class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed whitespace-pre-line">{{ result.response }}</div>
+    <div class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed whitespace-pre-line">{{ result.response|strip_markdown }}</div>
   </div>
   {% endif %}
   {% endwith %}

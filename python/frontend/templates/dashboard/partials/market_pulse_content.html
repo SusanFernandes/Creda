@@ -1,3 +1,4 @@
+{% load creda_filters %}
 {% if market %}
 <!-- Market Indices -->
 {% if market.analysis.indices %}
@@ -111,7 +112,7 @@
     <div class="w-2 h-2 rounded-full bg-blue-600"></div>
     CREDA Market Analysis
   </h2>
-  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ market.response }}</div>
+  <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ market.response|strip_markdown }}</div>
 </div>
 {% endif %}
 

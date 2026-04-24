@@ -32,7 +32,8 @@ def _get_whisper_model():
 
 
 def _convert_to_wav(audio_bytes: bytes) -> bytes:
-    """Convert any audio format (WebM, OGG, MP3, etc.) to WAV using pydub."""
+    """Convert any audio format (WebM, OGG, MP3, etc.) to WAV using pydub.
+    Returns original bytes if ffmpeg is not available."""
     try:
         from pydub import AudioSegment
         audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
@@ -40,8 +41,21 @@ def _convert_to_wav(audio_bytes: bytes) -> bytes:
         audio.export(wav_buffer, format="wav")
         return wav_buffer.getvalue()
     except Exception as e:
-        logger.warning("Audio conversion failed, using raw bytes: %s", e)
+        logger.warning("Audio conversion failed (ffmpeg may be missing), using raw bytes: %s", e)
         return audio_bytes
+
+
+def _detect_audio_format(audio_bytes: bytes) -> str:
+    """Detect audio format from magic bytes."""
+    if audio_bytes[:4] == b"RIFF":
+        return "wav"
+    if audio_bytes[:4] == b"OggS":
+        return "ogg"
+    if audio_bytes[:4] == b"\x1aE\xdf\xa3":
+        return "webm"
+    if audio_bytes[:3] == b"ID3" or audio_bytes[:2] == b"\xff\xfb":
+        return "mp3"
+    return "webm"  # default for browser MediaRecorder
 
 
 async def transcribe_audio(audio_bytes: bytes) -> dict:
@@ -69,10 +83,10 @@ async def _transcribe_faster_whisper(audio_bytes: bytes) -> dict:
 
     def _sync_transcribe():
         model = _get_whisper_model()
-        # Convert to WAV (handles WebM, OGG, etc.)
+        # Try WAV conversion first; if ffmpeg missing, write raw bytes with correct extension
         wav_bytes = _convert_to_wav(audio_bytes)
-        # Write to temp file (faster-whisper needs file path)
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        ext = ".wav" if wav_bytes[:4] == b"RIFF" else f".{_detect_audio_format(audio_bytes)}"
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
             f.write(wav_bytes)
             tmp_path = f.name
         try:
@@ -94,14 +108,20 @@ async def _transcribe_groq(audio_bytes: bytes) -> dict:
     """Fallback: Groq Whisper API."""
     import httpx
 
-    # Convert to WAV for reliable upload
+    # Try WAV conversion; if fails, send raw with detected mime type
     wav_bytes = _convert_to_wav(audio_bytes)
+    if wav_bytes[:4] == b"RIFF":
+        fname, mime = "audio.wav", "audio/wav"
+    else:
+        fmt = _detect_audio_format(audio_bytes)
+        fname = f"audio.{fmt}"
+        mime = f"audio/{fmt}"
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
-            files={"file": ("audio.wav", io.BytesIO(wav_bytes), "audio/wav")},
+            files={"file": (fname, io.BytesIO(wav_bytes), mime)},
             data={"model": "whisper-large-v3", "response_format": "json"},
         )
         response.raise_for_status()

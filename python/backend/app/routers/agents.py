@@ -304,8 +304,25 @@ async def expense_analytics(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
+    # Fetch actual expenses from DB (last 30 days)
+    from app.models import Expense, Budget
+    from datetime import date, timedelta
+    thirty_days_ago = date.today() - timedelta(days=30)
+    exp_result = await db.execute(
+        select(Expense).where(
+            Expense.user_id == auth.user_id,
+            Expense.expense_date >= thirty_days_ago,
+        )
+    )
+    expenses = list(exp_result.scalars().all())
+    # Fetch budgets for current month
+    current_month = date.today().strftime("%Y-%m")
+    bud_result = await db.execute(
+        select(Budget).where(Budget.user_id == auth.user_id, Budget.month == current_month)
+    )
+    budgets = list(bud_result.scalars().all())
     from app.agents.expense_analytics import run_expense_analytics
-    return await run_expense_analytics(profile, body.language, body.voice_mode)
+    return await run_expense_analytics(profile, body.language, body.voice_mode, expenses, budgets)
 
 
 @router.post("/life-event-advisor")
