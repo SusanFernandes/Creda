@@ -96,12 +96,12 @@ documents:
       Available only under Old Tax Regime. New regime does not allow 80C deductions.
 
   - id: ltcg_stcg
-    title: "Capital Gains Tax on Mutual Funds (FY2024-25)"
+    title: "Capital Gains Tax on Mutual Funds (FY2025-26)"
     category: tax
-    source: "Income Tax Act"
+    source: "Income Tax Act, Budget 2024"
     content: |
       Equity mutual funds: LTCG (>1 year) at 12.5% above ₹1.25 lakh exemption. STCG at 20%.
-      Debt mutual funds (bought after April 2023): Taxed at slab rate regardless of holding period.
+      Debt mutual funds (bought after April 2023): Taxed at slab rate regardless of holding period. No indexation.
       ELSS: 3-year lock-in, LTCG applies after lock-in.
       Equity = >65% in equity. Hybrid (35-65%) treated as equity if >65%.
 
@@ -194,7 +194,7 @@ documents:
       Tax loss harvesting: Book losses to offset capital gains before March 31.
       ELSS vs PPF vs NPS: ELSS shortest lock-in (3yr), NPS extra ₹50k deduction under 80CCD(1B).
       Section 54/54F: Reinvest property sale proceeds to save LTCG on real estate.
-      Section 87A rebate: Tax payable = 0 if total income < ₹7 lakh under new regime.
+      Section 87A rebate: Tax payable = 0 if total income < ₹12 lakh under new regime (Budget 2025), ₹5 lakh under old regime.
       Quarterly advance tax deadlines: June 15 (15%), Sep 15 (45%), Dec 15 (75%), Mar 15 (100%).
       Salary structuring: HRA, LTA, food coupons, NPS employer contribution (80CCD2) reduce tax.
       Agricultural income: Fully exempt. Partial integration with non-agricultural income above ₹5,000.
@@ -259,3 +259,69 @@ documents:
       SEBI-registered Investment Advisors (RIA) vs Mutual Fund Distributors (MFD): RIA = fee-only fiduciary.
       Red flags that need human review: conflicting goals, debt spiral, potential fraud victim.
       CREDA limitation: AI provides general guidance, not personalized licensed advice.
+
+  # ── Budget 2025 Tax Updates ──────────────────────────────
+  - id: budget_2025_tax
+    title: "Union Budget 2025 — Key Tax Changes (FY2025-26)"
+    category: tax
+    source: "Union Budget 2025, Finance Bill 2025, CBDT"
+    content: |
+      New Tax Regime (Default from FY2023-24 onward):
+      - Revised slabs FY2025-26: 0-4L @ 0%, 4-8L @ 5%, 8-12L @ 10%, 12-16L @ 15%, 16-20L @ 20%, 20-24L @ 25%, >24L @ 30%.
+      - Standard deduction: ₹75,000.
+      - Section 87A rebate limit raised to ₹12,00,000 (from ₹7L). Max rebate: ₹60,000.
+      - No income tax for income up to ₹12,75,000 (₹12L + ₹75K standard deduction).
+      - Employer NPS (80CCD2) up to 14% of basic allowed even in new regime.
+      Old Tax Regime (opt-in):
+      - Slabs unchanged: 0-2.5L @ 0%, 2.5-5L @ 5%, 5-10L @ 20%, >10L @ 30%.
+      - Standard deduction: ₹50,000.
+      - Section 87A rebate: taxable ≤ ₹5L → full rebate (max ₹12,500).
+      - All deductions available: 80C, 80D, 80CCD(1B), HRA, 24(b), etc.
+      Capital Gains (unchanged from Budget 2024):
+      - Equity LTCG (>1 year): 12.5% above ₹1.25L exemption.
+      - Equity STCG (<1 year): 20%.
+      - Debt MF (post Apr 2023): Taxed at slab rate regardless of holding period. No indexation.
+      Surcharge: New regime caps surcharge at 25% for income above ₹2 crore.
+
+  - id: section_80d_rules
+    title: "Section 80D — Health Insurance Deduction"
+    category: tax
+    source: "Income Tax Act, Section 80D"
+    content: |
+      Self/spouse/children: ₹25,000 (₹50,000 if senior citizen i.e. age ≥ 60).
+      Parents: Additional ₹25,000 (₹50,000 if parents are senior citizens).
+      Maximum combined: ₹1,00,000 (self senior + parents senior).
+      Covers: Health insurance premium, preventive health check-up (up to ₹5,000 within limit).
+      Cash payment not allowed except for preventive check-up.
+      Available only in Old Regime. Not available in New Regime.
+
+  - id: section_80ccd_nps
+    title: "Section 80CCD — NPS Tax Benefits"
+    category: tax
+    source: "Income Tax Act, Section 80CCD"
+    content: |
+      80CCD(1): Employee's own NPS contribution — within 80C limit of ₹1.5L. Old regime only.
+      80CCD(1B): Additional ₹50,000 deduction for NPS (beyond 80C). Old regime only.
+      80CCD(2): Employer's NPS contribution — up to 14% of basic salary (govt) or 10% (private).
+        This is available in BOTH old and new regimes. Major advantage for salaried individuals.
+      At maturity (age 60): 60% lump sum is tax-free. 40% must purchase annuity (annuity income taxable).
+      Partial withdrawal: Up to 25% after 3 years for specified purposes (education, medical, housing).
+
+  - id: capital_gains_mutual_funds_2025
+    title: "Capital Gains on Mutual Funds — Post Budget 2024 Rules (applicable FY2025-26)"
+    category: tax
+    source: "Income Tax Act, CBDT, Budget 2024"
+    content: |
+      Equity Mutual Funds (>65% equity allocation):
+        LTCG: Holding > 12 months → 12.5% on gains above ₹1.25 lakh per FY. No indexation.
+        STCG: Holding ≤ 12 months → 20% flat rate.
+      Debt Mutual Funds (purchased after 1 Apr 2023):
+        Always taxed at slab rate irrespective of holding period. No indexation benefit.
+        Old debt funds (pre-Apr 2023): LTCG (>36 months) at 20% with indexation.
+      Hybrid Funds:
+        Equity-oriented (>65% equity): Treated as equity for tax.
+        Debt-oriented (<65% equity): Treated as debt for tax.
+      ELSS: 3-year lock-in. After lock-in, LTCG rules of equity apply.
+      Tax-loss harvesting: Book losses before March 31 to offset gains. Carry forward for 8 years.
+      LTCG/STCG from different categories cannot be set off against each other (equity vs debt).
+

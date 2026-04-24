@@ -21,60 +21,60 @@ UV_INDEX_URL := https://pypi.tuna.tsinghua.edu.cn/simple
 
 .PHONY: help
 help: ## Show this help
-	@Write-Host ''
-	@Write-Host '  CREDA — AI Financial Coach for India' -ForegroundColor Cyan
-	@Write-Host '  ═══════════════════════════════════════════════════' -ForegroundColor Cyan
-	@Write-Host ''
-	@Write-Host '  QUICKSTART' -ForegroundColor Yellow
-	@Write-Host '    make init              One-time full setup (venv + deps + env + docker + migrate)'
-	@Write-Host '    make all               Start everything (Docker + Backend + Frontend)'
-	@Write-Host ''
-	@Write-Host '  STARTUP' -ForegroundColor Yellow
-	@Write-Host '    make docker            Start Docker services only'
-	@Write-Host '    make backend           Start FastAPI backend (port 8001, foreground)'
-	@Write-Host '    make backend-bg        Start FastAPI backend (new window)'
-	@Write-Host '    make frontend          Start Django frontend (port 8000, foreground)'
-	@Write-Host '    make frontend-bg       Start Django frontend (new window)'
-	@Write-Host ''
-	@Write-Host '  STOP / RESTART' -ForegroundColor Yellow
-	@Write-Host '    make stop              Stop all services'
-	@Write-Host '    make stop-backend      Stop backend only'
-	@Write-Host '    make stop-frontend     Stop frontend only'
-	@Write-Host '    make stop-docker       Stop Docker containers only'
-	@Write-Host '    make restart-backend   Restart backend'
-	@Write-Host '    make restart-frontend  Restart frontend'
-	@Write-Host ''
-	@Write-Host '  SETUP' -ForegroundColor Yellow
-	@Write-Host '    make venv              Create Python virtual environment'
-	@Write-Host '    make install           Install all Python dependencies'
-	@Write-Host '    make env               Create .env from .env.example'
-	@Write-Host '    make download-model    Download MiniLM to local models/ (offline embeddings)'
-	@Write-Host '    make postgres-volume-reset  Fix DB password mismatch (removes Postgres volume; wipes DB)'
-	@Write-Host '    make migrate           Run Django + Alembic migrations'
-	@Write-Host '    make superuser         Create Django admin superuser'
-	@Write-Host '    make seed              Seed demo data (Arjun + Priya with full portfolio)'
-	@Write-Host ''
-	@Write-Host '  DATABASE' -ForegroundColor Yellow
-	@Write-Host '    make db-shell          Open psql shell (creda_api)'
-	@Write-Host '    make db-shell-django   Open psql shell (creda_django)'
-	@Write-Host '    make db-tables         List all tables in creda_api'
-	@Write-Host ''
-	@Write-Host '  TESTING' -ForegroundColor Yellow
-	@Write-Host '    make test              Quick health check (backend + frontend)'
-	@Write-Host '    make test-backend      Backend health endpoint'
-	@Write-Host ''
-	@Write-Host '  UTILS' -ForegroundColor Yellow
-	@Write-Host '    make status            Show status of all services'
-	@Write-Host '    make logs              Tail Docker logs'
-	@Write-Host '    make clean             Remove __pycache__ and .pyc files'
-	@Write-Host '    make reset             Stop everything + clean'
-	@Write-Host '    make nuke              Stop + wipe ALL data + rebuild fresh'
-	@Write-Host ''
+	@echo.
+	@echo   CREDA - AI Financial Coach for India
+	@echo   =====================================================
+	@echo.
+	@echo   QUICKSTART
+	@echo     make init              One-time full setup (venv + deps + env + docker + migrate)
+	@echo     make all               Start everything (Docker + Backend + Frontend)
+	@echo.
+	@echo   STARTUP
+	@echo     make docker            Start Docker services only
+	@echo     make backend           Start FastAPI backend (port 8001, foreground)
+	@echo     make backend-bg        Start FastAPI backend (new window)
+	@echo     make frontend          Start Django frontend (port 8000, foreground)
+	@echo     make frontend-bg       Start Django frontend (new window)
+	@echo.
+	@echo   STOP / RESTART
+	@echo     make stop              Stop all services
+	@echo     make stop-backend      Stop backend only
+	@echo     make stop-frontend     Stop frontend only
+	@echo     make stop-docker       Stop Docker containers only
+	@echo     make restart-backend   Restart backend
+	@echo     make restart-frontend  Restart frontend
+	@echo.
+	@echo   SETUP
+	@echo     make venv              Create Python virtual environment
+	@echo     make install           Install all Python dependencies
+	@echo     make env               Create .env from .env.example
+	@echo     make download-model    Download MiniLM to local models/ (offline embeddings)
+	@echo     make postgres-volume-reset  Fix DB password mismatch (removes Postgres volume)
+	@echo     make migrate           Run Django + Alembic migrations
+	@echo     make superuser         Create Django admin superuser
+	@echo     make seed              Seed demo data (Arjun + Priya with full portfolio)
+	@echo.
+	@echo   DATABASE
+	@echo     make db-shell          Open psql shell (creda_api)
+	@echo     make db-shell-django   Open psql shell (creda_django)
+	@echo     make db-tables         List all tables in creda_api
+	@echo.
+	@echo   TESTING
+	@echo     make test              Quick health check (backend + frontend)
+	@echo     make test-backend      Backend health endpoint
+	@echo.
+	@echo   UTILS
+	@echo     make status            Show status of all services
+	@echo     make logs              Tail Docker logs
+	@echo     make clean             Remove __pycache__ and .pyc files
+	@echo     make reset             Stop everything + clean
+	@echo     make nuke              Stop + wipe ALL data + rebuild fresh
+	@echo.
 
 # ─── FIRST-TIME INIT ─────────────────────────────────────────────
 
 .PHONY: init
-init: venv install env download-model docker wait db-init migrate
+init: venv install env download-model download-whisper docker wait db-init migrate
 	@echo.
 	@echo   ═══════════════════════════════════════════════════
 	@echo   Setup complete!
@@ -88,9 +88,11 @@ init: venv install env download-model docker wait db-init migrate
 
 .PHONY: download-model
 download-model:
-	@echo Downloading sentence-transformers/all-MiniLM-L6-v2 (~87MB)...
-	"$(PYTHON)" -c "from sentence_transformers import SentenceTransformer; from pathlib import Path; d=Path('models/all-MiniLM-L6-v2'); m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); d.parent.mkdir(parents=True,exist_ok=True); m.save(str(d)); print('Saved to',d)"
-	@echo Model downloaded and saved locally.
+	@if exist "models\all-MiniLM-L6-v2\config.json" ( echo MiniLM model already exists — skipping download. ) else ( echo Downloading sentence-transformers/all-MiniLM-L6-v2 [~87MB]... && "$(PYTHON)" -c "from sentence_transformers import SentenceTransformer; from pathlib import Path; d=Path('models/all-MiniLM-L6-v2'); m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); d.parent.mkdir(parents=True,exist_ok=True); m.save(str(d)); print('Saved to',d)" && echo Model downloaded and saved locally. )
+
+.PHONY: download-whisper
+download-whisper: ## Download faster-whisper model for offline STT
+	@"$(PYTHON)" -c "from faster_whisper.utils import download_model; import os; d=os.path.join('models','faster-whisper-small'); os.makedirs(d, exist_ok=True); print('Checking faster-whisper-small...'); download_model('small', output_dir=d); print('faster-whisper-small ready at', d)" 2>nul || echo faster-whisper model download skipped (will use Groq fallback).
 
 .PHONY: venv
 venv:
@@ -98,16 +100,16 @@ venv:
 
 .PHONY: env
 env: ## Create .env from .env.example if missing
-	@if (-not (Test-Path '.env')) { if (Test-Path '.env.example') { Copy-Item '.env.example' '.env'; Write-Host 'Created .env from .env.example — edit it with your GROQ_API_KEY' -ForegroundColor Yellow } else { Write-Host '.env.example not found — create .env manually.' -ForegroundColor Red } } else { Write-Host '.env already exists — skipping.' -ForegroundColor Gray }
+	@if not exist ".env" ( if exist ".env.example" ( copy ".env.example" ".env" >nul && echo Created .env from .env.example — edit it with your GROQ_API_KEY ) else ( echo .env.example not found — create .env manually. ) ) else ( echo .env already exists — skipping. )
 
 .PHONY: postgres-volume-reset
 postgres-volume-reset: ## Remove Postgres volume and recreate container (fixes stale password; destroys DB data)
-	@Write-Host 'Removing Postgres container and volume (all Postgres data for this compose project)...' -ForegroundColor Yellow
+	@echo Removing Postgres container and volume...
 	docker compose stop postgres
 	docker compose rm -f postgres
-	@$$proj = Split-Path '$(CURDIR)' -Leaf; $$vol = $$proj + '_postgres_data'; docker volume rm $$vol 2>$$null; if ($$LASTEXITCODE -ne 0) { Write-Host ('Note: could not remove volume ' + $$vol + ' (missing or in use). Try: docker volume ls') -ForegroundColor Gray }
+	-docker volume rm python_postgres_data 2>nul
 	docker compose up -d postgres
-	@Write-Host 'Postgres is starting. Wait ~10s, then run: make migrate' -ForegroundColor Green
+	@echo Postgres is starting. Wait ~10s, then run: make migrate
 
 # ─── INSTALL ──────────────────────────────────────────────────────
 
@@ -158,7 +160,7 @@ wait:
 .PHONY: db-init
 db-init:
 	@echo Creating databases if not exists...
-	-docker compose exec postgres psql -U creda_admin -d postgres -c "CREATE DATABASE creda_django OWNER creda_admin;"
+	docker compose exec postgres psql -U creda_admin -d postgres -c "SELECT 'exists' FROM pg_database WHERE datname='creda_django';" | findstr exists >nul 2>&1 || docker compose exec postgres psql -U creda_admin -d postgres -c "CREATE DATABASE creda_django OWNER creda_admin;"
 	@echo Databases ready.
 
 .PHONY: backend

@@ -14,6 +14,11 @@ from app.models import Nudge, UserProfile, Portfolio, PortfolioFund, GoalPlan
 router = APIRouter()
 
 
+def _utcnow_naive():
+    """Return current UTC time as a naive datetime (no tzinfo) for DB columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 @router.post("/generate")
 async def generate_nudges(
     auth: AuthContext = Depends(get_auth),
@@ -58,7 +63,7 @@ async def generate_nudges(
     )
     goals = list(goals_q.scalars().all())
 
-    now = datetime.now(timezone.utc)
+    now = _utcnow_naive()
     nudges_to_create = []
 
     # ── Rule 1: Emergency fund critically low ──

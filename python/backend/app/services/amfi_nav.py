@@ -76,8 +76,7 @@ async def _fetch_and_parse_amfi() -> bool:
             if resp.status_code != 200:
                 logger.warning("AMFI NAV fetch failed: HTTP %d", resp.status_code)
                 return False
-
-        text = resp.text
+            text = resp.text
         lines = text.strip().split("\n")
 
         new_cache: dict[str, dict] = {}

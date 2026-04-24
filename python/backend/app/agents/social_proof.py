@@ -6,7 +6,7 @@ Uses real DB aggregation when enough users exist, falls back to curated benchmar
 import logging
 from typing import Any
 
-from sqlalchemy import select, func as sqlfunc, and_
+from sqlalchemy import select, func as sqlfunc, and_, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.llm import primary_llm
@@ -62,7 +62,7 @@ async def _get_real_peer_benchmarks(age_group: str, db: AsyncSession) -> dict | 
                 sqlfunc.avg(UserProfile.monthly_expenses).label("avg_expenses"),
                 sqlfunc.avg(UserProfile.emergency_fund).label("avg_emergency"),
                 sqlfunc.sum(
-                    sqlfunc.cast(UserProfile.has_health_insurance, sqlfunc.literal_column("INTEGER"))
+                    sqlfunc.cast(UserProfile.has_health_insurance, Integer)
                 ).label("insured_count"),
             ).where(
                 and_(

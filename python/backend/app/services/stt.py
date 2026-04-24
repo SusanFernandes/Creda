@@ -14,16 +14,20 @@ _whisper_model = None
 
 
 def _get_whisper_model():
-    """Lazy-load faster-whisper model (CPU only)."""
+    """Lazy-load faster-whisper model (CPU only). Prefers local model path."""
     global _whisper_model
     if _whisper_model is None:
         from faster_whisper import WhisperModel
+        from pathlib import Path
+        # Check for locally downloaded model first
+        local_path = Path(__file__).resolve().parents[3] / "models" / f"faster-whisper-{settings.WHISPER_MODEL_SIZE}"
+        model_id = str(local_path) if local_path.exists() else settings.WHISPER_MODEL_SIZE
         _whisper_model = WhisperModel(
-            settings.WHISPER_MODEL_SIZE,
+            model_id,
             device="cpu",
             compute_type="int8",
         )
-        logger.info("faster-whisper model '%s' loaded (CPU, int8)", settings.WHISPER_MODEL_SIZE)
+        logger.info("faster-whisper model loaded from '%s' (CPU, int8)", model_id)
     return _whisper_model
 
 

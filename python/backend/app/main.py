@@ -99,6 +99,7 @@ _cors_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, "CORS_ORIG
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -19,6 +19,13 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+# Ngrok / tunnel support: trust HTTPS behind reverse proxy
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CSRF: trust ngrok origins (populated from env)
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()] if _csrf_origins else []
+
 # ── Apps ───────────────────────────────────────────────────
 INSTALLED_APPS = [
     "django.contrib.admin",

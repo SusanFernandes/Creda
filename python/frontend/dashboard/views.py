@@ -120,12 +120,18 @@ async def portfolio_refresh_navs(request):
 
 @login_required
 async def health_view(request):
-    """Money Health Score page."""
+    """Money Health Score page — shows skeleton immediately, content loads via HTMX."""
+    return render(request, "dashboard/health.html", {"health": None, "deferred": True})
+
+
+@login_required
+async def health_htmx(request):
+    """HTMX fragment — actual health score data."""
     try:
         result = await request.backend.money_health()
     except Exception:
         result = None
-    return render(request, "dashboard/health.html", {"health": result})
+    return render(request, "dashboard/partials/health_content.html", {"health": result})
 
 
 @login_required
@@ -317,13 +323,30 @@ async def sip_calculator_view(request):
 
 @login_required
 async def market_pulse_view(request):
-    """Market Pulse — real-time market intelligence."""
+    """Market Pulse — shows skeleton immediately, content loads via HTMX."""
+    return render(request, "dashboard/market_pulse.html", {"market": None, "deferred": True})
+
+
+@login_required
+async def market_pulse_htmx(request):
+    """HTMX fragment — actual market pulse data."""
     try:
         result = await request.backend.market_pulse()
     except Exception as e:
         logger.error("Market pulse error: %s", e)
         result = None
-    return render(request, "dashboard/market_pulse.html", {"market": result})
+
+    # Transform flat indices dict into list format for template
+    if result and result.get("analysis") and isinstance(result["analysis"].get("indices"), dict):
+        raw = result["analysis"]["indices"]
+        result["analysis"]["indices"] = [
+            {"name": "Nifty 50", "value": raw.get("nifty50", 0),
+             "change": raw.get("nifty_change", 0), "change_pct": raw.get("nifty_change", 0)},
+            {"name": "Sensex", "value": raw.get("sensex", 0),
+             "change": raw.get("sensex_change", 0), "change_pct": raw.get("sensex_change", 0)},
+        ]
+
+    return render(request, "dashboard/partials/market_pulse_content.html", {"market": result})
 
 
 @login_required
@@ -666,6 +689,35 @@ async def admin_view(request):
         "stats": stats,
         "activity": activity,
         "users": users,
+    })
+
+
+@login_required
+async def report_card_view(request):
+    """Financial Report Card — shareable single-page summary."""
+    uid = _fastapi_user_id(request)
+    profile, health, portfolio, tax = None, None, None, None
+    try:
+        profile = await request.backend.get_profile(uid)
+    except Exception:
+        pass
+    try:
+        health = await request.backend.money_health()
+    except Exception:
+        pass
+    try:
+        portfolio = await request.backend.get_portfolio_summary()
+    except Exception:
+        pass
+    try:
+        tax = await request.backend.tax_wizard()
+    except Exception:
+        pass
+    return render(request, "dashboard/report_card.html", {
+        "profile": profile,
+        "health": health,
+        "portfolio": portfolio,
+        "tax": tax,
     })
 
 
