@@ -302,6 +302,37 @@ async def settings_view(request):
 
 
 @login_required
+async def assumptions_view(request):
+    """Planning assumptions: HTML page, or JSON GET/POST to FastAPI /assumptions."""
+    if request.method == "GET" and "application/json" in (request.headers.get("Accept") or ""):
+        try:
+            return JsonResponse(await request.backend.get_assumptions())
+        except Exception as e:
+            logger.exception("Assumptions JSON load: %s", e)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    if request.method == "POST" and request.content_type and "application/json" in request.content_type:
+        try:
+            body = json.loads(request.body or b"{}")
+            allowed = {
+                "inflation_rate",
+                "equity_lc_return",
+                "equity_mc_return",
+                "equity_sc_return",
+                "debt_return",
+                "sip_stepup_pct",
+                "stress_scenarios",
+            }
+            payload = {k: v for k, v in body.items() if k in allowed}
+            return JsonResponse(await request.backend.patch_assumptions(payload))
+        except Exception as e:
+            logger.exception("Assumptions save: %s", e)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return render(request, "settings/assumptions.html", {"error": None, "saved": False})
+
+
+@login_required
 async def onboarding_view(request):
     """Onboarding flow for new users."""
     return render(request, "dashboard/onboarding.html")
