@@ -136,7 +136,6 @@ async def chat_stream(
             language=body.language,
             voice_mode=body.voice_mode,
             history=history,
-            db=db,
         ):
             yield f"data: {chunk}\n\n"
         yield "data: [DONE]\n\n"

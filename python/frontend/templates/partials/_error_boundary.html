@@ -1,0 +1,29 @@
+<!-- _error_boundary.html — Reusable error state for failed API calls -->
+<!-- Usage: {% include "partials/_error_boundary.html" %} -->
+<!-- Set x-data errorState: { show: false, message: '', retry: null } -->
+
+<template x-if="typeof _errorState !== 'undefined' && _errorState.show">
+  <div class="glass rounded-[2rem] border border-red-200/50 dark:border-red-800/50 p-8 text-center max-w-lg mx-auto my-8">
+    <div class="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">Something went wrong</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-6" x-text="_errorState.message || 'The backend service is temporarily unavailable. Please try again.'"></p>
+    <div class="flex items-center justify-center gap-3">
+      <button @click="_errorState.retry ? _errorState.retry() : location.reload()"
+              class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Retry
+        </span>
+      </button>
+      <a href="{% url 'dashboard' %}" class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+        Go to Dashboard
+      </a>
+    </div>
+  </div>
+</template>

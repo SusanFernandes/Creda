@@ -1,0 +1,52 @@
+{
+  "form16_version": "Part_B",
+  "assessment_year": "2026-27",
+  "financial_year": "2025-26",
+  "employee": {
+    "name": "ARJUN MEHTA",
+    "pan": "XXXXX1234X",
+    "employer": "TechCorp India Pvt Ltd",
+    "employer_tan": "BLRT12345E"
+  },
+
+  "income": {
+    "gross_salary": 2160000,
+    "basic_salary": 1080000,
+    "hra_received": 336000,
+    "special_allowance": 504000,
+    "lta": 60000,
+    "employer_pf": 129600,
+    "standard_deduction": 50000,
+    "net_taxable_salary": 1980400
+  },
+
+  "deductions_claimed_by_employer": {
+    "section_80c_epf": 129600,
+    "section_80c_elss": 45000,
+    "section_80c_total": 150000,
+    "section_80ccd_nps": 0,
+    "section_80d": 0,
+    "section_24_home_loan": 0,
+    "hra_exemption": 168000
+  },
+
+  "tax_computation": {
+    "total_income": 1980400,
+    "total_deductions": 318000,
+    "taxable_income": 1662400,
+    "tax_on_income": 282480,
+    "surcharge": 0,
+    "cess": 11299,
+    "total_tax_liability": 293779,
+    "tds_deducted": 293779,
+    "balance_payable": 0
+  },
+
+  "optimization_opportunities": {
+    "section_80c_remaining": 105000,
+    "section_80ccd_1b_unused": 50000,
+    "section_80d_unused": 25000,
+    "potential_additional_savings": 55380,
+    "notes": "₹1.05L remaining under 80C (invest in ELSS/PPF). ₹50K NPS deduction under 80CCD(1B) completely unused. No personal health insurance premium claimed under 80D."
+  }
+}

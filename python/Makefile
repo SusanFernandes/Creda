@@ -52,7 +52,7 @@ help: ## Show this help
 	@Write-Host '    make postgres-volume-reset  Fix DB password mismatch (removes Postgres volume; wipes DB)'
 	@Write-Host '    make migrate           Run Django + Alembic migrations'
 	@Write-Host '    make superuser         Create Django admin superuser'
-	@Write-Host '    make seed              Seed demo data (2 users with full data)'
+	@Write-Host '    make seed              Seed demo data (Arjun + Priya with full portfolio)'
 	@Write-Host ''
 	@Write-Host '  DATABASE' -ForegroundColor Yellow
 	@Write-Host '    make db-shell          Open psql shell (creda_api)'

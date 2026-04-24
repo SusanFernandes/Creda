@@ -1,79 +1,179 @@
 {% extends "base_dashboard.html" %}
 {% block title %}Tax Wizard{% endblock %}
 {% block page_title %}Tax Wizard{% endblock %}
-{% block page_subtitle %}Old vs New Regime Comparison{% endblock %}
+{% block page_subtitle %}Regime Comparison & Year-Round Optimization{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
-  {% if tax %}
-  <!-- Regime Comparison -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-    <div class="glass rounded-[2rem] p-7 border-2 transition-all {% if tax.analysis.better_regime == 'old' %}border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10{% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
-      <div class="flex justify-between items-center mb-5">
-        <h3 class="font-bold">Old Regime</h3>
-        {% if tax.analysis.better_regime == 'old' %}
-        <span class="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded-full">Recommended</span>
-        {% endif %}
-      </div>
-      <p class="text-4xl font-black italic tracking-tight">₹{{ tax.analysis.old_regime.tax|floatformat:0 }}</p>
-      <p class="text-sm text-slate-500 mt-3">Deductions: ₹{{ tax.analysis.old_regime.total_deductions|floatformat:0 }}</p>
-    </div>
-    <div class="glass rounded-[2rem] p-7 border-2 transition-all {% if tax.analysis.better_regime == 'new' %}border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10{% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
-      <div class="flex justify-between items-center mb-5">
-        <h3 class="font-bold">New Regime</h3>
-        {% if tax.analysis.better_regime == 'new' %}
-        <span class="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded-full">Recommended</span>
-        {% endif %}
-      </div>
-      <p class="text-4xl font-black italic tracking-tight">₹{{ tax.analysis.new_regime.tax|floatformat:0 }}</p>
-      <p class="text-sm text-slate-500 mt-3">Standard deduction: ₹{{ tax.analysis.new_regime.standard_deduction|floatformat:0 }}</p>
-    </div>
+<div class="max-w-4xl mx-auto space-y-8" x-data="{ tab: '{{ active_tab|default:'regime' }}' }">
+
+  <!-- Tabs -->
+  <div class="flex gap-2 glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-1.5">
+    <button @click="tab = 'regime'" :class="tab === 'regime' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
+      Regime Comparison
+    </button>
+    <button @click="tab = 'copilot'" :class="tab === 'copilot' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
+      Year-Round Copilot
+    </button>
   </div>
 
-  <!-- Savings Banner -->
-  <div class="glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-6 text-center">
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-1">Potential Savings</p>
-    <p class="text-2xl font-black italic text-blue-600">₹{{ tax.analysis.savings|floatformat:0 }}</p>
-    <p class="text-sm text-slate-500 mt-1">with the {{ tax.analysis.better_regime }} regime</p>
-  </div>
-
-  {% if tax.analysis.missed_deductions %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
-    <h3 class="font-bold mb-4 flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-      Missed Deductions
-    </h3>
-    <div class="space-y-3">
-      {% for md in tax.analysis.missed_deductions %}
-      <div class="flex justify-between items-center p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
-        <div>
-          <p class="font-semibold text-sm">Section {{ md.section }}</p>
-          <p class="text-xs text-slate-500 mt-0.5">{{ md.suggestion }}</p>
+  <!-- TAB 1: Regime Comparison -->
+  <div x-show="tab === 'regime'" x-transition class="space-y-8">
+    {% if tax %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="glass rounded-[2rem] p-7 border-2 transition-all {% if tax.analysis.better_regime == 'old' %}border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10{% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="font-bold">Old Regime</h3>
+          {% if tax.analysis.better_regime == 'old' %}
+          <span class="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded-full">Recommended</span>
+          {% endif %}
         </div>
-        <p class="text-blue-600 font-black italic text-lg">₹{{ md.unused|floatformat:0 }}</p>
+        <p class="text-4xl font-black italic tracking-tight">₹{{ tax.analysis.old_regime.tax|floatformat:0 }}</p>
+        <p class="text-sm text-slate-500 mt-3">Deductions: ₹{{ tax.analysis.old_regime.total_deductions|floatformat:0 }}</p>
       </div>
-      {% endfor %}
+      <div class="glass rounded-[2rem] p-7 border-2 transition-all {% if tax.analysis.better_regime == 'new' %}border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10{% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="font-bold">New Regime</h3>
+          {% if tax.analysis.better_regime == 'new' %}
+          <span class="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded-full">Recommended</span>
+          {% endif %}
+        </div>
+        <p class="text-4xl font-black italic tracking-tight">₹{{ tax.analysis.new_regime.tax|floatformat:0 }}</p>
+        <p class="text-sm text-slate-500 mt-3">Standard deduction: ₹{{ tax.analysis.new_regime.standard_deduction|floatformat:0 }}</p>
+      </div>
     </div>
-  </div>
-  {% endif %}
-
-  {% if tax.response %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h2 class="font-bold mb-4 flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-      CREDA Tax Strategy
-    </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ tax.response }}</div>
-  </div>
-  {% endif %}
-
-  {% else %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+    <div class="glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-6 text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-1">Potential Savings</p>
+      <p class="text-2xl font-black italic text-blue-600">₹{{ tax.analysis.savings|floatformat:0 }}</p>
+      <p class="text-sm text-slate-500 mt-1">with the {{ tax.analysis.better_regime }} regime</p>
     </div>
-    <p class="text-slate-500 text-sm">Complete your profile to get tax regime analysis.</p>
+    {% if tax.analysis.missed_deductions %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+      <h3 class="font-bold mb-4 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+        Missed Deductions
+      </h3>
+      <div class="space-y-3">
+        {% for md in tax.analysis.missed_deductions %}
+        <div class="flex justify-between items-center p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
+          <div>
+            <p class="font-semibold text-sm">Section {{ md.section }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ md.suggestion }}</p>
+          </div>
+          <p class="text-blue-600 font-black italic text-lg">₹{{ md.unused|floatformat:0 }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% if tax.response %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h2 class="font-bold mb-4 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        CREDA Tax Strategy
+      </h2>
+      <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ tax.response }}</div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+      </div>
+      <p class="text-slate-500 text-sm">Complete your profile to get tax regime analysis.</p>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
+
+  <!-- TAB 2: Year-Round Tax Copilot -->
+  <div x-show="tab === 'copilot'" x-transition class="space-y-8">
+    {% if tax_copilot %}
+    {% if tax_copilot.analysis %}
+    {% if tax_copilot.analysis.deduction_tracker %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h3 class="font-bold mb-1">Deduction Tracker</h3>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Section-wise utilization for FY {{ tax_copilot.analysis.fy|default:"2024-25" }}</p>
+      <div class="space-y-5">
+        {% for section in tax_copilot.analysis.deduction_tracker %}
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <span class="text-sm font-semibold">Section {{ section.section }}</span>
+              <span class="text-xs text-slate-500 ml-2">{{ section.description }}</span>
+            </div>
+            <span class="text-sm font-black italic {% if section.utilization_pct >= 80 %}text-emerald-500{% elif section.utilization_pct >= 50 %}text-amber-500{% else %}text-red-500{% endif %}">
+              {{ section.utilization_pct }}%
+            </span>
+          </div>
+          <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2.5">
+            <div class="h-2.5 rounded-full transition-all duration-500 {% if section.utilization_pct >= 80 %}bg-emerald-500{% elif section.utilization_pct >= 50 %}bg-amber-500{% else %}bg-red-500{% endif %}"
+                 style="width: {{ section.utilization_pct }}%"></div>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400 mt-1">
+            <span>Used: ₹{{ section.used|floatformat:0 }}</span>
+            <span>Limit: ₹{{ section.limit|floatformat:0 }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% if tax_copilot.analysis.harvest_opportunities %}
+    <div class="glass rounded-2xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <h3 class="font-bold text-sm">Tax-Loss Harvesting Opportunities</h3>
+      </div>
+      <div class="space-y-3">
+        {% for opp in tax_copilot.analysis.harvest_opportunities %}
+        <div class="flex justify-between items-center p-4 rounded-xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
+          <div>
+            <p class="font-semibold text-sm">{{ opp.fund_name }}</p>
+            <p class="text-xs text-slate-500">Unrealized loss: ₹{{ opp.unrealized_loss|floatformat:0 }}</p>
+          </div>
+          <p class="font-black italic text-emerald-600">Save ₹{{ opp.tax_saving|floatformat:0 }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% if tax_copilot.analysis.upcoming_deadlines %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+      <h3 class="font-bold mb-4">Upcoming Deadlines</h3>
+      <div class="space-y-3">
+        {% for dl in tax_copilot.analysis.upcoming_deadlines %}
+        <div class="flex items-center gap-4 p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+          <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-sm">{{ dl.title }}</p>
+            <p class="text-xs text-slate-500">{{ dl.date }} — {{ dl.description }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% if tax_copilot.response %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+      <h2 class="font-bold mb-4 flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        CREDA Tax Strategy
+      </h2>
+      <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ tax_copilot.response }}</div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <p class="text-slate-500 text-sm">Complete your profile to unlock year-round tax optimization.</p>
+    </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

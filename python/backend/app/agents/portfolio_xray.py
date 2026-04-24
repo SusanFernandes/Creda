@@ -63,6 +63,19 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "bottom_performers": [{"name": f.get("fund_name"), "xirr": f.get("xirr")} for f in bottom_3],
     }
 
+    # Benchmark comparison: Nifty 50 via yfinance
+    try:
+        benchmark = await _fetch_nifty_benchmark()
+        analysis["benchmark"] = benchmark
+        portfolio_xirr = portfolio.get("xirr", 0) or 0
+        bench_return = benchmark.get("cagr_3y", 0)
+        analysis["alpha_vs_nifty"] = round(portfolio_xirr - bench_return, 2)
+        analysis["beating_benchmark"] = portfolio_xirr > bench_return
+    except Exception as e:
+        logger.debug("Benchmark fetch failed: %s", e)
+        analysis["benchmark"] = None
+        analysis["alpha_vs_nifty"] = None
+
     # LLM rebalancing recommendations
     try:
         result = await primary_llm.ainvoke(_REBALANCE_PROMPT.format(data=str(analysis)))
@@ -165,6 +178,30 @@ async def run_xray_analysis(portfolio, funds, user_id: str) -> dict:
         },
     }
     return await run(state)
+
+
+async def _fetch_nifty_benchmark() -> dict:
+    """Fetch Nifty 50 benchmark returns via yfinance."""
+    import asyncio
+    def _fetch():
+        import yfinance as yf
+        from datetime import datetime, timedelta
+        nifty = yf.Ticker("^NSEI")
+        hist = nifty.history(period="5y")
+        if hist.empty:
+            return {"available": False}
+        current = hist["Close"].iloc[-1]
+        # CAGR calculations
+        result = {"current_level": round(current, 2), "available": True}
+        for years, key in [(1, "cagr_1y"), (3, "cagr_3y"), (5, "cagr_5y")]:
+            target_date = datetime.now() - timedelta(days=years * 365)
+            past = hist.loc[hist.index >= target_date.strftime("%Y-%m-%d")]
+            if not past.empty:
+                start_price = past["Close"].iloc[0]
+                cagr = ((current / start_price) ** (1 / years) - 1) * 100
+                result[key] = round(cagr, 2)
+        return result
+    return await asyncio.get_event_loop().run_in_executor(None, _fetch)
 
 
 def _classify_scheme(name: str) -> str:

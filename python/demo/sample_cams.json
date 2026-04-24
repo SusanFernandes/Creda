@@ -1,0 +1,96 @@
+{
+  "statement_type": "CAMS_SUMMARY",
+  "generated_for": "ARJUN MEHTA",
+  "pan": "XXXXX1234X",
+  "email": "arjun@demo.creda.in",
+  "statement_date": "2026-06-15",
+  "folios": [
+    {
+      "amc": "Mirae Asset Mutual Fund",
+      "folio_number": "1234567890",
+      "scheme": "Mirae Asset Large Cap Fund - Direct Growth",
+      "isin": "INF769K01AX2",
+      "units": 2467.89,
+      "nav": 108.59,
+      "current_value": 268000,
+      "cost_value": 220000,
+      "transactions": [
+        {"date": "2024-01-15", "type": "SIP", "amount": 10000, "units": 92.34, "nav": 108.30},
+        {"date": "2024-02-15", "type": "SIP", "amount": 10000, "units": 91.12, "nav": 109.75},
+        {"date": "2024-03-15", "type": "SIP", "amount": 10000, "units": 93.56, "nav": 106.88}
+      ]
+    },
+    {
+      "amc": "Axis Mutual Fund",
+      "folio_number": "9876543210",
+      "scheme": "Axis Midcap Fund - Direct Growth",
+      "isin": "INF846K01EW2",
+      "units": 1832.45,
+      "nav": 111.87,
+      "current_value": 205000,
+      "cost_value": 150000,
+      "transactions": [
+        {"date": "2024-01-15", "type": "SIP", "amount": 7500, "units": 67.23, "nav": 111.56},
+        {"date": "2024-02-15", "type": "SIP", "amount": 7500, "units": 66.89, "nav": 112.13}
+      ]
+    },
+    {
+      "amc": "PPFAS Mutual Fund",
+      "folio_number": "5678901234",
+      "scheme": "Parag Parikh Flexi Cap Fund - Direct Growth",
+      "isin": "INF879O01027",
+      "units": 2841.23,
+      "nav": 81.30,
+      "current_value": 231000,
+      "cost_value": 180000,
+      "transactions": [
+        {"date": "2024-01-15", "type": "SIP", "amount": 10000, "units": 123.45, "nav": 81.00}
+      ]
+    },
+    {
+      "amc": "ICICI Prudential Mutual Fund",
+      "folio_number": "3456789012",
+      "scheme": "ICICI Pru Bluechip Fund - Direct Growth",
+      "isin": "INF109K01Z48",
+      "units": 1234.56,
+      "nav": 76.14,
+      "current_value": 94000,
+      "cost_value": 80000,
+      "transactions": [
+        {"date": "2024-06-15", "type": "Lump Sum", "amount": 80000, "units": 1234.56, "nav": 64.80}
+      ]
+    },
+    {
+      "amc": "SBI Mutual Fund",
+      "folio_number": "7890123456",
+      "scheme": "SBI Small Cap Fund - Direct Growth",
+      "isin": "INF200K01RJ0",
+      "units": 987.65,
+      "nav": 89.11,
+      "current_value": 88000,
+      "cost_value": 60000,
+      "transactions": [
+        {"date": "2024-03-01", "type": "Lump Sum", "amount": 60000, "units": 987.65, "nav": 60.75}
+      ]
+    },
+    {
+      "amc": "Axis Mutual Fund",
+      "folio_number": "2345678901",
+      "scheme": "Axis Bluechip Fund - Direct Growth",
+      "isin": "INF846K01DP8",
+      "units": 678.90,
+      "nav": 65.55,
+      "current_value": 44500,
+      "cost_value": 40000,
+      "transactions": [
+        {"date": "2025-01-15", "type": "Lump Sum", "amount": 40000, "units": 678.90, "nav": 58.92}
+      ]
+    }
+  ],
+  "summary": {
+    "total_invested": 730000,
+    "current_value": 830500,
+    "total_gain": 100500,
+    "xirr_pct": 13.2
+  }
+}

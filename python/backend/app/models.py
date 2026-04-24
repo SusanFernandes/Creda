@@ -289,3 +289,67 @@ class FamilyLink(Base):
     relationship_type = Column(String(30), default="spouse")  # spouse | parent | child | sibling
     is_accepted = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  BUDGETS — MONTHLY BUDGET TRACKING
+# ═══════════════════════════════════════════════════════════════════════════
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    month = Column(String(7), nullable=False)             # "2025-01"
+    category = Column(String(100), nullable=False)        # food | transport | rent | ...
+    planned_amount = Column(Float, default=0)
+    actual_amount = Column(Float, default=0)
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Expense(Base):
+    __tablename__ = "expenses"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    category = Column(String(100), nullable=False)
+    amount = Column(Float, nullable=False)
+    description = Column(String(500), default="")
+    expense_date = Column(Date, nullable=False)
+    payment_method = Column(String(50), default="")       # upi | card | cash | netbanking
+    is_recurring = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ACTIVITY LOG — USER ACTION AUDIT TRAIL
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False)          # login | portfolio_upload | chat | voice_query | ...
+    detail = Column(Text, default="")
+    ip_address = Column(String(45), default="")
+    user_agent = Column(String(500), default="")
+    metadata_json = Column(JSON, default=dict)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  EMAIL VERIFICATION TOKENS
+# ═══════════════════════════════════════════════════════════════════════════
+
+class EmailVerification(Base):
+    __tablename__ = "email_verifications"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token = Column(String(200), unique=True, nullable=False)
+    verified = Column(Boolean, default=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())

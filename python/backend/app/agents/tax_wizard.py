@@ -101,6 +101,42 @@ async def run(state: FinancialState) -> dict[str, Any]:
         missed.append({"section": "80D", "unused": 25000,
                         "suggestion": "Health insurance premium (₹25K for self, ₹50K if parents)"})
 
+    # Ranked 80C options — ordered by effective return
+    ranked_80c = [
+        {"instrument": "ELSS Mutual Fund", "lock_in": "3 years", "expected_return": "12-15%",
+         "tax_benefit": "₹46,800 (at 30% bracket)", "liquidity": "Medium",
+         "rating": 5, "reason": "Shortest lock-in + equity growth + tax saving"},
+        {"instrument": "PPF", "lock_in": "15 years", "expected_return": "7.1%",
+         "tax_benefit": "₹46,800 (at 30% bracket)", "liquidity": "Low",
+         "rating": 4, "reason": "EEE tax status — completely tax-free returns"},
+        {"instrument": "EPF VPF", "lock_in": "Till retirement", "expected_return": "8.25%",
+         "tax_benefit": "₹46,800 (at 30% bracket)", "liquidity": "Very Low",
+         "rating": 4, "reason": "Guaranteed return + employer match"},
+        {"instrument": "NPS (80CCD)", "lock_in": "Till 60", "expected_return": "9-12%",
+         "tax_benefit": "₹15,600 extra (₹50K at 30%)", "liquidity": "Very Low",
+         "rating": 3, "reason": "Extra ₹50K deduction beyond 80C"},
+        {"instrument": "SCSS", "lock_in": "5 years", "expected_return": "8.2%",
+         "tax_benefit": "₹46,800 (at 30% bracket)", "liquidity": "Low",
+         "rating": 3, "reason": "Best for senior citizens — guaranteed"},
+        {"instrument": "Tax-Saving FD", "lock_in": "5 years", "expected_return": "6.5-7%",
+         "tax_benefit": "₹46,800 (at 30% bracket)", "liquidity": "Low",
+         "rating": 2, "reason": "Safe but interest is fully taxable"},
+    ]
+
+    # Tax-loss harvesting opportunities (from portfolio if available)
+    tax_loss_harvesting = []
+    portfolio_funds = state.get("portfolio_data", {}).get("funds", []) if state.get("portfolio_data") else []
+    for fund in portfolio_funds:
+        gain = (fund.get("current_value", 0) or 0) - (fund.get("invested", 0) or 0)
+        if gain < 0:
+            tax_loss_harvesting.append({
+                "fund_name": fund.get("fund_name", "Unknown"),
+                "invested": fund.get("invested", 0),
+                "current_value": fund.get("current_value", 0),
+                "unrealised_loss": round(abs(gain)),
+                "potential_tax_saved": round(abs(gain) * 0.10),  # 10% LTCG
+                "action": f"Redeem & reinvest in similar category after 30 days",
+            })
     data = {
         "gross_income": income,
         "old_regime": {
@@ -121,6 +157,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "better_regime": better_regime,
         "savings": savings,
         "missed_deductions": missed,
+        "ranked_80c": ranked_80c,
+        "tax_loss_harvesting": tax_loss_harvesting,
     }
 
     try:

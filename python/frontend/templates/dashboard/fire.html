@@ -35,6 +35,125 @@
     </div>
   </div>
 
+  <!-- FIRE Trajectory Chart -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+    <h3 class="text-sm font-bold mb-4">FIRE Trajectory</h3>
+    <div class="relative" style="height:280px;">
+      <canvas id="fireChart"></canvas>
+    </div>
+  </div>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Chart === 'undefined') return;
+    const fireNumber = {{ fire.analysis.fire_number|default:0 }};
+    const currentCorpus = {{ fire.analysis.current_corpus|default:0 }};
+    const requiredSip = {{ fire.analysis.required_sip|default:0 }};
+    const yearsToFire = {{ fire.analysis.years_to_fire|default:15 }};
+    const returnRate = 0.12;
+
+    // Generate projected trajectory
+    const years = [];
+    const projectedValues = [];
+    const targetLine = [];
+    let running = currentCorpus;
+
+    for (let y = 0; y <= yearsToFire; y++) {
+      years.push('Year ' + y);
+      projectedValues.push(Math.round(running));
+      targetLine.push(fireNumber);
+      running = running * (1 + returnRate) + requiredSip * 12;
+    }
+
+    const ctx = document.getElementById('fireChart')?.getContext('2d');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: [
+            { label: 'Projected Corpus', data: projectedValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+            { label: 'FIRE Target', data: targetLine, borderColor: '#dc2626', borderDash: [8,4], pointRadius: 0, borderWidth: 2, fill: false },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } } },
+          scales: {
+            y: { ticks: { callback: v=>'₹'+(v/10000000).toFixed(1)+'Cr', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.1)' } },
+            x: { ticks: { font: { size: 9 }, maxTicksLimit: 10 }, grid: { display: false } }
+          }
+        }
+      });
+    }
+  });
+  </script>
+
+  <!-- Year-by-Year Roadmap Table -->
+  {% if fire.analysis.roadmap %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+    <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+      Year-by-Year Roadmap <span class="text-xs font-normal text-slate-400">(10% annual SIP step-up)</span>
+    </h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 dark:border-slate-700">
+            <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Year</th>
+            <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Age</th>
+            <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Annual SIP</th>
+            <th class="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Portfolio Value</th>
+            <th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in fire.analysis.roadmap %}
+          <tr class="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors {% if row.corpus >= fire.analysis.fire_number %}bg-emerald-50/30 dark:bg-emerald-900/5{% endif %}">
+            <td class="px-4 py-3 font-medium">Y{{ row.year }}</td>
+            <td class="px-4 py-3">{{ row.age }}</td>
+            <td class="text-right px-4 py-3 font-bold">₹{{ row.annual_sip|floatformat:0 }}</td>
+            <td class="text-right px-4 py-3 font-bold {% if row.corpus >= fire.analysis.fire_number %}text-emerald-600{% endif %}">₹{{ row.corpus|floatformat:0 }}</td>
+            <td class="px-4 py-3 text-xs">
+              {% if row.corpus >= fire.analysis.fire_number %}
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">🎯 FIRE REACHED</span>
+              {% elif row.year == 1 %}
+              <span class="text-blue-600">Start step-up SIP</span>
+              {% elif row.year|divisibleby:5 %}
+              <span class="text-amber-600">Review & rebalance</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Glide Path: Asset Allocation Over Time -->
+  {% if fire.analysis.glide_path %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+    <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+      Asset Allocation Glide Path
+    </h3>
+    <div class="space-y-2">
+      {% for step in fire.analysis.glide_path %}
+      {% if step.year|divisibleby:5 or step.year == 0 or step.phase == "preservation" %}
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-bold w-8 text-slate-400">{{ step.age }}</span>
+        <div class="flex-1 flex h-6 rounded-full overflow-hidden">
+          <div class="bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold" style="width:{{ step.equity_pct }}%">{{ step.equity_pct }}% Eq</div>
+          <div class="bg-amber-400 flex items-center justify-center text-amber-900 text-[10px] font-bold" style="width:{{ step.debt_pct }}%">{{ step.debt_pct }}% Debt</div>
+        </div>
+        <span class="text-[10px] w-20 text-right capitalize {% if step.phase == 'accumulation' %}text-blue-600{% elif step.phase == 'transition' %}text-amber-600{% else %}text-emerald-600{% endif %} font-bold">{{ step.phase }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if fire.analysis.tax_gaps %}
   <div class="glass rounded-2xl border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-6">
     <div class="flex items-center gap-2 mb-3">

@@ -81,6 +81,44 @@ async def run(state: FinancialState) -> dict[str, Any]:
         })
         annual_sip *= 1.10  # 10% step-up
 
+    # Month-by-month roadmap (first 36 months for detailed view)
+    monthly_roadmap = []
+    proj = current_corpus
+    monthly_sip_amount = current_sip
+    for month in range(1, min(years_to_fire * 12 + 1, 37)):
+        proj = proj * (1 + monthly_return) + monthly_sip_amount
+        if month % 12 == 0:
+            monthly_sip_amount *= 1.10  # annual step-up
+        monthly_roadmap.append({
+            "month": month,
+            "corpus": round(proj),
+            "sip": round(monthly_sip_amount),
+        })
+
+    # Asset allocation glide path (equity → debt transition as FIRE approaches)
+    glide_path = []
+    for year in range(0, min(years_to_fire + 1, 31)):
+        remaining_years = years_to_fire - year
+        if remaining_years >= 15:
+            equity_pct = 80
+        elif remaining_years >= 10:
+            equity_pct = 70
+        elif remaining_years >= 5:
+            equity_pct = 60
+        elif remaining_years >= 3:
+            equity_pct = 45
+        elif remaining_years >= 1:
+            equity_pct = 30
+        else:
+            equity_pct = 20
+        glide_path.append({
+            "year": year,
+            "age": age + year,
+            "equity_pct": equity_pct,
+            "debt_pct": 100 - equity_pct,
+            "phase": "accumulation" if remaining_years > 5 else "transition" if remaining_years > 1 else "preservation",
+        })
+
     # Tax optimisation check
     investments_80c = profile.get("investments_80c", 0)
     nps_contribution = profile.get("nps_contribution", 0)
@@ -110,6 +148,9 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "sip_gap": round(sip_gap),
         "on_track": required_sip <= current_sip,
         "roadmap_summary": roadmap[:5],  # first 5 years
+        "roadmap": roadmap,
+        "monthly_roadmap": monthly_roadmap,
+        "glide_path": glide_path,
         "tax_gaps": tax_gaps,
         "insurance_gaps": insurance_gaps,
     }

@@ -146,6 +146,30 @@ async def _generate_premarket_briefing(indices: dict, headlines: list, sentiment
         return ""
 
 
+async def _analyze_portfolio_headline_impact(headlines: list[dict], portfolio: dict) -> list[dict]:
+    """Link market headlines to user's specific portfolio holdings using fast LLM."""
+    funds = portfolio.get("funds", [])
+    if not funds or not headlines:
+        return []
+    fund_names = [f.get("fund_name", "") for f in funds[:10]]
+    fund_categories = list(set(f.get("category", "") for f in funds if f.get("category")))
+    titles = "\n".join(f"- {h['title']}" for h in headlines[:6])
+    try:
+        result = await fast_llm.ainvoke(
+            f"Given these market headlines:\n{titles}\n\n"
+            f"And this user's portfolio (fund names: {', '.join(fund_names[:6])}, "
+            f"categories: {', '.join(fund_categories)}), "
+            f"identify which headlines directly affect this portfolio. "
+            f"Respond ONLY as a JSON array: [{{\"headline\": \"...\", \"affected_funds\": [\"...\"], "
+            f"\"impact\": \"positive|negative|neutral\", \"action\": \"...\"}}]. "
+            f"Max 3 items. Only include headlines that specifically relate to this portfolio."
+        )
+        import json
+        return json.loads(result.content.strip())
+    except Exception:
+        return []
+
+
 async def run(state: FinancialState) -> dict[str, Any]:
     """Run market pulse analysis with real-time data, FII/DII flows, and sentiment."""
     headlines = await _fetch_headlines()
@@ -178,6 +202,11 @@ async def run(state: FinancialState) -> dict[str, Any]:
     # Generate voice-friendly briefing
     briefing = await _generate_premarket_briefing(indices, headlines, sentiment, portfolio_summary)
 
+    # Portfolio-aware headline impact analysis
+    portfolio_impact_headlines = []
+    if portfolio and portfolio.get("funds"):
+        portfolio_impact_headlines = await _analyze_portfolio_headline_impact(headlines, portfolio)
+
     return {
         "indices": indices,
         "headlines": headlines[:5],
@@ -185,12 +214,13 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "sentiment": sentiment,
         "fii_dii": fii_dii,
         "briefing": briefing,
+        "portfolio_impact_headlines": portfolio_impact_headlines,
         "timestamp": datetime.now().isoformat(),
         "portfolio_impact": portfolio_summary,
     }
 
 
-async def run_market_pulse(profile, portfolio, language: str, voice_mode: bool) -> dict:
+async def run_market_pulse(profile, portfolio, funds=None, language: str = "en", voice_mode: bool = False) -> dict:
     from app.agents.synthesizer import synthesize
     profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns} if profile else {}
     portfolio_dict = None
@@ -200,6 +230,12 @@ async def run_market_pulse(profile, portfolio, language: str, voice_mode: bool) 
             "current_value": portfolio.current_value,
             "xirr": portfolio.xirr,
         }
+        if funds:
+            portfolio_dict["funds"] = [
+                {"fund_name": f.fund_name, "category": f.category, "current_value": f.current_value,
+                 "invested": f.invested, "xirr": f.xirr}
+                for f in funds
+            ]
     state: FinancialState = {
         "user_id": profile.user_id if profile else "",
         "message": "market pulse",

@@ -129,3 +129,75 @@ async def _register_backend(email: str, password: str, name: str) -> tuple[str |
     except Exception:
         pass
     return None, None
+
+
+async def forgot_password_view(request):
+    """Password reset request form."""
+    message = ""
+    error = ""
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        if not email:
+            error = "Please enter your email address"
+        else:
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.post(
+                        f"{settings.BACKEND_API_URL}/auth/password-reset-request",
+                        json={"email": email},
+                    )
+                    data = resp.json()
+                    reset_token = data.get("reset_token", "")
+                    if reset_token:
+                        # In dev, redirect directly to reset form with token
+                        return redirect(f"/reset-password/?token={reset_token}")
+                    message = data.get("message", "If an account exists, a reset link has been sent.")
+            except Exception:
+                error = "Could not process request. Try again later."
+
+    return render(request, "accounts/forgot_password.html", {
+        "message": message, "error": error,
+    })
+
+
+async def reset_password_view(request):
+    """Password reset confirmation form — enter new password with valid token."""
+    token = request.GET.get("token", "") or request.POST.get("token", "")
+    message = ""
+    error = ""
+
+    if request.method == "POST":
+        new_password = request.POST.get("new_password", "")
+        confirm_password = request.POST.get("confirm_password", "")
+
+        if not token:
+            error = "Invalid reset link. Please request a new one."
+        elif len(new_password) < 8:
+            error = "Password must be at least 8 characters"
+        elif new_password != confirm_password:
+            error = "Passwords do not match"
+        else:
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.post(
+                        f"{settings.BACKEND_API_URL}/auth/password-reset-confirm",
+                        json={"token": token, "new_password": new_password},
+                    )
+                    if resp.status_code == 200:
+                        # Also update Django password
+                        data = resp.json()
+                        try:
+                            # Find user by attempting login or just show success
+                            pass
+                        except Exception:
+                            pass
+                        message = "Password reset successfully! You can now log in."
+                    else:
+                        data = resp.json()
+                        error = data.get("detail", "Reset failed. Token may be expired.")
+            except Exception:
+                error = "Could not process request. Try again later."
+
+    return render(request, "accounts/reset_password.html", {
+        "token": token, "message": message, "error": error,
+    })

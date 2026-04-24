@@ -96,8 +96,13 @@ function chatApp() {
         this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
       });
 
+      // Add placeholder for streaming response
+      const assistantMsg = { id: ++this.msgId, role: 'assistant', content: '', agent: '' };
+      this.messages.push(assistantMsg);
+
       try {
-        const resp = await fetch('/api/chat/', {
+        // Try SSE streaming first
+        const resp = await fetch('/api/chat/stream/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -105,19 +110,51 @@ function chatApp() {
           },
           body: JSON.stringify({ message: text, session_id: this.sessionId }),
         });
-        const data = await resp.json();
-        this.messages.push({
-          id: ++this.msgId,
-          role: 'assistant',
-          content: data.response,
-          agent: data.agent_used,
-        });
+
+        if (resp.ok && resp.headers.get('content-type')?.includes('event-stream')) {
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            // Parse SSE: lines starting with "data: "
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') break;
+                assistantMsg.content += data;
+                this.$nextTick(() => {
+                  this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+                });
+              }
+            }
+          }
+        } else {
+          // Fallback to regular chat endpoint
+          const data = await resp.json();
+          assistantMsg.content = data.response || data.error || 'No response';
+          assistantMsg.agent = data.agent_used || '';
+        }
       } catch (e) {
-        this.messages.push({
-          id: ++this.msgId,
-          role: 'assistant',
-          content: 'Connection interrupted. Please try again.',
-        });
+        // Fallback to non-streaming endpoint
+        try {
+          const resp2 = await fetch('/api/chat/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ message: text, session_id: this.sessionId }),
+          });
+          const data = await resp2.json();
+          assistantMsg.content = data.response || data.error || 'Connection interrupted.';
+          assistantMsg.agent = data.agent_used || '';
+        } catch (e2) {
+          assistantMsg.content = 'Connection interrupted. Please try again.';
+        }
       }
 
       this.loading = false;

@@ -1,0 +1,245 @@
+# Kannada translations for CREDA
+# Copyright (C) 2025 CREDA
+msgid ""
+msgstr ""
+"Project-Id-Version: CREDA 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0530\n"
+"PO-Revision-Date: 2025-01-01 00:00+0530\n"
+"Last-Translator: CREDA Team\n"
+"Language-Team: Kannada\n"
+"Language: kn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Navigation
+msgid "Dashboard"
+msgstr "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್"
+
+msgid "AI Chat"
+msgstr "AI ಚಾಟ್"
+
+msgid "Portfolio X-Ray"
+msgstr "ಪೋರ್ಟ್‌ಫೋಲಿಯೋ ಎಕ್ಸ್-ರೇ"
+
+msgid "Money Health"
+msgstr "ಹಣದ ಆರೋಗ್ಯ"
+
+msgid "Market Pulse"
+msgstr "ಮಾರುಕಟ್ಟೆ ನಾಡಿ"
+
+msgid "FIRE Planner"
+msgstr "FIRE ಯೋಜಕ"
+
+msgid "Tax Wizard"
+msgstr "ತೆರಿಗೆ ವಿಝಾರ್ಡ್"
+
+msgid "Tax Copilot"
+msgstr "ತೆರಿಗೆ ಕೋಪೈಲಟ್"
+
+msgid "Budget Coach"
+msgstr "ಬಜೆಟ್ ಕೋಚ್"
+
+msgid "Goals"
+msgstr "ಗುರಿಗಳು"
+
+msgid "Goal Simulator"
+msgstr "ಗುರಿ ಸಿಮ್ಯುಲೇಟರ್"
+
+msgid "Stress Test"
+msgstr "ಒತ್ತಡ ಪರೀಕ್ಷೆ"
+
+msgid "Couples Finance"
+msgstr "ಜೋಡಿ ಹಣಕಾಸು"
+
+msgid "SIP Calculator"
+msgstr "SIP ಕ್ಯಾಲ್ಕುಲೇಟರ್"
+
+msgid "Personality"
+msgstr "ವ್ಯಕ್ತಿತ್ವ"
+
+msgid "Peer Insights"
+msgstr "ಸಹವರ್ತಿ ಒಳನೋಟ"
+
+msgid "Research"
+msgstr "ಸಂಶೋಧನೆ"
+
+msgid "Voice Agent"
+msgstr "ಧ್ವನಿ ಏಜೆಂಟ್"
+
+msgid "Notifications"
+msgstr "ಅಧಿಸೂಚನೆಗಳು"
+
+msgid "Settings"
+msgstr "ಸೆಟ್ಟಿಂಗ್‌ಗಳು"
+
+msgid "Admin"
+msgstr "ನಿರ್ವಾಹಕ"
+
+msgid "Compliance"
+msgstr "ಅನುಸರಣೆ"
+
+msgid "Life Events"
+msgstr "ಜೀವನ ಘಟನೆಗಳು"
+
+# Common UI
+msgid "Overview"
+msgstr "ಅವಲೋಕನ"
+
+msgid "Planning"
+msgstr "ಯೋಜನೆ"
+
+msgid "Tools"
+msgstr "ಉಪಕರಣಗಳು"
+
+msgid "Logout"
+msgstr "ಲಾಗ್ ಔಟ್"
+
+msgid "Login"
+msgstr "ಲಾಗಿನ್"
+
+msgid "Sign Up"
+msgstr "ಸೈನ್ ಅಪ್"
+
+msgid "Submit"
+msgstr "ಸಲ್ಲಿಸಿ"
+
+msgid "Cancel"
+msgstr "ರದ್ದು"
+
+msgid "Save"
+msgstr "ಉಳಿಸಿ"
+
+msgid "Loading..."
+msgstr "ಲೋಡ್ ಆಗುತ್ತಿದೆ..."
+
+msgid "Error"
+msgstr "ದೋಷ"
+
+msgid "Success"
+msgstr "ಯಶಸ್ಸು"
+
+# Dashboard
+msgid "Welcome back"
+msgstr "ಮರಳಿ ಸ್ವಾಗತ"
+
+msgid "Total Invested"
+msgstr "ಒಟ್ಟು ಹೂಡಿಕೆ"
+
+msgid "Current Value"
+msgstr "ಪ್ರಸ್ತುತ ಮೌಲ್ಯ"
+
+msgid "Total Gain"
+msgstr "ಒಟ್ಟು ಲಾಭ"
+
+msgid "Monthly SIP Budget"
+msgstr "ಮಾಸಿಕ SIP ಬಜೆಟ್"
+
+# Portfolio
+msgid "Upload CAMS Statement"
+msgstr "CAMS ಹೇಳಿಕೆ ಅಪ್‌ಲೋಡ್"
+
+msgid "Holdings"
+msgstr "ಹೋಲ್ಡಿಂಗ್‌ಗಳು"
+
+msgid "Fund"
+msgstr "ಫಂಡ್"
+
+msgid "Invested"
+msgstr "ಹೂಡಿಕೆ"
+
+msgid "Current"
+msgstr "ಪ್ರಸ್ತುತ"
+
+msgid "Run X-Ray Analysis"
+msgstr "ಎಕ್ಸ್-ರೇ ವಿಶ್ಲೇಷಣೆ"
+
+msgid "Compare Funds"
+msgstr "ಫಂಡ್ ಹೋಲಿಕೆ"
+
+msgid "Refresh NAVs"
+msgstr "NAV ರಿಫ್ರೆಶ್"
+
+# Goals
+msgid "Goal Planner"
+msgstr "ಗುರಿ ಯೋಜಕ"
+
+msgid "Financial Target Tracking & Simulation"
+msgstr "ಹಣಕಾಸು ಗುರಿ ಟ್ರ್ಯಾಕಿಂಗ್ & ಸಿಮ್ಯುಲೇಷನ್"
+
+msgid "My Goals"
+msgstr "ನನ್ನ ಗುರಿಗಳು"
+
+msgid "On Track"
+msgstr "ಸರಿಯಾದ ಹಾದಿಯಲ್ಲಿ"
+
+msgid "Needs Attention"
+msgstr "ಗಮನ ಬೇಕು"
+
+msgid "Link Funds to Goals"
+msgstr "ಫಂಡ್‌ಗಳನ್ನು ಗುರಿಗಳಿಗೆ ಲಿಂಕ್ ಮಾಡಿ"
+
+# Chat
+msgid "Type your message..."
+msgstr "ನಿಮ್ಮ ಸಂದೇಶವನ್ನು ಟೈಪ್ ಮಾಡಿ..."
+
+msgid "Send"
+msgstr "ಕಳುಹಿಸಿ"
+
+# Budget
+msgid "Budget Overview"
+msgstr "ಬಜೆಟ್ ಅವಲೋಕನ"
+
+msgid "Planned"
+msgstr "ಯೋಜಿತ"
+
+msgid "Actual"
+msgstr "ವಾಸ್ತವಿಕ"
+
+# FIRE
+msgid "FIRE Calculator"
+msgstr "FIRE ಕ್ಯಾಲ್ಕುಲೇಟರ್"
+
+msgid "Years to FIRE"
+msgstr "FIRE ಗೆ ವರ್ಷಗಳು"
+
+msgid "Monthly Savings Needed"
+msgstr "ಅಗತ್ಯ ಮಾಸಿಕ ಉಳಿತಾಯ"
+
+# Notifications
+msgid "All"
+msgstr "ಎಲ್ಲಾ"
+
+msgid "SIP"
+msgstr "SIP"
+
+msgid "Rebalance"
+msgstr "ಮರುಸಮತೋಲನ"
+
+msgid "Tax"
+msgstr "ತೆರಿಗೆ"
+
+msgid "Mark all read"
+msgstr "ಎಲ್ಲಾ ಓದಿದ ಎಂದು ಗುರುತಿಸಿ"
+
+# Export
+msgid "Export as CSV"
+msgstr "CSV ಆಗಿ ರಫ್ತು"
+
+msgid "Export as PDF"
+msgstr "PDF ಆಗಿ ರಫ್ತು"
+
+# Health Score
+msgid "Money Health Score"
+msgstr "ಹಣ ಆರೋಗ್ಯ ಸ್ಕೋರ್"
+
+msgid "Emergency Fund"
+msgstr "ತುರ್ತು ನಿಧಿ"
+
+msgid "Insurance Coverage"
+msgstr "ವಿಮೆ ಕವರೇಜ್"
+
+msgid "Debt Level"
+msgstr "ಸಾಲ ಮಟ್ಟ"

@@ -1,142 +1,257 @@
 {% extends "base_dashboard.html" %}
 {% block title %}Voice Agent{% endblock %}
 {% block page_title %}Voice Agent{% endblock %}
-{% block page_subtitle %}Multilingual Voice Interface{% endblock %}
+{% block page_subtitle %}Continuous Voice Conversation{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto" x-data="voiceApp()">
-  <!-- Voice Interface -->
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center">
-    <div class="mb-6">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Voice-Powered Financial Assistant</p>
-      <p class="text-sm text-slate-500 max-w-md mx-auto">Speak in English, Hindi, Tamil, Telugu, Bengali, Marathi, or any supported language. CREDA will understand and respond in your language.</p>
+<div class="max-w-3xl mx-auto" x-data="voiceLive()">
+
+  <!-- Session Controls -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 text-center mb-8">
+    <div class="mb-4">
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Voice-Powered Financial Assistant</p>
+      <p class="text-sm text-slate-500 max-w-md mx-auto">Speak naturally in any language. CREDA listens, understands, responds, and keeps listening — like a real conversation.</p>
     </div>
 
-    <!-- Mic Button -->
-    <div class="relative inline-flex items-center justify-center mb-8">
-      <!-- Pulse rings -->
-      <div x-show="recording" class="absolute w-40 h-40 rounded-full bg-blue-500/10 animate-ping"></div>
-      <div x-show="recording" class="absolute w-32 h-32 rounded-full bg-blue-500/20 animate-pulse"></div>
-      <button @click="toggleRecording()"
-              :class="recording ? 'bg-red-500 hover:bg-red-600 shadow-red-500/25 scale-110' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25'"
-              class="relative w-24 h-24 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 z-10">
-        <svg x-show="!recording" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-        <svg x-show="recording" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+    <!-- Large Mic / Conversation Button -->
+    <div class="relative inline-flex items-center justify-center mb-6">
+      <!-- Pulse rings when active -->
+      <template x-if="sessionActive && state === 'listening'">
+        <div>
+          <div class="absolute w-40 h-40 rounded-full bg-blue-500/10 animate-ping"></div>
+          <div class="absolute w-32 h-32 rounded-full bg-blue-500/20 animate-pulse"></div>
+        </div>
+      </template>
+      <template x-if="sessionActive && state === 'processing'">
+        <div class="absolute w-32 h-32 rounded-full bg-amber-500/20 animate-pulse"></div>
+      </template>
+
+      <button @click="toggleSession()"
+              :class="{
+                'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25': !sessionActive,
+                'bg-red-500 hover:bg-red-600 shadow-red-500/25 scale-110': sessionActive && state === 'listening',
+                'bg-amber-500 shadow-amber-500/25': sessionActive && state === 'processing',
+                'bg-emerald-500 shadow-emerald-500/25': sessionActive && state === 'speaking'
+              }"
+              class="relative w-28 h-28 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 z-10">
+        <svg x-show="!sessionActive" class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        <svg x-show="sessionActive" class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
       </button>
     </div>
 
-    <!-- Status -->
-    <div class="mb-6">
-      <p x-show="status === 'idle'" class="text-sm text-slate-400">Tap the microphone to start speaking</p>
-      <p x-show="status === 'recording'" class="text-sm text-red-500 font-medium animate-pulse">Listening...</p>
-      <p x-show="status === 'processing'" class="text-sm text-blue-500 font-medium">Processing your request...</p>
-      <p x-show="status === 'playing'" class="text-sm text-emerald-500 font-medium">Playing response...</p>
-      <p x-show="status === 'error'" class="text-sm text-red-500" x-text="errorMsg"></p>
-    </div>
-
-    <!-- Transcript -->
-    <div x-show="transcript" class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-left mb-4">
-      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">You said</p>
-      <p class="text-sm" x-text="transcript"></p>
-    </div>
-
-    <!-- Response -->
-    <div x-show="response" class="glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-5 text-left">
-      <div class="flex items-center gap-2 mb-2">
-        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-500">CREDA Response</p>
+    <!-- Volume Meter -->
+    <div x-show="sessionActive" class="max-w-xs mx-auto mb-4">
+      <div class="h-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-100"
+             :class="state === 'listening' ? 'bg-blue-500' : state === 'speaking' ? 'bg-emerald-500' : 'bg-amber-500'"
+             :style="'width:' + volumePct + '%'"></div>
       </div>
-      <p class="text-sm leading-relaxed" x-text="response"></p>
-      <p x-show="agentUsed" class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-3" x-text="'Agent: ' + agentUsed"></p>
     </div>
+
+    <!-- Status -->
+    <div class="mb-2">
+      <p x-show="!sessionActive" class="text-sm text-slate-400">Tap to start a voice conversation</p>
+      <p x-show="sessionActive && state === 'listening'" class="text-sm text-blue-500 font-medium animate-pulse">Listening... speak naturally</p>
+      <p x-show="sessionActive && state === 'processing'" class="text-sm text-amber-500 font-medium">
+        <svg class="w-4 h-4 inline animate-spin mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        Thinking...
+      </p>
+      <p x-show="sessionActive && state === 'speaking'" class="text-sm text-emerald-500 font-medium">Speaking...</p>
+      <p x-show="state === 'error'" class="text-sm text-red-500" x-text="errorMsg"></p>
+    </div>
+
+    <p x-show="sessionActive" class="text-[10px] text-slate-400">Auto-detects silence • Tap the button to end session</p>
   </div>
 
-  <!-- Conversation History -->
-  <div x-show="history.length > 0" class="mt-8">
-    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Conversation History</h3>
-    <div class="space-y-3">
-      <template x-for="item in history" :key="item.id">
-        <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-4">
-          <p class="text-xs text-slate-500 mb-1" x-text="item.transcript"></p>
-          <p class="text-sm" x-text="item.response"></p>
+  <!-- Live Transcript -->
+  <div x-show="messages.length > 0" class="space-y-4">
+    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Conversation</h3>
+    <template x-for="msg in messages" :key="msg.id">
+      <div :class="msg.role === 'user' ? 'ml-12' : 'mr-12'">
+        <div :class="msg.role === 'user'
+              ? 'glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-4'
+              : 'glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-4'">
+          <div class="flex items-center gap-2 mb-1.5">
+            <div class="w-2 h-2 rounded-full" :class="msg.role === 'user' ? 'bg-slate-400' : 'bg-blue-600'"></div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em]"
+               :class="msg.role === 'user' ? 'text-slate-400' : 'text-blue-500'"
+               x-text="msg.role === 'user' ? 'You' : 'CREDA'"></p>
+            <p x-show="msg.intent" class="text-[10px] text-slate-400 ml-auto" x-text="msg.intent"></p>
+          </div>
+          <p class="text-sm leading-relaxed" x-text="msg.text"></p>
         </div>
-      </template>
-    </div>
+      </div>
+    </template>
   </div>
 </div>
 
 <script>
-function voiceApp() {
+function voiceLive() {
   return {
-    recording: false,
-    status: 'idle',
-    transcript: '',
-    response: '',
-    agentUsed: '',
+    sessionActive: false,
+    state: 'idle',        // idle | listening | processing | speaking | error
+    volumePct: 0,
     errorMsg: '',
-    history: [],
-    histId: 0,
-    mediaRecorder: null,
-    chunks: [],
+    messages: [],
+    _msgId: 0,
+    _recorder: null,
+    _stream: null,
+    _audioCtx: null,
+    _analyser: null,
+    _chunks: [],
+    _rafId: null,
+    _silenceDelay: 2000,
+    _silenceThreshold: 12,
+    _currentAudio: null,
 
-    async toggleRecording() {
-      if (this.recording) {
-        this.mediaRecorder?.stop();
-        this.recording = false;
+    toggleSession() {
+      if (this.sessionActive) {
+        this._endSession();
       } else {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          this.mediaRecorder = new MediaRecorder(stream);
-          this.chunks = [];
-          this.mediaRecorder.ondataavailable = (e) => this.chunks.push(e.data);
-          this.mediaRecorder.onstop = () => this.processAudio(stream);
-          this.mediaRecorder.start();
-          this.recording = true;
-          this.status = 'recording';
-          this.transcript = '';
-          this.response = '';
-        } catch (e) {
-          this.status = 'error';
-          this.errorMsg = 'Microphone access denied.';
-        }
+        this._startSession();
       }
     },
 
-    async processAudio(stream) {
-      this.status = 'processing';
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(this.chunks, { type: 'audio/webm' });
-      const formData = new FormData();
-      formData.append('audio', blob, 'recording.webm');
+    async _startSession() {
+      try {
+        this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = this._audioCtx.createMediaStreamSource(this._stream);
+        this._analyser = this._audioCtx.createAnalyser();
+        this._analyser.fftSize = 512;
+        source.connect(this._analyser);
+
+        this.sessionActive = true;
+        this.errorMsg = '';
+        this._startListening();
+      } catch (e) {
+        this.state = 'error';
+        this.errorMsg = 'Microphone access denied. Check browser permissions.';
+      }
+    },
+
+    _endSession() {
+      if (this._currentAudio) {
+        this._currentAudio.pause();
+        this._currentAudio = null;
+      }
+      if (this._recorder && this._recorder.state === 'recording') this._recorder.stop();
+      if (this._rafId) cancelAnimationFrame(this._rafId);
+      if (this._stream) this._stream.getTracks().forEach(t => t.stop());
+      if (this._audioCtx) this._audioCtx.close().catch(() => {});
+      this._stream = null;
+      this._audioCtx = null;
+      this._analyser = null;
+      this._rafId = null;
+      this.sessionActive = false;
+      this.state = 'idle';
+      this.volumePct = 0;
+    },
+
+    _startListening() {
+      if (!this.sessionActive || !this._stream) return;
+
+      // Re-open audio context if closed
+      if (!this._audioCtx || this._audioCtx.state === 'closed') {
+        this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = this._audioCtx.createMediaStreamSource(this._stream);
+        this._analyser = this._audioCtx.createAnalyser();
+        this._analyser.fftSize = 512;
+        source.connect(this._analyser);
+      }
+
+      this._chunks = [];
+      this._recorder = new MediaRecorder(this._stream);
+      this._recorder.ondataavailable = (e) => { if (e.data.size > 0) this._chunks.push(e.data); };
+      this._recorder.onstop = () => this._processChunk();
+      this._recorder.start();
+      this.state = 'listening';
+
+      // Monitor volume + silence
+      const data = new Uint8Array(this._analyser.frequencyBinCount);
+      let silenceStart = null;
+      let hasSpoken = false;
+
+      const check = () => {
+        if (this.state !== 'listening') return;
+        this._analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length) * 100;
+        this.volumePct = Math.min(rms * 3, 100);
+
+        if (rms >= this._silenceThreshold / 100) {
+          hasSpoken = true;
+          silenceStart = null;
+        } else if (hasSpoken) {
+          if (!silenceStart) silenceStart = Date.now();
+          if (Date.now() - silenceStart > this._silenceDelay) {
+            if (this._recorder.state === 'recording') this._recorder.stop();
+            return;
+          }
+        }
+        this._rafId = requestAnimationFrame(check);
+      };
+      this._rafId = requestAnimationFrame(check);
+    },
+
+    async _processChunk() {
+      if (!this.sessionActive) return;
+      this.state = 'processing';
+      this.volumePct = 0;
+
+      const blob = new Blob(this._chunks, { type: 'audio/webm' });
+      if (blob.size < 1000) {
+        // Too short — go back to listening
+        this._startListening();
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('audio', blob, 'recording.webm');
 
       try {
         const resp = await fetch('/api/voice/', {
           method: 'POST',
-          headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-          body: formData,
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}' },
+          body: fd,
         });
         const data = await resp.json();
-        this.transcript = data.transcript || '';
-        this.response = data.response || '';
-        this.agentUsed = data.intent || '';
 
-        if (this.transcript && this.response) {
-          this.history.unshift({ id: ++this.histId, transcript: this.transcript, response: this.response });
+        if (data.transcript) {
+          this.messages.push({ id: ++this._msgId, role: 'user', text: data.transcript });
+        }
+        if (data.response) {
+          this.messages.push({ id: ++this._msgId, role: 'assistant', text: data.response, intent: data.intent });
         }
 
-        // Play audio from base64 data
-        if (data.audio_data) {
-          this.status = 'playing';
-          const audio = new Audio('data:audio/wav;base64,' + data.audio_data);
-          audio.onended = () => { this.status = 'idle'; };
-          audio.onerror = () => { this.status = 'idle'; };
-          audio.play().catch(() => { this.status = 'idle'; });
-        } else {
-          this.status = 'idle';
+        // Play audio response, then auto-listen again
+        if (data.audio_data && this.sessionActive) {
+          this.state = 'speaking';
+          this._currentAudio = new Audio('data:audio/wav;base64,' + data.audio_data);
+          this._currentAudio.onended = () => {
+            this._currentAudio = null;
+            if (this.sessionActive) this._startListening();
+          };
+          this._currentAudio.onerror = () => {
+            this._currentAudio = null;
+            if (this.sessionActive) this._startListening();
+          };
+          this._currentAudio.play().catch(() => {
+            if (this.sessionActive) this._startListening();
+          });
+        } else if (this.sessionActive) {
+          this._startListening();
         }
       } catch (e) {
-        this.status = 'error';
-        this.errorMsg = 'Failed to process audio. Please try again.';
+        this.state = 'error';
+        this.errorMsg = 'Processing failed. Retrying...';
+        setTimeout(() => {
+          if (this.sessionActive) this._startListening();
+        }, 2000);
       }
     }
   };

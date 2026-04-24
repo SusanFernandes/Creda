@@ -9,9 +9,9 @@
 <h1 align="center">CREDA</h1>
 <h3 align="center">AI-Powered Financial Coach for India</h3>
 <p align="center">
-  Multilingual voice & text financial advisor with 20 specialized AI agents,<br>
+  Multilingual voice & text financial advisor with 21+ specialized AI agents,<br>
   4-tier intent classification (keyword → embeddings → LLM), SEBI-compliant advice logging,<br>
-  family wealth management, and proactive nudges — built for every Indian household.
+  family wealth management, couples finance, and proactive nudges — built for every Indian household.
 </p>
 
 ---
@@ -76,7 +76,7 @@ Users interact via a premium web dashboard (text or voice) or WhatsApp. Every qu
 
 | Category | Features |
 |----------|----------|
-| **AI Agents** | 20 specialized LangGraph agents covering portfolio analysis, FIRE planning, tax optimization, budgeting, goals, couples finance, stress testing, family wealth, and more |
+| **AI Agents** | 21+ specialized LangGraph agents covering portfolio analysis, FIRE planning, tax optimization, budgeting, goals, couples finance, life event advising, stress testing, family wealth, and more |
 | **Intent Classification** | Production-grade 4-tier cascade — follow-up detection (0ms) → weighted keyword scoring (0ms) → MiniLM embedding similarity (~10ms, offline) → LLM classifier (1-2s) — saves ~95% of LLM API calls |
 | **Multilingual** | Full support for 11 languages — English, Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu |
 | **Voice** | Speech-to-text (faster-whisper / Groq Whisper), text-to-speech (Kokoro / Edge TTS / Piper / gTTS), full voice pipeline |
@@ -123,7 +123,7 @@ Users interact via a premium web dashboard (text or voice) or WhatsApp. Every qu
                                   │  │  load_profile → agent    │      │
                                   │  │       → synthesizer      │      │
                                   │  │                          │      │
-                                  │  │  19 Specialist Agents    │      │
+                                  │  │  21+ Specialist Agents   │      │
                                   │  └──────────────────────────┘      │
                                   └──────────┬──────────────────────────┘
                                              │
@@ -370,7 +370,9 @@ python/
 │   │   │   ├── social_proof.py      # Peer benchmarking
 │   │   │   ├── et_research.py       # Financial research engine
 │   │   │   ├── human_handoff.py     # Advisor escalation
-│   │   │   └── family_wealth.py     # Family wealth management
+│   │   │   ├── family_wealth.py     # Family wealth management
+│   │   │   ├── life_event_advisor.py # Life event bonus/windfall advisor
+│   │   │   └── expense_analytics.py  # Expense analytics & tracking
 │   │   │
 │   │   ├── routers/            # ── FastAPI Routers ──
 │   │   │   ├── auth.py         # Login / register (rate-limited)
@@ -416,15 +418,15 @@ python/
     │   └── admin.py            # Django admin registration
     │
     ├── dashboard/              # Main app
-    │   ├── views.py            # 25 async views + 1 upload handler
-    │   └── urls.py             # 26 URL patterns
+│   │   ├── views.py            # 30 async views + API proxies
+│   │   └── urls.py             # 42 URL patterns (28 pages + 14 API proxies)
     │
     ├── static/css/
     │   └── app.css             # Custom overrides
     │
     └── templates/
         ├── base.html           # Root template (Tailwind, Alpine, HTMX)
-        ├── base_dashboard.html # Sidebar layout (26 nav links, dark mode)
+        ├── base_dashboard.html # Sidebar layout (28 nav links, dark mode)
         ├── landing.html        # Public landing page (professional)
         ├── accounts/
         │   ├── login.html
@@ -451,9 +453,16 @@ python/
             ├── social_proof.html
             ├── research.html
             ├── voice.html
+            ├── expense_analytics.html
+            ├── life_events.html
+            ├── compliance.html
+            ├── family.html
+            ├── admin.html
             ├── advisor.html
             └── partials/
-                └── upload_result.html
+                ├── upload_result.html
+                ├── xray_result.html
+                └── refresh_result.html
 ```
 
 ---
@@ -486,6 +495,8 @@ python/
 | **ET Research** | Financial research engine with source verification, confidence scoring, fact-checking against curated knowledge base | Query |
 | **Human Handoff** | Advisor escalation — detects complexity triggers, prepares context summary for human SEBI-registered RIA | Profile + history |
 | **Family Wealth** | Consolidated multi-member family dashboard — linked portfolios, combined net worth, per-member analysis | Family links |
+| **Life Event Advisor** | Windfall/bonus/inheritance allocation — prioritized deployment across emergency fund, goals, tax optimization, investments based on urgency | Life event + profile |
+| **Expense Analytics** | Spending categorization, optimization suggestions, and spending score analysis | Profile + expenses |
 
 ### Support Agents
 
@@ -593,6 +604,7 @@ Custom: accounts_user (extends AbstractUser with language field)
 |--------|----------|-------------|
 | POST | `/api/portfolio/upload` | Upload CAMS PDF statement |
 | POST | `/api/portfolio/xray` | Run X-ray analysis on portfolio |
+| POST | `/api/portfolio/refresh-navs` | Refresh NAVs for all holdings |
 | GET | `/api/portfolio/summary` | Get portfolio summary |
 
 ### Agents (`/api/agents`)
@@ -614,6 +626,8 @@ Custom: accounts_user (extends AbstractUser with language field)
 | POST | `/api/agents/et-research` | Financial research |
 | POST | `/api/agents/human-handoff` | Advisor escalation |
 | POST | `/api/agents/family-wealth` | Family wealth analysis |
+| POST | `/api/agents/life-event-advisor` | Life event / windfall allocation |
+| POST | `/api/agents/expense-analytics` | Expense analysis + optimization |
 
 ### Profile (`/api/profile`)
 
@@ -628,6 +642,7 @@ Custom: accounts_user (extends AbstractUser with language field)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/nudges/pending` | Get unread nudges |
+| POST | `/api/nudges/generate` | Dynamically generate nudges from user profile |
 | POST | `/api/nudges/{id}/read` | Mark nudge as read |
 | POST | `/api/nudges/mark-all-read` | Mark all as read |
 
@@ -687,7 +702,12 @@ Custom: accounts_user (extends AbstractUser with language field)
 | `/social-proof/` | Social Proof | Peer benchmarks + percentile rankings |
 | `/research/` | Research | Search with confidence scoring + sources |
 | `/voice/` | Voice | Full voice interface with recording + playback |
-| `/advisor/` | Advisor | Human handoff with escalation triggers |\n| `/compliance/` | Compliance | SEBI compliance audit log and AI disclosure |\n| `/family/` | Family | Multi-member family wealth dashboard |
+| `/advisor/` | Advisor | Human handoff with escalation triggers |
+| `/expenses/` | Expense Analytics | Spending breakdown + optimization |
+| `/life-events/` | Life Events | Bonus/windfall allocation advisor |
+| `/compliance/` | Compliance | SEBI compliance audit log and AI disclosure |
+| `/family/` | Family | Multi-member family wealth dashboard |
+| `/admin/` | Admin | User management + system stats |
 
 ---
 
@@ -720,18 +740,22 @@ make all
 
 ### Demo Accounts
 
-Two pre-built demo accounts come with the platform for quick exploration. Seed them with:
+Two pre-built demo accounts come with the platform for the **"Arjun’s Story"** hackathon demo scenario. Seed them with:
 
 ```bash
 make seed
 ```
 
 | Account | Email | Password | Profile |
-|---------|-------|----------|---------|
-| **Rahul Sharma** | `rahul@demo.creda.in` | `demo1234` | 28, Salaried IT (Bengaluru), ₹1.5L/mo income, Moderate risk, 8 mutual funds (₹14.87L portfolio), 4 goals |
-| **Priya Patel** | `priya@demo.creda.in` | `demo1234` | 35, Business Owner (Mumbai), ₹2.8L/mo income, Aggressive risk, 10 mutual funds (₹47.5L portfolio), 4 goals |
+|---------|-------|----------|--------|
+| **Arjun Mehta** | `arjun@demo.creda.in` | `demo1234` | 29, Salaried IT (Bengaluru), ₹1.8L/mo income, Moderate risk, 6 mutual funds (₹8.3L portfolio), 4 goals, 2 life events |
+| **Priya Sharma** | `priya@demo.creda.in` | `demo1234` | 27, Product Manager (Bengaluru), ₹1.4L/mo income, Moderate risk, 2 mutual funds (₹3.2L portfolio), 2 goals |
 
-Both accounts include pre-populated portfolios, financial goals, conversation history, and notification nudges — ready for a full demo walkthrough.
+- Arjun & Priya are pre-linked as a **spouse pair** for Couples Finance
+- Arjun has **deliberate portfolio problems**: 3 large-cap overlap, Nifty 50 underperformance, no debt allocation
+- Arjun’s Money Health Score starts at **42/100 (RED)** — drives the demo narrative
+- Dynamic nudges are generated on dashboard load (no pre-seeded conversations)
+- See full demo scenario in [`demo/README.md`](demo/README.md)
 
 ---
 
@@ -827,7 +851,7 @@ Run all commands from the `python/` directory:
 | `make restart-backend` | Restart backend |
 | `make restart-frontend` | Restart frontend |
 | `make migrate` | Run Django + Alembic migrations |
-| `make seed` | Seed demo accounts (Rahul & Priya) with portfolios, goals, nudges |
+| `make seed` | Seed demo accounts (Arjun & Priya) with portfolios, goals, nudges, family link |
 | `make superuser` | Create Django admin superuser |
 | `make db-shell` | Open psql shell |
 | `make test` | Health check both services |

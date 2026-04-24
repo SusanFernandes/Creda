@@ -222,6 +222,105 @@ async def run_premarket_briefing():
         await db.commit()
 
 
+async def run_portfolio_refresh():
+    """
+    Refresh portfolio fund current values using yfinance.
+    Scheduled every market day at 4 PM IST (after market close).
+    """
+    from app.models import Portfolio, PortfolioFund
+    logger.info("Portfolio refresh: starting NAV update")
+
+    async with AsyncSessionLocal() as db:
+        # Get all portfolios with funds
+        port_result = await db.execute(select(Portfolio))
+        portfolios = port_result.scalars().all()
+
+        updated_count = 0
+        for portfolio in portfolios:
+            funds_result = await db.execute(
+                select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+            )
+            funds = funds_result.scalars().all()
+
+            for fund in funds:
+                try:
+                    new_value = await _refresh_fund_nav(fund)
+                    if new_value is not None and new_value > 0:
+                        fund.current_value = new_value
+                        updated_count += 1
+                except Exception as e:
+                    logger.warning("NAV refresh failed for fund %s: %s", fund.fund_name, e)
+
+        await db.commit()
+        logger.info("Portfolio refresh: updated %d funds across %d portfolios",
+                     updated_count, len(portfolios))
+
+
+async def _refresh_fund_nav(fund) -> float | None:
+    """Refresh a single fund's current value using AMFI NAV API."""
+    units = fund.units or 0
+    if units <= 0:
+        return None
+
+    fund_name = (fund.fund_name or "").strip()
+    if not fund_name:
+        return None
+
+    try:
+        from app.services.amfi_nav import get_fund_nav
+        nav_data = await get_fund_nav(fund_name)
+        if nav_data and nav_data.get("nav"):
+            return round(units * nav_data["nav"], 2)
+    except Exception as e:
+        logger.debug("AMFI NAV lookup failed for '%s': %s", fund_name, e)
+
+    # Fallback: if AMFI lookup fails, retain current value (no random simulation)
+    return None
+
+
+async def run_goal_progress_update():
+    """
+    Update goal progress based on actual savings trajectory.
+    Scheduled daily at 10 AM IST.
+    """
+    from app.models import GoalPlan
+    logger.info("Goal progress update: recalculating all goals")
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(GoalPlan))
+        goals = result.scalars().all()
+
+        for goal in goals:
+            try:
+                if not goal.target_amount or goal.target_amount <= 0:
+                    continue
+
+                # Calculate progress from monthly investments
+                months_elapsed = max(
+                    (date.today().year - goal.created_at.year) * 12
+                    + (date.today().month - goal.created_at.month), 0
+                )
+                monthly_inv = goal.monthly_investment or 0
+
+                # Estimate accumulated amount with 10% annual return
+                monthly_rate = 0.10 / 12
+                if monthly_rate > 0 and months_elapsed > 0:
+                    accumulated = monthly_inv * (
+                        ((1 + monthly_rate) ** months_elapsed - 1) / monthly_rate
+                    ) * (1 + monthly_rate)
+                else:
+                    accumulated = monthly_inv * months_elapsed
+
+                new_progress = min(round(accumulated / goal.target_amount * 100, 1), 100)
+                goal.progress_pct = new_progress
+
+            except Exception as e:
+                logger.warning("Goal progress update failed for goal %s: %s", goal.id, e)
+
+        await db.commit()
+        logger.info("Goal progress update: recalculated %d goals", len(goals))
+
+
 async def _create_nudge(db: AsyncSession, user_id: str, nudge_type: str,
                          title: str, body: str, action_url: str):
     """Create a nudge if one of same type doesn't already exist today."""
@@ -245,3 +344,15 @@ async def _create_nudge(db: AsyncSession, user_id: str, nudge_type: str,
         action_url=action_url,
     )
     db.add(nudge)
+
+    # Broadcast via WebSocket if user is connected
+    try:
+        from app.routers.ws import broadcast_nudge
+        await broadcast_nudge(user_id, {
+            "title": title,
+            "body": body,
+            "nudge_type": nudge_type,
+            "action_url": action_url,
+        })
+    except Exception:
+        pass  # WS broadcast is best-effort

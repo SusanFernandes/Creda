@@ -1,0 +1,58 @@
+<!-- _skeleton_loader.html — Reusable loading and error state component -->
+<!-- Usage: {% include "partials/_skeleton_loader.html" with target_id="my-content" %} -->
+
+<!-- Skeleton Pulse Animation -->
+<style>
+  @keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+  }
+  .skeleton-line {
+    background: linear-gradient(90deg, transparent, rgba(148,163,184,0.15), transparent);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 0.5rem;
+  }
+  .skeleton-card {
+    @apply glass rounded-[2rem] border border-slate-200/30 dark:border-slate-700/30 p-6;
+  }
+</style>
+
+<!-- Skeleton Loader Template (Alpine component) -->
+<template x-if="typeof _pageLoading !== 'undefined' && _pageLoading">
+  <div class="space-y-6 animate-pulse">
+    <!-- Header skeleton -->
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-12 h-12 rounded-xl bg-slate-200/50 dark:bg-slate-800/50 skeleton-line"></div>
+      <div class="space-y-2 flex-1">
+        <div class="h-5 w-48 bg-slate-200/50 dark:bg-slate-800/50 skeleton-line"></div>
+        <div class="h-3 w-32 bg-slate-200/50 dark:bg-slate-800/50 skeleton-line"></div>
+      </div>
+    </div>
+    <!-- Card skeletons -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="skeleton-card">
+        <div class="h-3 w-24 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line mb-3"></div>
+        <div class="h-8 w-36 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="h-3 w-24 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line mb-3"></div>
+        <div class="h-8 w-36 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="h-3 w-24 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line mb-3"></div>
+        <div class="h-8 w-36 bg-slate-200/40 dark:bg-slate-800/40 skeleton-line"></div>
+      </div>
+    </div>
+    <!-- Table skeleton -->
+    <div class="skeleton-card">
+      <div class="space-y-4">
+        <div class="h-4 w-full bg-slate-200/30 dark:bg-slate-800/30 skeleton-line"></div>
+        <div class="h-4 w-5/6 bg-slate-200/30 dark:bg-slate-800/30 skeleton-line"></div>
+        <div class="h-4 w-4/6 bg-slate-200/30 dark:bg-slate-800/30 skeleton-line"></div>
+        <div class="h-4 w-full bg-slate-200/30 dark:bg-slate-800/30 skeleton-line"></div>
+        <div class="h-4 w-3/4 bg-slate-200/30 dark:bg-slate-800/30 skeleton-line"></div>
+      </div>
+    </div>
+  </div>
+</template>

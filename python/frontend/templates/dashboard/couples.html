@@ -5,26 +5,43 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
+
+  {% if partner %}
+  <!-- Linked Partner Badge -->
+  <div class="glass rounded-[2rem] border-2 border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+      <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    </div>
+    <div class="flex-1">
+      <p class="font-bold text-emerald-700 dark:text-emerald-400">{{ partner.name }} is linked as your {{ partner.relationship }}</p>
+      <p class="text-xs text-slate-500">Partner profile auto-detected. Click "Run Joint Analysis" below.</p>
+    </div>
+    <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">LINKED ✓</span>
+  </div>
+  {% endif %}
+
   <!-- Input Form -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
     <h3 class="font-bold mb-1">Partner Financial Details</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Enter your partner's information for joint analysis</p>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">
+      {% if partner %}{{ partner.name }}'s data will be fetched from their linked profile{% else %}Enter your partner's information for joint analysis{% endif %}
+    </p>
     <form method="POST" class="flex flex-col sm:flex-row gap-4 items-end">
       {% csrf_token %}
       <div class="flex-1">
         <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Income (₹)</label>
-        <input type="number" name="partner_income" value="0"
+        <input type="number" name="partner_income" value="{% if partner %}0{% else %}0{% endif %}"
                class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
-               placeholder="50000">
+               placeholder="Auto-detected from linked profile">
       </div>
       <div class="flex-1">
         <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Expenses (₹)</label>
         <input type="number" name="partner_expenses" value="0"
                class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
-               placeholder="30000">
+               placeholder="Auto-detected from linked profile">
       </div>
       <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] whitespace-nowrap">
-        Analyze Together
+        {% if partner %}Run Joint Analysis{% else %}Analyze Together{% endif %}
       </button>
     </form>
   </div>

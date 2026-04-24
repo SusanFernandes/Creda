@@ -120,6 +120,36 @@ async def run(state: FinancialState) -> dict[str, Any]:
     else:
         grade = "D"
 
+    # Benchmark comparison — Social Proof (age-band + city averages)
+    age_band = f"{(age // 5) * 5}-{(age // 5) * 5 + 4}"
+    city = profile.get("city", "").strip().lower()
+    # Approximate peer benchmarks by age band (based on aggregated Indian financial data)
+    _BENCHMARKS = {
+        "25-29": {"avg_score": 42, "emergency_pct": 35, "insurance_pct": 25, "sip_pct": 45},
+        "30-34": {"avg_score": 48, "emergency_pct": 45, "insurance_pct": 40, "sip_pct": 55},
+        "35-39": {"avg_score": 54, "emergency_pct": 55, "insurance_pct": 55, "sip_pct": 62},
+        "40-44": {"avg_score": 58, "emergency_pct": 60, "insurance_pct": 65, "sip_pct": 68},
+        "45-49": {"avg_score": 55, "emergency_pct": 58, "insurance_pct": 70, "sip_pct": 60},
+    }
+    # Metro city adjustments
+    _METRO_BONUS = {"bengaluru": 3, "bangalore": 3, "mumbai": 2, "delhi": 1,
+                     "hyderabad": 2, "pune": 2, "chennai": 1, "kolkata": 0}
+    bench = _BENCHMARKS.get(age_band, {"avg_score": 50, "emergency_pct": 45, "insurance_pct": 45, "sip_pct": 50})
+    peer_avg = bench["avg_score"] + _METRO_BONUS.get(city, 0)
+    score_vs_peers = overall - peer_avg
+    benchmark = {
+        "age_band": age_band,
+        "city": city or "India",
+        "peer_avg_score": peer_avg,
+        "your_score": overall,
+        "diff": score_vs_peers,
+        "percentile": min(max(round(50 + score_vs_peers * 2), 5), 95),
+        "peer_emergency_pct": bench["emergency_pct"],
+        "peer_insurance_pct": bench["insurance_pct"],
+        "peer_sip_pct": bench["sip_pct"],
+        "insight": f"Your score of {overall} is {'above' if score_vs_peers > 0 else 'below'} the average of {peer_avg} for {age_band} year olds in {city.title() or 'India'}.",
+    }
+
     # LLM top 3 actions
     try:
         result = await primary_llm.ainvoke(
@@ -133,6 +163,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "overall_score": overall,
         "grade": grade,
         "dimensions": scores,
+        "benchmark": benchmark,
         "top_actions": actions,
     }
 

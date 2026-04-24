@@ -6,7 +6,7 @@ import json
 import logging
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render, redirect
 
 from creda.middleware import _fastapi_user_id_for_request
@@ -22,21 +22,45 @@ def _fastapi_user_id(request) -> str:
 
 @login_required
 async def dashboard_view(request):
-    """Main dashboard — summary cards, nudges, quick actions."""
+    """Main dashboard — summary cards, nudges, quick actions, health preview."""
     try:
         profile = await request.backend.get_profile(_fastapi_user_id(request))
-        nudges = await request.backend.get_nudges()
     except Exception:
         profile = None
-        nudges = []
 
     # Redirect to onboarding if profile incomplete
     if not profile or not profile.get("onboarding_complete"):
         return redirect("onboarding")
 
+    # Generate dynamic nudges if none exist, then fetch
+    try:
+        await request.backend.generate_nudges()
+    except Exception:
+        pass
+    try:
+        nudges = await request.backend.get_nudges()
+    except Exception:
+        nudges = []
+
+    # Fetch health score preview for dashboard widget
+    health = None
+    try:
+        health = await request.backend.money_health()
+    except Exception:
+        pass
+
+    # Fetch portfolio summary for dashboard
+    portfolio = None
+    try:
+        portfolio = await request.backend.get_portfolio_summary()
+    except Exception:
+        pass
+
     return render(request, "dashboard/dashboard.html", {
         "profile": profile,
         "nudges": nudges,
+        "health": health,
+        "portfolio": portfolio,
     })
 
 
@@ -75,6 +99,26 @@ async def portfolio_upload(request):
 
 
 @login_required
+async def portfolio_xray_view(request):
+    """Run X-Ray analysis on portfolio (HTMX partial)."""
+    try:
+        result = await request.backend.run_xray()
+    except Exception as e:
+        return render(request, "dashboard/partials/xray_result.html", {"error": str(e)})
+    return render(request, "dashboard/partials/xray_result.html", {"xray": result})
+
+
+@login_required
+async def portfolio_refresh_navs(request):
+    """Refresh NAVs for all holdings (HTMX partial)."""
+    try:
+        result = await request.backend.refresh_navs()
+    except Exception as e:
+        return render(request, "dashboard/partials/refresh_result.html", {"error": str(e)})
+    return render(request, "dashboard/partials/refresh_result.html", {"result": result})
+
+
+@login_required
 async def health_view(request):
     """Money Health Score page."""
     try:
@@ -96,12 +140,23 @@ async def fire_view(request):
 
 @login_required
 async def tax_view(request):
-    """Tax Wizard page."""
+    """Tax Wizard page — merged with Tax Copilot (tabs)."""
+    tax_result = None
+    copilot_result = None
+    active_tab = request.GET.get("tab", "regime")
     try:
-        result = await request.backend.tax_wizard()
+        tax_result = await request.backend.tax_wizard()
     except Exception:
-        result = None
-    return render(request, "dashboard/tax.html", {"tax": result})
+        pass
+    try:
+        copilot_result = await request.backend.tax_copilot()
+    except Exception:
+        pass
+    return render(request, "dashboard/tax.html", {
+        "tax": tax_result,
+        "tax_copilot": copilot_result,
+        "active_tab": active_tab,
+    })
 
 
 @login_required
@@ -116,12 +171,29 @@ async def budget_view(request):
 
 @login_required
 async def goals_view(request):
-    """Goal Planner page."""
+    """Goal Planner page — merged with Goal Simulator (tabs)."""
+    goals_result = None
+    sim_result = None
+    active_tab = request.GET.get("tab", "goals")
+    sim_target = float(request.GET.get("target", 5000000))
+    sim_years = int(request.GET.get("years", 10))
     try:
-        result = await request.backend.goal_planner()
+        goals_result = await request.backend.goal_planner()
     except Exception:
-        result = None
-    return render(request, "dashboard/goals.html", {"goals": result})
+        pass
+    # Fetch simulator data if on simulator tab or if target/years were submitted
+    if active_tab == "simulator" or "target" in request.GET:
+        try:
+            sim_result = await request.backend.goal_simulator(sim_target, sim_years)
+        except Exception as e:
+            logger.error("Goal simulator error: %s", e)
+    return render(request, "dashboard/goals.html", {
+        "goals": goals_result,
+        "sim": sim_result,
+        "active_tab": active_tab,
+        "sim_target": int(sim_target),
+        "sim_years": sim_years,
+    })
 
 
 @login_required
@@ -209,8 +281,20 @@ async def notifications_view(request):
 
 @login_required
 async def couples_view(request):
-    """Couples Finance page."""
+    """Couples Finance page — auto-detects linked spouse."""
     result = None
+    partner = None
+
+    # Auto-detect linked spouse
+    try:
+        family = await request.backend.family_members()
+        members = family.get("members", [])
+        spouse = next((m for m in members if m.get("relationship") == "spouse"), None)
+        if spouse:
+            partner = spouse
+    except Exception:
+        pass
+
     if request.method == "POST":
         try:
             partner_income = float(request.POST.get("partner_income", 0))
@@ -218,7 +302,7 @@ async def couples_view(request):
             result = await request.backend.couples_finance(partner_income, partner_expenses)
         except Exception as e:
             logger.error("Couples finance error: %s", e)
-    return render(request, "dashboard/couples.html", {"couples": result})
+    return render(request, "dashboard/couples.html", {"couples": result, "partner": partner})
 
 
 @login_required
@@ -244,12 +328,8 @@ async def market_pulse_view(request):
 
 @login_required
 async def tax_copilot_view(request):
-    """Tax Copilot — year-round tax optimization."""
-    try:
-        result = await request.backend.tax_copilot()
-    except Exception:
-        result = None
-    return render(request, "dashboard/tax_copilot.html", {"tax_copilot": result})
+    """Tax Copilot — redirects to merged tax page with copilot tab."""
+    return redirect("/tax/?tab=copilot")
 
 
 @login_required
@@ -264,15 +344,10 @@ async def money_personality_view(request):
 
 @login_required
 async def goal_simulator_view(request):
-    """Goal Simulator — what-if scenario modeling."""
-    result = None
-    target = float(request.GET.get("target", 5000000))
-    years = int(request.GET.get("years", 10))
-    try:
-        result = await request.backend.goal_simulator(target, years)
-    except Exception as e:
-        logger.error("Goal simulator error: %s", e)
-    return render(request, "dashboard/goal_simulator.html", {"sim": result, "target": target, "years": years})
+    """Goal Simulator — redirects to merged goals page with simulator tab."""
+    target = request.GET.get("target", "5000000")
+    years = request.GET.get("years", "10")
+    return redirect(f"/goals/?tab=simulator&target={target}&years={years}")
 
 
 @login_required
@@ -305,6 +380,17 @@ async def voice_view(request):
 
 
 @login_required
+async def expense_analytics_view(request):
+    """Expense Analytics — smart spending breakdown."""
+    try:
+        result = await request.backend.expense_analytics()
+    except Exception as e:
+        logger.error("Expense analytics error: %s", e)
+        result = None
+    return render(request, "dashboard/expense_analytics.html", {"expense": result})
+
+
+@login_required
 async def advisor_view(request):
     """Human Advisor handoff page."""
     try:
@@ -312,6 +398,21 @@ async def advisor_view(request):
     except Exception:
         result = None
     return render(request, "dashboard/advisor.html", {"handoff": result})
+
+
+@login_required
+async def life_event_view(request):
+    """Life Event Financial Advisor — bonus deployment, marriage planning, etc."""
+    result = None
+    message = ""
+    if request.method == "POST":
+        message = request.POST.get("message", "")
+        if message:
+            try:
+                result = await request.backend.life_event_advisor(message)
+            except Exception as e:
+                logger.error("Life event advisor error: %s", e)
+    return render(request, "dashboard/life_events.html", {"result": result, "message": message})
 
 
 @login_required
@@ -412,6 +513,47 @@ async def api_chat(request):
 
 
 @login_required
+async def api_chat_stream(request):
+    """SSE streaming proxy — connects to FastAPI /chat/stream and relays SSE to browser."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        import httpx
+        from django.conf import settings as django_settings
+        data = json.loads(request.body)
+        backend_url = django_settings.BACKEND_API_URL.rstrip("/")
+        headers = request.backend._headers()
+
+        async def sse_generator():
+            async with httpx.AsyncClient(timeout=120) as client:
+                async with client.stream(
+                    "POST",
+                    f"{backend_url}/chat/stream",
+                    json={
+                        "message": data.get("message", ""),
+                        "session_id": data.get("session_id", ""),
+                        "language": data.get("language", "en"),
+                        "voice_mode": data.get("voice_mode", False),
+                    },
+                    headers=headers,
+                ) as resp:
+                    async for line in resp.aiter_lines():
+                        if line.startswith("data: "):
+                            yield f"{line}\n\n"
+
+        response = StreamingHttpResponse(
+            sse_generator(),
+            content_type="text/event-stream",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
+    except Exception as e:
+        logger.error("Chat stream error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
 async def api_voice(request):
     """Proxy POST to FastAPI /voice — used by voice interface."""
     if request.method != "POST":
@@ -437,6 +579,24 @@ async def api_voice(request):
 
 
 @login_required
+async def api_voice_navigate(request):
+    """Proxy POST to FastAPI /voice/navigate — floating mic hero feature."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        audio = request.FILES.get("audio")
+        if not audio:
+            return JsonResponse({"error": "No audio provided"}, status=400)
+        language = request.POST.get("language", "en")
+        audio_bytes = audio.read()
+        result = await request.backend.voice_navigate(audio_bytes, audio.name, language)
+        return JsonResponse(result)
+    except Exception as e:
+        logger.error("Voice navigate proxy error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
 async def api_nudge_read(request, nudge_id):
     """Proxy POST to mark a single nudge as read."""
     try:
@@ -457,4 +617,104 @@ async def api_nudge_mark_all_read(request):
         return JsonResponse({"status": "ok"})
     except Exception as e:
         logger.error("Nudge mark-all-read proxy error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+async def api_export_proxy(request, export_type, fmt):
+    """Proxy GET to FastAPI /export/{type}/{fmt} and stream file to browser."""
+    import httpx
+    from django.conf import settings as django_settings
+
+    backend_url = django_settings.BACKEND_API_URL.rstrip("/")
+    headers = request.backend._headers()
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.get(
+                f"{backend_url}/export/{export_type}/{fmt}",
+                headers=headers,
+            )
+            resp.raise_for_status()
+
+            content_type = resp.headers.get("content-type", "application/octet-stream")
+            disposition = resp.headers.get("content-disposition", "")
+
+            response = HttpResponse(resp.content, content_type=content_type)
+            if disposition:
+                response["Content-Disposition"] = disposition
+            return response
+    except Exception as e:
+        logger.error("Export proxy error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+async def admin_view(request):
+    """Admin dashboard — platform stats and activity logs."""
+    if not request.user.is_staff:
+        return redirect("dashboard")
+    try:
+        stats = await request.backend.admin_stats()
+        activity = await request.backend.admin_activity(limit=30)
+        users = await request.backend.admin_users(limit=30)
+    except Exception as e:
+        logger.error("Admin view error: %s", e)
+        stats, activity, users = {}, [], []
+
+    return render(request, "dashboard/admin.html", {
+        "stats": stats,
+        "activity": activity,
+        "users": users,
+    })
+
+
+@login_required
+async def api_budget_expense(request):
+    """Proxy POST to FastAPI /budget/expense — log an expense."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        import httpx
+        from django.conf import settings as django_settings
+        backend_url = django_settings.BACKEND_API_URL.rstrip("/")
+        headers = request.backend._headers()
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{backend_url}/budget/expense",
+                json=data,
+                headers=headers,
+            )
+            return JsonResponse(resp.json(), status=resp.status_code)
+    except Exception as e:
+        logger.error("Budget expense proxy error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+async def api_goals_funds(request):
+    """Get goals and funds for linking UI."""
+    try:
+        result = await request.backend.goals_with_funds()
+        return JsonResponse(result)
+    except Exception as e:
+        logger.error("Goals funds error: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+async def api_link_funds(request):
+    """Link portfolio funds to a specific goal."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        result = await request.backend.link_funds_to_goal(
+            goal_id=data.get("goal_id", ""),
+            fund_ids=data.get("fund_ids", []),
+        )
+        return JsonResponse(result)
+    except Exception as e:
+        logger.error("Link funds error: %s", e)
         return JsonResponse({"error": str(e)}, status=500)
