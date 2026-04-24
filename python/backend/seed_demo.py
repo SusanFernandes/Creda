@@ -417,9 +417,11 @@ async def seed_fastapi_db():
         for user_data in DEMO_USERS:
             user_id_str = str(user_data["django_id"])
 
-            # Check if user already exists
+            # Check if user already exists (by id or email)
             from sqlalchemy import select
-            existing = await db.execute(select(User).where(User.email == user_data["email"]))
+            existing = await db.execute(
+                select(User).where((User.id == user_id_str) | (User.email == user_data["email"]))
+            )
             if existing.scalar_one_or_none():
                 print(f"  [skip] {user_data['email']} already exists in creda_api")
                 continue
