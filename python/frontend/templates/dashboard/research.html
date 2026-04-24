@@ -1,7 +1,8 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Research{% endblock %}
 {% block page_title %}Research Desk{% endblock %}
-{% block page_subtitle %}AI-Powered Financial Research{% endblock %}
+{% block page_subtitle %}AI-Powered Financial Research + Live Web Intelligence{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
@@ -19,37 +20,66 @@
         Research
       </button>
     </form>
+    <div class="flex flex-wrap gap-2 mt-3">
+      {% for tag in "Mutual fund SIP returns,ELSS vs PPF comparison,NPS tax benefits,Health insurance claim,LTCG tax on equity"|make_list %}
+      {% endfor %}
+      <a href="?q=Mutual fund SIP returns" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-all">SIP Returns</a>
+      <a href="?q=ELSS vs PPF comparison" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-all">ELSS vs PPF</a>
+      <a href="?q=NPS tax benefits Section 80CCD" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-all">NPS Benefits</a>
+      <a href="?q=Health insurance claim process India" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-all">Health Insurance</a>
+      <a href="?q=LTCG tax on equity mutual funds 2024" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-all">LTCG Tax</a>
+    </div>
   </div>
 
   {% if research %}
   {% if research.analysis %}
-  <!-- Confidence -->
-  {% if research.analysis.confidence %}
-  <div class="flex items-center gap-3">
+  <!-- Confidence + Source badges -->
+  <div class="flex items-center gap-3 flex-wrap">
+    {% if research.analysis.confidence_score %}
     <div class="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]
-         {% if research.analysis.confidence >= 0.8 %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
-         {% elif research.analysis.confidence >= 0.5 %}bg-amber-100 dark:bg-amber-900/20 text-amber-600
+         {% if research.analysis.confidence_score >= 70 %}bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
+         {% elif research.analysis.confidence_score >= 40 %}bg-amber-100 dark:bg-amber-900/20 text-amber-600
          {% else %}bg-red-100 dark:bg-red-900/20 text-red-600{% endif %}">
-      {% if research.analysis.confidence >= 0.8 %}CREDA Verified{% elif research.analysis.confidence >= 0.5 %}Moderate Confidence{% else %}Low Confidence{% endif %}
+      {% if research.analysis.confidence_score >= 70 %}CREDA Verified{% elif research.analysis.confidence_score >= 40 %}Moderate Confidence{% else %}Low Confidence{% endif %}
     </div>
-    <span class="text-xs text-slate-400">{{ research.analysis.confidence|floatformat:0 }}% match from knowledge base</span>
+    <span class="text-xs text-slate-400">{{ research.analysis.confidence_score }}% confidence</span>
+    {% endif %}
+    {% if research.analysis.has_web_results %}
+    <div class="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] bg-blue-100 dark:bg-blue-900/20 text-blue-600">
+      Live Web Data
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
 
-  <!-- Sources -->
+  <!-- Sources — Knowledge Base -->
   {% if research.analysis.sources %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
     <h3 class="font-bold mb-4">Sources Referenced</h3>
     <div class="space-y-3">
       {% for src in research.analysis.sources %}
       <div class="flex items-start gap-3 p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
-        <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 mt-0.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 {% if src.type == 'web' %}bg-blue-100 dark:bg-blue-900/20{% else %}bg-indigo-100 dark:bg-indigo-900/20{% endif %}">
+          {% if src.type == 'web' %}
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          {% else %}
           <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          {% endif %}
         </div>
-        <div>
-          <p class="font-semibold text-sm">{{ src.title }}</p>
-          <p class="text-xs text-slate-500 mt-0.5">Relevance: {{ src.score|floatformat:0 }}%</p>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm truncate">{{ src.title }}</p>
+          {% if src.url %}
+          <a href="{{ src.url }}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-blue-500 hover:underline truncate block">{{ src.url|truncatechars:60 }}</a>
+          {% endif %}
+          {% if src.snippet %}
+          <p class="text-xs text-slate-500 mt-1">{{ src.snippet|truncatechars:120 }}</p>
+          {% endif %}
+          {% if src.score %}
+          <p class="text-xs text-slate-400 mt-0.5">Relevance: {{ src.score|floatformat:0 }}%</p>
+          {% endif %}
         </div>
+        <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-[0.15em] shrink-0 {% if src.type == 'web' %}bg-blue-50 text-blue-500{% else %}bg-indigo-50 text-indigo-500{% endif %}">
+          {% if src.type == 'web' %}WEB{% else %}KB{% endif %}
+        </span>
       </div>
       {% endfor %}
     </div>
@@ -63,7 +93,7 @@
       <div class="w-2 h-2 rounded-full bg-blue-600"></div>
       Research Findings
     </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ research.response }}</div>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ research.response|strip_markdown }}</div>
   </div>
   {% endif %}
 
@@ -76,8 +106,8 @@
     <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4">
       <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
     </div>
-    <p class="text-slate-500 text-sm mb-2">Search CREDA's financial knowledge base</p>
-    <p class="text-xs text-slate-400">Covers mutual funds, tax laws, insurance, SEBI regulations, and more</p>
+    <p class="text-slate-500 text-sm mb-2">Search CREDA's financial knowledge + live web intelligence</p>
+    <p class="text-xs text-slate-400">Combines curated knowledge base with real-time data from Economic Times, Moneycontrol, LiveMint & more</p>
   </div>
   {% endif %}
 </div>

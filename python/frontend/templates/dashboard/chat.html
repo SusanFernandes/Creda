@@ -4,8 +4,7 @@
 {% block page_subtitle %}AI Financial Intelligence{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto h-[calc(100vh-12rem)] flex flex-col" x-data="chatApp()"
-     @submit-field.window="handleFieldSubmit($event.detail)">
+<div class="max-w-4xl mx-auto h-[calc(100vh-12rem)] flex flex-col" x-data="chatApp()">
 
   <!-- Messages -->
   <div class="flex-1 overflow-y-auto space-y-4 pb-4 pr-2 scrollbar-thin" id="chat-messages" x-ref="messages">
@@ -41,29 +40,11 @@
         <div :class="msg.role === 'user'
               ? 'bg-blue-600 text-white rounded-[1.5rem] rounded-br-lg px-5 py-3 max-w-[75%] shadow-lg shadow-blue-500/10'
               : 'glass border border-slate-200/50 dark:border-slate-700/50 rounded-[1.5rem] rounded-bl-lg px-5 py-3 max-w-[75%]'">
-          <template x-if="msg.kind === 'field_request'">
-            <div>
-              <p class="text-sm whitespace-pre-wrap leading-relaxed" x-text="msg.prompt"></p>
-              <div class="mt-3 flex flex-wrap gap-2 items-center">
-                <span class="text-xs text-slate-500">₹</span>
-                <input type="number" x-model="msg.fieldValue" class="w-32 px-2 py-1 rounded-lg bg-white/10 border border-slate-300 dark:border-slate-600 text-sm"
-                       @keydown.enter.prevent="$dispatch('submit-field', { msg })">
-                <button type="button" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white"
-                        @click="$dispatch('submit-field', { msg, estimate: false })">Submit</button>
-                <button type="button" class="text-xs px-3 py-1.5 rounded-lg border border-slate-400"
-                        @click="$dispatch('submit-field', { msg, estimate: true })">Use an estimate</button>
-              </div>
-            </div>
-          </template>
-          <template x-if="msg.kind !== 'field_request'">
-            <div>
-              <p class="text-sm whitespace-pre-wrap leading-relaxed" x-text="msg.content"></p>
-              <div x-show="msg.agent" class="mt-2 flex items-center gap-1.5">
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.15em] opacity-50" x-text="msg.agent"></p>
-              </div>
-            </div>
-          </template>
+          <p class="text-sm whitespace-pre-wrap leading-relaxed" x-text="msg.content"></p>
+          <div x-show="msg.agent" class="mt-2 flex items-center gap-1.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em] opacity-50" x-text="msg.agent"></p>
+          </div>
         </div>
       </div>
     </template>
@@ -102,19 +83,26 @@ function chatApp() {
     loading: false,
     msgId: 0,
     sessionId: crypto.randomUUID(),
-    lastUserText: '',
 
-    async postChat(text, pushUserBubble) {
-      if (pushUserBubble) {
-        this.lastUserText = text;
-        this.messages.push({ id: ++this.msgId, role: 'user', content: text, kind: 'text' });
-      }
+    async sendMessage() {
+      const text = this.input.trim();
+      if (!text || this.loading) return;
+
+      this.messages.push({ id: ++this.msgId, role: 'user', content: text });
+      this.input = '';
       this.loading = true;
+
       this.$nextTick(() => {
         this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
       });
+
+      // Add placeholder for streaming response
+      const assistantMsg = { id: ++this.msgId, role: 'assistant', content: '', agent: '' };
+      this.messages.push(assistantMsg);
+
       try {
-        const resp = await fetch('/api/chat/', {
+        // Try SSE streaming first
+        const resp = await fetch('/api/chat/stream/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,85 +110,58 @@ function chatApp() {
           },
           body: JSON.stringify({ message: text, session_id: this.sessionId }),
         });
-        const data = await resp.json();
-        if (data.type === 'field_request') {
-          this.messages.push({
-            id: ++this.msgId,
-            role: 'assistant',
-            kind: 'field_request',
-            prompt: data.message,
-            field: data.field,
-            fieldValue: '',
-            agent: data.agent_used,
-          });
+
+        if (resp.ok && resp.headers.get('content-type')?.includes('event-stream')) {
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            // Parse SSE: lines starting with "data: "
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') break;
+                assistantMsg.content += data;
+                this.$nextTick(() => {
+                  this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+                });
+              }
+            }
+          }
         } else {
-          this.messages.push({
-            id: ++this.msgId,
-            role: 'assistant',
-            kind: 'text',
-            content: data.response || '',
-            agent: data.agent_used,
-          });
+          // Fallback to regular chat endpoint
+          const data = await resp.json();
+          assistantMsg.content = data.response || data.error || 'No response';
+          assistantMsg.agent = data.agent_used || '';
         }
       } catch (e) {
-        this.messages.push({
-          id: ++this.msgId,
-          role: 'assistant',
-          kind: 'text',
-          content: 'Connection interrupted. Please try again.',
-        });
+        // Fallback to non-streaming endpoint
+        try {
+          const resp2 = await fetch('/api/chat/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ message: text, session_id: this.sessionId }),
+          });
+          const data = await resp2.json();
+          assistantMsg.content = data.response || data.error || 'Connection interrupted.';
+          assistantMsg.agent = data.agent_used || '';
+        } catch (e2) {
+          assistantMsg.content = 'Connection interrupted. Please try again.';
+        }
       }
+
       this.loading = false;
       this.$nextTick(() => {
         this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
       });
-    },
-
-    async sendMessage() {
-      const text = this.input.trim();
-      if (!text || this.loading) return;
-      this.input = '';
-      await this.postChat(text, true);
-    },
-
-    async handleFieldSubmit(detail) {
-      const msg = detail.msg;
-      const estimate = detail.estimate === true;
-      const field = msg.field || '';
-      let payloadVal;
-      if (estimate) {
-        if (field === 'age') payloadVal = 30;
-        else if (field.includes('premium') || field.includes('rent') || field.includes('income') || field.includes('expenses') || field.includes('salary') || field.includes('contribution'))
-          payloadVal = 50000;
-        else if (field.includes('above') || field.includes('nps')) payloadVal = false;
-        else payloadVal = 50000;
-      } else {
-        const raw = msg.fieldValue;
-        if (field.includes('above') || field === 'has_nps') payloadVal = raw === 'true' || raw === true;
-        else payloadVal = parseFloat(raw);
-        if (!payloadVal && payloadVal !== 0 && !field.includes('above')) return;
-      }
-      try {
-        await fetch('/api/profile/upsert/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
-          },
-          body: JSON.stringify({ [field]: payloadVal }),
-        });
-        const idx = this.messages.findIndex((m) => m.id === msg.id);
-        if (idx >= 0) this.messages.splice(idx, 1);
-        await this.postChat(this.lastUserText, false);
-      } catch (e) {
-        this.messages.push({
-          id: ++this.msgId,
-          role: 'assistant',
-          kind: 'text',
-          content: 'Could not save profile field. Try again.',
-        });
-      }
-    },
+    }
   };
 }
 </script>

@@ -6,7 +6,7 @@ Uses real DB aggregation when enough users exist, falls back to curated benchmar
 import logging
 from typing import Any
 
-from sqlalchemy import select, func as sqlfunc, and_
+from sqlalchemy import select, func as sqlfunc, and_, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.llm import primary_llm
@@ -62,7 +62,7 @@ async def _get_real_peer_benchmarks(age_group: str, db: AsyncSession) -> dict | 
                 sqlfunc.avg(UserProfile.monthly_expenses).label("avg_expenses"),
                 sqlfunc.avg(UserProfile.emergency_fund).label("avg_emergency"),
                 sqlfunc.sum(
-                    sqlfunc.cast(UserProfile.has_health_insurance, sqlfunc.literal_column("INTEGER"))
+                    sqlfunc.cast(UserProfile.has_health_insurance, Integer)
                 ).label("insured_count"),
             ).where(
                 and_(
@@ -189,6 +189,16 @@ async def run(state: FinancialState) -> dict[str, Any]:
         insights = result.content.strip()
     except Exception:
         insights = ""
+
+    if not insights:
+        cmp_sr = comparisons["savings_rate"]
+        cmp_ef = comparisons["emergency_fund"]
+        insights = (
+            f"Peer snapshot ({age_group}): typical savings rate ~{peers['avg_savings_rate']}%; "
+            f"you are at {user_metrics['savings_rate']}% — {'ahead of' if cmp_sr['status'] == 'above' else 'behind' if cmp_sr['status'] == 'below' else 'aligned with'} the band. "
+            f"Emergency buffer: peers ~{peers['avg_emergency_months']} months vs your ~{user_metrics['emergency_months']} months ({cmp_ef['status']}). "
+            f"Insight: {peers['behavior']}"
+        )
 
     return {
         "age_group": age_group,

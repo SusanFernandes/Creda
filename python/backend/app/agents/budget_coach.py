@@ -18,17 +18,20 @@ Be specific with ₹ amounts. Keep it encouraging, not judgmental."""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
-    from app.agents.profile_checks import require_complete_profile
-
-    inc = require_complete_profile(state)
-    if inc:
-        return inc
-
     profile = state.get("user_profile") or {}
 
-    income = profile.get("monthly_income")
-    expenses = profile.get("monthly_expenses")
-    emi = profile.get("monthly_emi", 0)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        from app.services.profile_completeness import humanize_missing, missing_for_core_planning
+        miss = missing_for_core_planning(profile)
+        return {
+            "input_required": True,
+            "missing_fields_detail": humanize_missing(miss),
+            "message": "Budget Coach needs your actual monthly income and expenses from Settings (no default assumptions).",
+        }
+
+    emi = float(profile.get("monthly_emi") or 0)
     savings = income - expenses
 
     # 50/30/20 rule analysis
@@ -66,6 +69,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
         data["advice"] = result.content.strip()
     except Exception:
         data["advice"] = ""
+
+    if not data.get("advice"):
+        r = data["rule_50_30_20"]
+        data["advice"] = (
+            f"50/30/20 snapshot: needs target ₹{r['needs']['target']:,.0f} (actual ₹{r['needs']['actual']:,.0f}, "
+            f"{r['needs']['status']}). Wants target ₹{r['wants']['target']:,.0f}. "
+            f"Savings target ₹{r['savings']['target']:,.0f} vs actual ₹{r['savings']['actual']:,.0f}. "
+            f"Next step: move at least ₹{max(0, r['savings']['target'] - r['savings']['actual']):,.0f}/mo into SIP or emergency fund auto-debit."
+        )
 
     return data
 

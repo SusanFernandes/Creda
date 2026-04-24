@@ -42,8 +42,49 @@
 </div>
 {% endif %}
 
-<!-- Metric Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+<!-- Money Health Score Hero + Metric Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-10">
+  <!-- Health Score Banner -->
+  <a href="{% url 'health' %}" class="lg:col-span-2 group glass rounded-[2rem] p-6 border-2 transition-all hover:-translate-y-0.5
+    {% if health and health.analysis and health.analysis.overall_score is not None %}
+      {% if health.analysis.overall_score >= 70 %}border-emerald-400 hover:border-emerald-500{% elif health.analysis.overall_score >= 40 %}border-amber-400 hover:border-amber-500{% else %}border-red-400 hover:border-red-500{% endif %}
+    {% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">Money Health Score</p>
+    {% if health and health.analysis and health.analysis.overall_score is not None %}
+    <div class="flex items-end gap-3">
+      <span class="text-6xl font-black italic tracking-tight
+        {% if health.analysis.overall_score >= 70 %}text-emerald-500{% elif health.analysis.overall_score >= 40 %}text-amber-500{% else %}text-red-500{% endif %}">
+        {{ health.analysis.overall_score }}
+      </span>
+      <span class="text-2xl font-bold text-slate-300 mb-2">/100</span>
+      <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-bold mb-2
+        {% if health.analysis.grade == 'A' %}bg-emerald-100 text-emerald-700{% elif health.analysis.grade == 'B' %}bg-blue-100 text-blue-700{% elif health.analysis.grade == 'C' %}bg-amber-100 text-amber-700{% elif health.analysis.grade == 'N/A' %}bg-slate-100 text-slate-600{% else %}bg-red-100 text-red-700{% endif %}">
+        Grade {{ health.analysis.grade }}
+      </span>
+    </div>
+    <p class="text-xs text-slate-500 mt-2">Click to see detailed breakdown →</p>
+    {% elif health and health.analysis %}
+    <p class="text-2xl font-bold text-amber-600 mt-2">Add income &amp; expenses in Settings</p>
+    <p class="text-xs text-slate-500 mt-2">Then refresh the dashboard →</p>
+    {% else %}
+    <p class="text-2xl font-bold text-slate-300 mt-2">Loading...</p>
+    {% endif %}
+  </a>
+
+  <!-- Portfolio Value Card -->
+  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Portfolio Value</p>
+    {% if portfolio %}
+    <p class="text-3xl font-black italic tracking-tight">₹{{ portfolio.current_value|floatformat:0 }}</p>
+    <div class="mt-3 flex items-center gap-1.5 text-xs font-medium {% if portfolio.gain >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">
+      {% if portfolio.gain >= 0 %}+{% endif %}{{ portfolio.gain_pct|floatformat:1 }}% · XIRR {{ portfolio.xirr|floatformat:1 }}%
+    </div>
+    {% else %}
+    <p class="text-3xl font-black italic tracking-tight text-slate-300">—</p>
+    {% endif %}
+  </div>
+
+  <!-- Monthly Income -->
   <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Income</p>
     <p class="text-3xl font-black italic tracking-tight">₹{{ profile.monthly_income|floatformat:0|default:"—" }}</p>
@@ -52,23 +93,15 @@
       Active
     </div>
   </div>
-  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Monthly Savings</p>
-    <p class="text-3xl font-black italic tracking-tight text-blue-600">₹{{ profile.monthly_surplus|default:0|floatformat:0 }}</p>
-    <div class="mt-3 flex items-center gap-1.5 text-blue-500 text-xs font-medium">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-      Tracking
-    </div>
-  </div>
+
+  <!-- Emergency Fund -->
   <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Emergency Fund</p>
-    <p class="text-3xl font-black italic tracking-tight">₹{{ profile.emergency_fund|floatformat:0|default:"0" }}</p>
-    <div class="mt-3 flex items-center gap-1.5 text-slate-400 text-xs font-medium">Safety Net</div>
-  </div>
-  <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Risk Profile</p>
-    <p class="text-3xl font-black italic tracking-tight capitalize">{{ profile.risk_appetite|default:"—" }}</p>
-    <div class="mt-3 flex items-center gap-1.5 text-slate-400 text-xs font-medium">Calibrated</div>
+    <p class="text-3xl font-black italic tracking-tight {% if profile.emergency_fund and profile.emergency_fund < profile.monthly_expenses %}text-red-500{% endif %}">₹{{ profile.emergency_fund|floatformat:0|default:"0" }}</p>
+    <div class="mt-3 flex items-center gap-1.5 text-xs font-medium
+      {% if profile.emergency_fund and profile.monthly_expenses and profile.emergency_fund < profile.monthly_expenses %}text-red-500{% else %}text-slate-400{% endif %}">
+      {% if profile.monthly_expenses %}{{ profile.emergency_fund|default:0 }}{% endif %} Safety Net
+    </div>
   </div>
 </div>
 
@@ -76,7 +109,7 @@
 <div class="mb-4 flex items-center justify-between">
   <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Quick Actions</h2>
 </div>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
   <a href="{% url 'chat' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
     <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -104,6 +137,13 @@
     </div>
     <p class="font-semibold text-sm">Market Pulse</p>
     <p class="text-[10px] text-slate-400 mt-0.5">Live Markets</p>
+  </a>
+  <a href="{% url 'report_card' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all hover:-translate-y-0.5">
+    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <p class="font-semibold text-sm">Report Card</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">Share Your Score</p>
   </a>
 </div>
 

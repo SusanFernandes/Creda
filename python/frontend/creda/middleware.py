@@ -155,6 +155,11 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def refresh_navs(self) -> dict:
+        resp = await self._client.post("/portfolio/refresh-navs", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Agents (direct endpoints) ──────────────────────────
     async def fire_planner(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/fire-planner", language)
@@ -220,7 +225,50 @@ class BackendClient:
     async def human_handoff(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/human-handoff", language)
 
+    async def expense_analytics(self, language: str = "en") -> dict:
+        return await self._agent_call("/agents/expense-analytics", language)
+
+    async def list_budget_expenses(self, month: str = "", limit: int = 100) -> list:
+        params: dict[str, str | int] = {"limit": limit}
+        if month:
+            params["month"] = month
+        resp = await self._client.get("/budget/expenses", params=params, headers=self._headers())
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, list) else []
+
+    async def post_budget_expense(
+        self,
+        category: str,
+        amount: float,
+        description: str = "",
+        expense_date: str = "",
+        payment_method: str = "upi",
+        is_recurring: bool = False,
+    ) -> dict:
+        payload = {
+            "category": category,
+            "amount": amount,
+            "description": description,
+            "expense_date": expense_date,
+            "payment_method": payment_method,
+            "is_recurring": is_recurring,
+        }
+        resp = await self._client.post("/budget/expense", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def delete_budget_expense(self, expense_id: str) -> dict:
+        resp = await self._client.delete(f"/budget/expense/{expense_id}", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Nudges ─────────────────────────────────────────────
+    async def generate_nudges(self) -> dict:
+        resp = await self._client.post("/nudges/generate", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     async def get_nudges(self) -> list:
         resp = await self._client.get("/nudges/pending", headers=self._headers())
         resp.raise_for_status()
@@ -257,6 +305,55 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
+    # ── Admin ──────────────────────────────────────────────
+    async def admin_stats(self) -> dict:
+        resp = await self._client.get("/admin/stats", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def admin_activity(self, limit: int = 50) -> list:
+        resp = await self._client.get("/admin/activity", params={"limit": limit}, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def admin_users(self, limit: int = 50) -> list:
+        resp = await self._client.get("/admin/users", params={"limit": limit}, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── Goal-Fund Linking ──────────────────────────────────
+    async def goals_with_funds(self) -> dict:
+        resp = await self._client.get("/portfolio/goals", headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def create_goal(
+        self,
+        goal_name: str,
+        target_amount: float,
+        target_date: str | None = None,
+        current_saved: float = 0,
+        monthly_investment: float = 0,
+    ) -> dict:
+        payload: dict = {
+            "goal_name": goal_name,
+            "target_amount": target_amount,
+            "current_saved": current_saved,
+            "monthly_investment": monthly_investment,
+        }
+        if target_date:
+            payload["target_date"] = target_date
+        resp = await self._client.post("/portfolio/goals", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def link_funds_to_goal(self, goal_id: str, fund_ids: list) -> dict:
+        resp = await self._client.post("/portfolio/goals/link", json={
+            "goal_id": goal_id, "fund_ids": fund_ids,
+        }, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
     async def link_family_member(self, email: str, relationship: str = "spouse") -> dict:
         resp = await self._client.post("/family/link", json={
             "member_email": email, "relationship": relationship,
@@ -266,6 +363,13 @@ class BackendClient:
 
     async def family_wealth(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/family-wealth", language)
+
+    async def life_event_advisor(self, message: str, language: str = "en") -> dict:
+        resp = await self._client.post("/agents/life-event-advisor", json={
+            "message": message, "language": language,
+        }, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
 
     # ── Voice ──────────────────────────────────────────────
     async def voice_chat(self, audio_bytes: bytes, filename: str, language: str = "en") -> dict:
@@ -284,6 +388,14 @@ class BackendClient:
             "language": resp.headers.get("X-Language", language),
             "audio_data": audio_b64,
         }
+
+    async def voice_navigate(self, audio_bytes: bytes, filename: str, language: str = "en") -> dict:
+        """Send audio to voice navigate endpoint — returns intent + page URL + ack audio."""
+        files = {"audio": (filename, audio_bytes, "audio/webm")}
+        data = {"language": language}
+        resp = await self._client.post("/voice/navigate", files=files, data=data, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
 
     # ── Helper ─────────────────────────────────────────────
     async def _agent_call(self, path: str, language: str) -> dict:

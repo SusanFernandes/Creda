@@ -1,7 +1,7 @@
 """
 Goal Planner agent — target-based savings plans (house, car, education, wedding, etc.).
 """
-import math
+from datetime import date
 from typing import Any
 
 from app.core.llm import primary_llm
@@ -18,22 +18,70 @@ Data:
 Be practical and specific with ₹ amounts and timelines."""
 
 
+def _years_from_target_date(target_date) -> float:
+    if not target_date:
+        return 5.0
+    if isinstance(target_date, str):
+        try:
+            td = date.fromisoformat(target_date[:10])
+        except ValueError:
+            return 5.0
+    else:
+        td = target_date
+    years = (td - date.today()).days / 365.25
+    return max(0.5, min(years, 40.0))
+
+
 async def run(state: FinancialState) -> dict[str, Any]:
-    from app.agents.profile_checks import require_complete_profile
-
-    inc = require_complete_profile(state)
-    if inc:
-        return inc
-
     profile = state.get("user_profile") or {}
     message = state.get("message", "")
 
-    income = profile.get("monthly_income")
-    expenses = profile.get("monthly_expenses")
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        from app.services.profile_completeness import humanize_missing, missing_for_core_planning
+        miss = missing_for_core_planning(profile)
+        return {
+            "input_required": True,
+            "missing_fields_detail": humanize_missing(miss),
+            "message": "Goal Planner needs monthly income and expenses from Settings to know what SIP you can afford.",
+            "available_monthly_sip": 0,
+            "total_sip_needed": 0,
+            "affordable": False,
+            "goals": [],
+            "drift_alerts": [],
+        }
+
     available_sip = income - expenses
 
-    # Parse goal from message or use common Indian goals
-    goals = _extract_goals(message, income)
+    stored = state.get("stored_goals") or []
+    if stored:
+        goals = []
+        for row in stored:
+            tgt = float(row.get("target_amount") or 0)
+            if tgt <= 0:
+                continue
+            years = _years_from_target_date(row.get("target_date"))
+            goals.append({
+                "name": row.get("goal_name") or "Goal",
+                "target_amount": tgt,
+                "years": years,
+                "current_saved": float(row.get("current_saved") or 0),
+            })
+    else:
+        goals = _extract_goals(message, income)
+
+    if not goals:
+        return {
+            "input_required": False,
+            "needs_goals": True,
+            "message": "You have no goals saved yet. Add a goal below (or in the API), then reload — we will size SIPs from your real targets instead of generic examples.",
+            "available_monthly_sip": available_sip,
+            "total_sip_needed": 0,
+            "affordable": True,
+            "goals": [],
+            "drift_alerts": [],
+        }
 
     for goal in goals:
         target = goal["target_amount"]
@@ -102,13 +150,16 @@ async def run(state: FinancialState) -> dict[str, Any]:
     return data
 
 
-async def run_goal_planner(profile, language: str, voice_mode: bool) -> dict:
+async def run_goal_planner(
+    profile, language: str, voice_mode: bool, stored_goals: list[dict] | None = None,
+) -> dict:
     from app.agents.synthesizer import synthesize
     profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns}
     state: FinancialState = {
         "user_id": profile.user_id, "message": "goal planning", "intent": "goal_planner",
         "language": language, "voice_mode": voice_mode, "history": [],
         "user_profile": profile_dict,
+        "stored_goals": stored_goals or [],
     }
     output = await run(state)
     response = await synthesize(output, "goal_planner", "goal planning", language, voice_mode)
@@ -116,27 +167,19 @@ async def run_goal_planner(profile, language: str, voice_mode: bool) -> dict:
 
 
 def _extract_goals(message: str, income: float) -> list[dict]:
-    """Extract goals from message or provide common defaults."""
+    """Extract goals from chat-style message only — no silent defaults."""
     msg = message.lower()
-    goals = []
+    goals: list[dict] = []
 
     if "house" in msg or "home" in msg:
-        goals.append({"name": "House Down Payment", "target_amount": income * 12 * 5, "years": 5})
+        goals.append({"name": "House Down Payment", "target_amount": income * 12 * 5, "years": 5, "current_saved": 0})
     if "car" in msg:
-        goals.append({"name": "Car", "target_amount": income * 12, "years": 3})
+        goals.append({"name": "Car", "target_amount": income * 12, "years": 3, "current_saved": 0})
     if "education" in msg or "child" in msg:
-        goals.append({"name": "Child Education", "target_amount": 2_000_000, "years": 15})
+        goals.append({"name": "Child Education", "target_amount": 2_000_000, "years": 15, "current_saved": 0})
     if "wedding" in msg or "marriage" in msg:
-        goals.append({"name": "Wedding", "target_amount": 1_500_000, "years": 3})
+        goals.append({"name": "Wedding", "target_amount": 1_500_000, "years": 3, "current_saved": 0})
     if "vacation" in msg or "travel" in msg:
-        goals.append({"name": "Vacation", "target_amount": 200_000, "years": 1})
-
-    if not goals:
-        # Default common goals
-        goals = [
-            {"name": "Emergency Fund (6 months)", "target_amount": income * 6, "years": 2},
-            {"name": "House Down Payment", "target_amount": income * 12 * 5, "years": 7},
-            {"name": "Retirement Corpus", "target_amount": income * 12 * 25, "years": 25},
-        ]
+        goals.append({"name": "Vacation", "target_amount": 200_000, "years": 1, "current_saved": 0})
 
     return goals

@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Money Personality{% endblock %}
 {% block page_title %}Money Personality{% endblock %}
 {% block page_subtitle %}Behavioral Finance Assessment{% endblock %}
@@ -6,13 +7,24 @@
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
   {% if personality %}
+  {% if personality.analysis and personality.analysis.profile_incomplete %}
+  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8">
+    <h3 class="font-bold text-amber-900 dark:text-amber-100 mb-2">Finish these fields first</h3>
+    <ul class="text-sm space-y-2 list-disc list-inside text-slate-700 dark:text-slate-300">
+      {% for row in personality.analysis.missing_fields_detail %}
+      <li><span class="font-semibold">{{ row.label }}</span> — {{ row.settings_hint }}</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'settings' %}" class="inline-block mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">Open Settings</a>
+  </div>
+  {% endif %}
   {% if personality.analysis %}
   <!-- Personality Result -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center relative overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent"></div>
     <div class="relative">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Your Financial Archetype</p>
-      <h2 class="text-4xl font-black italic tracking-tight mb-3">{{ personality.analysis.archetype }}</h2>
+      <h2 class="text-4xl font-black italic tracking-tight mb-3">{{ personality.analysis.archetype|default:"—" }}</h2>
       <p class="text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">{{ personality.analysis.description }}</p>
 
       {% if personality.analysis.traits %}
@@ -87,7 +99,7 @@
       <div class="w-2 h-2 rounded-full bg-blue-600"></div>
       Personalized Recommendations
     </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ personality.response }}</div>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ personality.response|strip_markdown }}</div>
   </div>
   {% endif %}
 
@@ -96,7 +108,8 @@
     <div class="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-4">
       <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     </div>
-    <p class="text-slate-500 text-sm">Complete your profile to discover your money personality.</p>
+    <p class="text-slate-500 text-sm">Personality could not load. Ensure the backend is running, set income and expenses in Settings, then refresh.</p>
+    <a href="{% url 'settings' %}" class="inline-block mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">Open Settings</a>
   </div>
   {% endif %}
 </div>

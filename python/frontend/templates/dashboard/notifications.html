@@ -4,17 +4,44 @@
 {% block page_subtitle %}Alerts & Reminders{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-3xl mx-auto" x-data="{ search: '', filterType: 'all' }">
   {% if nudges %}
-  <div class="flex justify-end mb-4">
+  <!-- Search & Filter Bar -->
+  <div class="flex flex-col sm:flex-row gap-3 mb-4">
+    <div class="relative flex-1">
+      <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" x-model="search" placeholder="Search notifications..."
+             class="w-full pl-10 pr-4 py-2.5 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm bg-transparent focus:border-blue-500 outline-none transition">
+    </div>
+    <div class="flex gap-2">
+      <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-blue-600 text-white' : 'glass border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all">All</button>
+      <button @click="filterType = 'sip_reminder'" :class="filterType === 'sip_reminder' ? 'bg-blue-600 text-white' : 'glass border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all">SIP</button>
+      <button @click="filterType = 'rebalance_alert'" :class="filterType === 'rebalance_alert' ? 'bg-blue-600 text-white' : 'glass border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Rebalance</button>
+      <button @click="filterType = 'tax_deadline'" :class="filterType === 'tax_deadline' ? 'bg-blue-600 text-white' : 'glass border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Tax</button>
+    </div>
     <button hx-post="/api/nudges/mark-all-read/" hx-target="#nudge-list" hx-swap="innerHTML"
-            class="text-sm text-blue-600 hover:text-blue-700 font-medium transition">Mark all as read</button>
+            class="text-sm text-blue-600 hover:text-blue-700 font-medium transition whitespace-nowrap">Mark all read</button>
   </div>
   <div id="nudge-list" class="space-y-3">
     {% for nudge in nudges %}
-    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 flex items-start gap-4" id="nudge-{{ nudge.id }}">
-      <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 flex items-start gap-4" id="nudge-{{ nudge.id }}"
+         x-show="(filterType === 'all' || '{{ nudge.nudge_type }}'.includes(filterType)) && (search === '' || '{{ nudge.title }} {{ nudge.body }}'.toLowerCase().includes(search.toLowerCase()))"
+         x-transition>
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+            {% if nudge.nudge_type == 'sip_reminder' %}bg-emerald-100 dark:bg-emerald-900/20{% elif nudge.nudge_type == 'rebalance_alert' %}bg-amber-100 dark:bg-amber-900/20{% elif nudge.nudge_type == 'tax_deadline' %}bg-red-100 dark:bg-red-900/20{% else %}bg-blue-100 dark:bg-blue-900/20{% endif %}">
+        {% if nudge.nudge_type == 'sip_reminder' %}
+        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% elif nudge.nudge_type == 'rebalance_alert' %}
+        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        {% elif nudge.nudge_type == 'tax_deadline' %}
+        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        {% else %}
         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        {% endif %}
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-semibold text-sm">{{ nudge.title }}</p>

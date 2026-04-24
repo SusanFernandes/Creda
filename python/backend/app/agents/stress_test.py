@@ -1,165 +1,113 @@
 """
-Stress Test agent — NumPy Monte Carlo with optional user stress scenarios from assumptions.
+Stress Test agent — Monte Carlo simulations for life events.
+500 iterations per event, P10/P50/P90 outcomes.
 """
-from __future__ import annotations
-
+import random
 from typing import Any
 
-import numpy as np
-
-from app.agents.state import FinancialState
-from app.core.agent_envelope import wrap_agent_response
 from app.core.llm import primary_llm
-from app.database import AsyncSessionLocal
+from app.agents.state import FinancialState
+
+_EVENTS = {
+    "market_crash_30": {"label": "Market crash 30%", "portfolio_hit": -0.30, "monthly_cost": 0},
+    "market_crash_50": {"label": "Market crash 50%", "portfolio_hit": -0.50, "monthly_cost": 0},
+    "baby": {"label": "Having a baby", "portfolio_hit": 0, "monthly_cost": 25000},
+    "marriage": {"label": "Marriage", "portfolio_hit": 0, "monthly_cost": 15000},
+    "job_loss": {"label": "Job loss (6 months)", "portfolio_hit": 0, "monthly_cost": 0, "income_hit_months": 6},
+    "job_change": {"label": "Job change (+30% salary)", "portfolio_hit": 0, "monthly_cost": -0.30},
+    "retirement": {"label": "Early retirement", "portfolio_hit": 0, "monthly_cost": 0},
+}
 
 _MITIGATION_PROMPT = """Given these stress test results for an Indian investor, provide 3 specific mitigation strategies.
 
 Profile: Income ₹{income}/month, Expenses ₹{expenses}/month, Emergency fund ₹{emergency}, Portfolio ₹{portfolio}
+Events tested: {events}
 Results: {results}
 
 Provide 3 numbered, actionable strategies. Be specific with numbers."""
 
-ITERATIONS = 1000
-
-
-def run_monte_carlo(
-    current_corpus: float,
-    monthly_sip: float,
-    years_to_retire: int,
-    blended_return: float,
-    _inflation_rate: float,
-    stress_events: list[dict[str, Any]],
-    *,
-    goal_corpus: float,
-    iterations: int = ITERATIONS,
-) -> dict[str, Any]:
-    months = max(int(years_to_retire * 12), 1)
-    monthly_mean = blended_return / 12
-    monthly_std = 0.18 / np.sqrt(12)
-
-    rng = np.random.default_rng()
-    returns = rng.normal(monthly_mean, monthly_std, (iterations, months))
-
-    sip_matrix = np.full((iterations, months), float(monthly_sip))
-    for event in stress_events:
-        if not event.get("active"):
-            continue
-        start = int(event.get("start_month", 0))
-        dur = int(event.get("duration_months", 6))
-        cost = float(event.get("monthly_cost", 0))
-        end = min(start + dur, months)
-        sip_matrix[:, start:end] -= cost
-
-    corpus = np.full(iterations, float(current_corpus))
-    for m in range(months):
-        corpus = corpus * (1.0 + returns[:, m]) + sip_matrix[:, m]
-        corpus = np.maximum(corpus, 0.0)
-
-    final = corpus
-    survival = float(np.mean(final >= goal_corpus) * 100)
-    return {
-        "p10": float(np.percentile(final, 10)),
-        "p50": float(np.percentile(final, 50)),
-        "p90": float(np.percentile(final, 90)),
-        "survival_probability_pct": survival,
-        "iterations": iterations,
-        "final_samples": final,
-    }
+ITERATIONS = 500
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
-    from app.agents.profile_checks import require_complete_profile
-
-    inc = require_complete_profile(state)
-    if inc:
-        return inc
-
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
+    message = state.get("message", "")
 
-    income = float(profile["monthly_income"])
-    expenses = float(profile["monthly_expenses"])
-    emergency = float(profile.get("emergency_fund") or 0)
-    portfolio_value = float(portfolio.get("current_value") or 0)
-    age = int(profile["age"])
-    fire_age = int(profile["fire_target_age"])
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        return {
+            "input_required": True,
+            "profile_message": "Add monthly income and expenses in Settings to simulate realistic stress outcomes.",
+            "events_tested": [],
+            "results": {},
+            "mitigation_strategies": "",
+        }
+    savings_rate = (income - expenses) / income if income > 0 else 0.2
+    emergency = profile.get("emergency_fund", 0)
+    portfolio_value = portfolio.get("current_value", 0) or 0
 
-    async with AsyncSessionLocal() as db:
-        from app.core.assumptions import get_user_assumptions
+    # Prefer explicit keys from the stress-test UI; else parse natural language
+    explicit = state.get("stress_event_keys") or []
+    events_to_test = [e for e in explicit if e in _EVENTS]
+    if not events_to_test:
+        events_to_test = _detect_events(message)
+    if not events_to_test:
+        events_to_test = ["market_crash_30", "baby", "job_loss"]
 
-        assumptions = await get_user_assumptions(db, state["user_id"])
+    results = {}
+    for event_key in events_to_test:
+        event = _EVENTS.get(event_key)
+        if not event:
+            continue
+        scenarios = _monte_carlo(
+            portfolio_value, income, expenses, emergency, savings_rate, event
+        )
+        scenarios.sort()
+        results[event_key] = {
+            "label": event["label"],
+            "p10": round(scenarios[int(ITERATIONS * 0.1)]),
+            "p50": round(scenarios[int(ITERATIONS * 0.5)]),
+            "p90": round(scenarios[int(ITERATIONS * 0.9)]),
+            "worst_case": round(scenarios[0]),
+            "best_case": round(scenarios[-1]),
+        }
 
-    blended = float(assumptions["equity_lc_return"])
-    inflation_rate = float(assumptions["inflation_rate"])
-    monthly_sip = max(income - expenses, 0)
-
-    years_to_retire = max(fire_age - age, 5)
-    annual_exp = expenses * 12
-    goal_corpus = max(annual_exp * 25, portfolio_value * 1.2)
-
-    raw_scenarios = assumptions.get("stress_scenarios") or {}
-    stress_events: list[dict[str, Any]] = []
-    if isinstance(raw_scenarios, dict):
-        for key, cfg in raw_scenarios.items():
-            if isinstance(cfg, dict):
-                stress_events.append({"name": key, **cfg})
-
-    if not stress_events:
-        stress_events = [
-            {"active": True, "start_month": 0, "duration_months": 6, "monthly_cost": expenses * 0.9},
-        ]
-
-    mc = run_monte_carlo(
-        portfolio_value + emergency * 0.5,
-        monthly_sip,
-        years_to_retire,
-        blended,
-        inflation_rate,
-        stress_events,
-        goal_corpus=goal_corpus,
-    )
-
-    inner = {
-        "p10_corpus": mc["p10"],
-        "p50_corpus": mc["p50"],
-        "p90_corpus": mc["p90"],
-        "survival_probability_pct": mc["survival_probability_pct"],
-        "retire_date_shift_months": {},
-        "emergency_fund_required": round(expenses * 6),
-        "emergency_fund_current": round(emergency),
-        "emergency_fund_gap": round(max(expenses * 6 - emergency, 0)),
-        "iterations": mc["iterations"],
-    }
-
+    # LLM mitigation strategies
     try:
         prompt = _MITIGATION_PROMPT.format(
-            income=income,
-            expenses=expenses,
-            emergency=emergency,
-            portfolio=portfolio_value,
-            results=str(inner),
+            income=income, expenses=expenses, emergency=emergency,
+            portfolio=portfolio_value, events=events_to_test, results=str(results),
         )
         llm_result = await primary_llm.ainvoke(prompt)
         mitigation = llm_result.content.strip()
     except Exception:
         mitigation = ""
 
-    inner["mitigation_strategies"] = mitigation
+    if not mitigation and results:
+        lines = [
+            "Mitigation (automated):",
+            "1. Keep 6+ months of expenses in a liquid fund before adding risk.",
+            "2. If a scenario shows a large P10 drop, increase monthly surplus and delay large discretionary spends.",
+            "3. Maintain term + health insurance so a shock does not force equity redemptions at the bottom.",
+        ]
+        for ek, r in results.items():
+            lines.append(
+                f"- {r['label']}: median outcome ~₹{r['p50']:,} vs worst sample ~₹{r['worst_case']:,}."
+            )
+        mitigation = "\n".join(lines)
 
-    out = wrap_agent_response(
-        "stress_test",
-        "success",
-        "estimated",
-        {"inflation_rate": inflation_rate, "equity_return": blended},
-        inner,
-    )
-    out["data_quality"] = "estimated"
-    return out
+    return {
+        "events_tested": events_to_test,
+        "results": results,
+        "mitigation_strategies": mitigation,
+    }
 
 
 async def run_stress_test(profile, events: list[str], language: str, voice_mode: bool) -> dict:
+    """Direct endpoint call — skip LangGraph."""
     from app.agents.synthesizer import synthesize
-
     state: FinancialState = {
         "user_id": profile.user_id,
         "message": f"stress test for {', '.join(events)}",
@@ -168,8 +116,70 @@ async def run_stress_test(profile, events: list[str], language: str, voice_mode:
         "voice_mode": voice_mode,
         "history": [],
         "user_profile": {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns},
+        "stress_event_keys": events,
     }
     output = await run(state)
-    inner = output.get("output", output) if isinstance(output, dict) else output
-    response = await synthesize(inner, "stress_test", state["message"], language, voice_mode)
-    return {"analysis": inner, "response": response}
+    response = await synthesize(output, "stress_test", state["message"], language, voice_mode)
+    return {"analysis": output, "response": response}
+
+
+def _monte_carlo(portfolio: float, income: float, expenses: float,
+                 emergency: float, savings_rate: float, event: dict) -> list[float]:
+    results = []
+    for _ in range(ITERATIONS):
+        p = portfolio
+        e = emergency
+        monthly_savings = income - expenses
+
+        # Apply portfolio hit
+        p *= (1 + event.get("portfolio_hit", 0) + random.gauss(0, 0.05))
+
+        # Apply monthly cost increase (12 months projection)
+        extra_cost = event.get("monthly_cost", 0)
+        if isinstance(extra_cost, float) and -1 < extra_cost < 0:
+            # Negative = income increase (e.g., job_change)
+            monthly_savings *= (1 - extra_cost)
+            extra_cost = 0
+
+        income_hit_months = event.get("income_hit_months", 0)
+
+        for month in range(12):
+            monthly_return = random.gauss(0.01, 0.04)  # ~12% annual, 16% vol
+            p *= (1 + monthly_return)
+
+            if month < income_hit_months:
+                net = -expenses - extra_cost
+            else:
+                net = monthly_savings - extra_cost
+
+            if net < 0:
+                e += net
+                if e < 0:
+                    p += e
+                    e = 0
+            else:
+                p += net * 0.5
+                e += net * 0.5
+
+        results.append(p + e)
+    return results
+
+
+def _detect_events(message: str) -> list[str]:
+    msg = message.lower()
+    detected = []
+    if "crash" in msg and "50" in msg:
+        detected.append("market_crash_50")
+    elif "crash" in msg or "market" in msg:
+        detected.append("market_crash_30")
+    if "baby" in msg or "child" in msg:
+        detected.append("baby")
+    if "marriage" in msg or "wedding" in msg:
+        detected.append("marriage")
+    if "job loss" in msg or "fired" in msg or "layoff" in msg:
+        detected.append("job_loss")
+    if "job change" in msg or "new job" in msg:
+        detected.append("job_change")
+    if "retire" in msg:
+        detected.append("retirement")
+    return detected

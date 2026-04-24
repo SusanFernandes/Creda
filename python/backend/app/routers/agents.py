@@ -6,12 +6,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
-from app.models import UserProfile
+from app.models import LifeEvent, UserProfile
 
 router = APIRouter()
 
@@ -37,6 +37,10 @@ class GoalSimulatorRequest(AgentRequest):
 
 
 class ResearchRequest(AgentRequest):
+    message: str = ""
+
+
+class LifeEventRequest(AgentRequest):
     message: str = ""
 
 
@@ -110,8 +114,20 @@ async def goal_planner(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
+    from app.models import GoalPlan
+    goals_result = await db.execute(select(GoalPlan).where(GoalPlan.user_id == auth.user_id))
+    goals_list = list(goals_result.scalars().all())
+    stored = [
+        {
+            "goal_name": g.goal_name,
+            "target_amount": g.target_amount,
+            "target_date": g.target_date.isoformat() if g.target_date else None,
+            "current_saved": g.current_saved or 0,
+        }
+        for g in goals_list
+    ]
     from app.agents.goal_planner import run_goal_planner
-    return await run_goal_planner(profile, body.language, body.voice_mode)
+    return await run_goal_planner(profile, body.language, body.voice_mode, stored)
 
 
 @router.post("/couples-finance")
@@ -121,9 +137,34 @@ async def couples_finance(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
+    partner_income = body.partner_income
+    partner_expenses = body.partner_expenses
+
+    # Auto-detect linked spouse if partner data not provided
+    if partner_income == 0:
+        from app.models import FamilyLink, UserProfile
+        from sqlalchemy import or_
+        link_result = await db.execute(
+            select(FamilyLink).where(
+                or_(FamilyLink.owner_id == auth.user_id, FamilyLink.member_id == auth.user_id),
+                FamilyLink.is_accepted == True,
+                FamilyLink.relationship_type == "spouse",
+            )
+        )
+        link = link_result.scalar_one_or_none()
+        if link:
+            spouse_id = link.member_id if link.owner_id == auth.user_id else link.owner_id
+            spouse_result = await db.execute(
+                select(UserProfile).where(UserProfile.user_id == spouse_id)
+            )
+            spouse_profile = spouse_result.scalar_one_or_none()
+            if spouse_profile:
+                partner_income = spouse_profile.monthly_income or 0
+                partner_expenses = spouse_profile.monthly_expenses or 0
+
     from app.agents.couples_finance import run_couples_finance
     return await run_couples_finance(
-        profile, body.partner_income, body.partner_expenses,
+        profile, partner_income, partner_expenses,
         body.split_strategy, body.language, body.voice_mode,
     )
 
@@ -138,14 +179,18 @@ async def market_pulse(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
-    # Also try loading portfolio
-    from app.models import Portfolio
+    # Also try loading portfolio with funds
+    from app.models import Portfolio, PortfolioFund
     port_result = await db.execute(
         select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
     )
     portfolio = port_result.scalar_one_or_none()
+    funds = []
+    if portfolio:
+        funds_result = await db.execute(select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id))
+        funds = list(funds_result.scalars().all())
     from app.agents.market_pulse import run_market_pulse
-    return await run_market_pulse(profile, portfolio, body.language, body.voice_mode)
+    return await run_market_pulse(profile, portfolio, funds, body.language, body.voice_mode)
 
 
 @router.post("/tax-copilot")
@@ -262,3 +307,67 @@ async def family_wealth(
         "db": db,
     }
     return await run_family(state)
+
+
+@router.post("/expense-analytics")
+async def expense_analytics(
+    body: AgentRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await _get_profile(auth.user_id, db)
+    # Fetch actual expenses from DB (last 30 days)
+    from app.models import Expense, Budget
+    from datetime import date, timedelta
+    # Rolling window so seeded / older line items still power charts after demo time passes
+    expense_since = date.today() - timedelta(days=120)
+    exp_result = await db.execute(
+        select(Expense).where(
+            Expense.user_id == auth.user_id,
+            Expense.expense_date >= expense_since,
+        )
+    )
+    expenses = list(exp_result.scalars().all())
+    # Fetch budgets for current month
+    current_month = date.today().strftime("%Y-%m")
+    bud_result = await db.execute(
+        select(Budget).where(Budget.user_id == auth.user_id, Budget.month == current_month)
+    )
+    budgets = list(bud_result.scalars().all())
+    from app.agents.expense_analytics import run_expense_analytics
+    return await run_expense_analytics(profile, body.language, body.voice_mode, expenses, budgets)
+
+
+@router.post("/life-event-advisor")
+async def life_event_advisor(
+    body: LifeEventRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await _get_profile(auth.user_id, db)
+    from app.models import Portfolio, PortfolioFund, GoalPlan
+    port_result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = port_result.scalar_one_or_none()
+    goals_result = await db.execute(select(GoalPlan).where(GoalPlan.user_id == auth.user_id))
+    goals_list = list(goals_result.scalars().all())
+    from app.agents.life_event_advisor import run_life_event_advisor
+    result = await run_life_event_advisor(
+        profile, portfolio, goals_list, body.message, body.language, body.voice_mode
+    )
+    analysis = result.get("analysis") or {}
+    if analysis.get("event_type") == "bonus" and float(analysis.get("event_amount") or 0) > 0:
+        amt = float(analysis["event_amount"])
+        profile.ytd_bonus_income = float(profile.ytd_bonus_income or 0) + amt
+        db.add(LifeEvent(
+            user_id=auth.user_id,
+            event_type="bonus",
+            financial_impact=amt,
+            notes=(body.message or "")[:2000],
+        ))
+        await db.commit()
+        await db.refresh(profile)
+        result["bonus_recorded"] = True
+        result["ytd_bonus_income"] = profile.ytd_bonus_income
+    return result

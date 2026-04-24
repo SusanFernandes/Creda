@@ -1,0 +1,277 @@
+{% extends "base_dashboard.html" %}
+{% load creda_filters %}
+{% block title %}Expense Analytics{% endblock %}
+{% block page_title %}Expense Analytics{% endblock %}
+{% block page_subtitle %}Smart Spending Intelligence{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  <div x-data="{ open: false }" class="glass rounded-[2rem] border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/30 dark:bg-amber-900/10 p-6">
+    <button @click="open = !open" class="w-full flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <span class="font-bold text-sm">What is Expense Analytics?</span>
+      </div>
+      <svg :class="open && 'rotate-180'" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+      <p>Log individual expenses below (category + amount). We aggregate them for charts and scores. You can also add categories during onboarding. If you have no line items yet, we still estimate a breakdown from your profile totals.</p>
+    </div>
+  </div>
+
+  {% if expense_flash %}
+  <div class="rounded-xl border px-4 py-3 text-sm {% if expense_flash.kind == 'ok' %}border-emerald-200 bg-emerald-50/60 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-100{% else %}border-red-200 bg-red-50/60 text-red-900 dark:border-red-800 dark:bg-red-900/20 dark:text-red-100{% endif %}">
+    {{ expense_flash.text }}
+  </div>
+  {% endif %}
+
+  <!-- Log expense + recent entries -->
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 space-y-8">
+    <div>
+      <h3 class="font-bold mb-1">Log an expense</h3>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-5">Amount, category, and date are saved to your account for analytics</p>
+      <form method="post" action="{% url 'expense_analytics' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Category</label>
+            <input name="category" list="expense-cat-suggestions" required maxlength="100"
+                   class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none"
+                   placeholder="e.g. Rent/Housing or custom">
+            <datalist id="expense-cat-suggestions">
+              <option value="Rent/Housing">
+              <option value="Groceries">
+              <option value="Transport">
+              <option value="Dining Out">
+              <option value="Utilities">
+              <option value="Shopping">
+              <option value="Entertainment">
+              <option value="Health & Fitness">
+              <option value="Subscriptions">
+              <option value="Miscellaneous">
+              <option value="EMI / Loans">
+              <option value="Education">
+              <option value="Childcare">
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Amount (₹)</label>
+            <input name="amount" type="number" step="1" min="1" required
+                   class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Date</label>
+            <input name="expense_date" type="date" value="{{ today_iso }}"
+                   class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Paid via</label>
+            <select name="payment_method" class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none">
+              <option value="upi">UPI</option>
+              <option value="card">Card</option>
+              <option value="netbanking">Netbanking</option>
+              <option value="cash">Cash</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Note (optional)</label>
+            <input name="description" type="text" maxlength="500"
+                   class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none"
+                   placeholder="What was this for?">
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <input type="checkbox" name="is_recurring" id="exp-recurring" class="rounded border-slate-300 text-blue-600">
+            <label for="exp-recurring" class="text-sm text-slate-600 dark:text-slate-300">Recurring (e.g. rent, subscriptions)</label>
+          </div>
+        </div>
+        <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
+          Save expense
+        </button>
+      </form>
+    </div>
+
+    {% if recent_expenses %}
+    <div>
+      <h3 class="font-bold mb-1">Recent expenses</h3>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Last 100 entries — delete if you logged something by mistake</p>
+      <div class="overflow-x-auto rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+        <table class="w-full text-sm">
+          <thead class="text-left text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 bg-slate-50/80 dark:bg-slate-800/50">
+            <tr>
+              <th class="px-4 py-3">Date</th>
+              <th class="px-4 py-3">Category</th>
+              <th class="px-4 py-3 text-right">₹</th>
+              <th class="px-4 py-3 w-24"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for row in recent_expenses %}
+            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+              <td class="px-4 py-2.5 text-slate-500 whitespace-nowrap">{{ row.expense_date }}</td>
+              <td class="px-4 py-2.5 font-medium">{{ row.category }}</td>
+              <td class="px-4 py-2.5 text-right font-mono">{{ row.amount|floatformat:0 }}</td>
+              <td class="px-4 py-2.5">
+                <form method="post" action="{% url 'expense_analytics' %}" class="inline" onsubmit="return confirm('Remove this expense?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="expense_id" value="{{ row.id }}">
+                  <button type="submit" class="text-xs font-semibold text-red-600 hover:text-red-700">Remove</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if expense and expense.analysis %}
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">Monthly Income</p>
+      <p class="text-xl font-black italic text-blue-600">₹{{ expense.analysis.monthly_income|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">Monthly Expenses</p>
+      <p class="text-xl font-black italic text-red-500">₹{{ expense.analysis.monthly_expenses|floatformat:0 }}</p>
+    </div>
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">Savings Rate</p>
+      <p class="text-xl font-black italic {% if expense.analysis.savings_rate >= 20 %}text-emerald-500{% elif expense.analysis.savings_rate >= 10 %}text-amber-500{% else %}text-red-500{% endif %}">{{ expense.analysis.savings_rate }}%</p>
+    </div>
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5 text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">Spending Score</p>
+      <p class="text-xl font-black italic {% if expense.analysis.spending_score >= 70 %}text-emerald-500{% elif expense.analysis.spending_score >= 50 %}text-amber-500{% else %}text-red-500{% endif %}">{{ expense.analysis.spending_score }}/100</p>
+    </div>
+  </div>
+
+  {% if expense.analysis.spending_personality %}
+  <div class="glass rounded-2xl border border-blue-200/50 bg-blue-50/30 dark:bg-blue-900/10 p-5 text-center">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-1">Your Spending Personality</p>
+    <p class="text-lg font-black italic">{{ expense.analysis.spending_personality }}</p>
+  </div>
+  {% endif %}
+
+  {% if expense.analysis.categories %}
+  {{ expense.analysis.categories|json_script:"expense-chart-json" }}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <h3 class="text-sm font-bold mb-4">Spending Distribution</h3>
+      <div class="relative" style="height:260px;">
+        <canvas id="expenseDonut"></canvas>
+      </div>
+    </div>
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <h3 class="text-sm font-bold mb-4">Category Amounts</h3>
+      <div class="relative" style="height:260px;">
+        <canvas id="expenseBar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h3 class="font-bold mb-1">Expense breakdown</h3>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">From your logged expenses (aggregated), or estimated from profile if you have none yet</p>
+    <div class="space-y-4">
+      {% for cat in expense.analysis.categories %}
+      <div class="group">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold">{{ cat.name }}</span>
+            {% if cat.trend == 'up' %}
+            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-[0.1em] bg-red-100 dark:bg-red-900/20 text-red-500">↑ Rising</span>
+            {% elif cat.trend == 'down' %}
+            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-[0.1em] bg-emerald-100 dark:bg-emerald-900/20 text-emerald-500">↓ Falling</span>
+            {% endif %}
+          </div>
+          <div class="text-right">
+            <span class="text-sm font-black italic">₹{{ cat.amount|floatformat:0 }}</span>
+            <span class="text-xs text-slate-400 ml-1">({{ cat.pct }}%)</span>
+          </div>
+        </div>
+        <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2.5">
+          <div class="h-2.5 rounded-full transition-all duration-700 {% if cat.pct > 25 %}bg-red-500{% elif cat.pct > 15 %}bg-amber-500{% else %}bg-blue-500{% endif %}"
+               style="width: {{ cat.pct }}%"></div>
+        </div>
+        {% if cat.insight %}
+        <p class="text-xs text-slate-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">💡 {{ cat.insight }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if expense.analysis.top_savings_opportunities %}
+  <div class="glass rounded-[2rem] border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-7">
+    <div class="flex items-center gap-2 mb-5">
+      <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+      <h3 class="font-bold text-sm">Top Savings Opportunities</h3>
+    </div>
+    <div class="space-y-3">
+      {% for opp in expense.analysis.top_savings_opportunities %}
+      <div class="flex justify-between items-center p-4 rounded-xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <p class="font-semibold text-sm">{{ opp.category }}</p>
+          <p class="text-xs text-slate-500">₹{{ opp.current|floatformat:0 }} → ₹{{ opp.target|floatformat:0 }}</p>
+          {% if opp.tip %}
+          <p class="text-xs text-emerald-600 mt-1">{{ opp.tip }}</p>
+          {% endif %}
+        </div>
+        <div class="text-right">
+          <p class="font-black italic text-emerald-600 text-lg">₹{{ opp.monthly_saving|floatformat:0 }}</p>
+          <p class="text-[10px] text-slate-400 uppercase">per month</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if expense.analysis.annual_projection %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
+    <h3 class="font-bold mb-4">Annual Projection</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="p-4 rounded-xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30">
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-red-400 mb-1">Total Annual Spending</p>
+        <p class="text-2xl font-black italic text-red-500">₹{{ expense.analysis.annual_projection.total_spending|floatformat:0 }}</p>
+      </div>
+      <div class="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30">
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-1">Total Annual Saving</p>
+        <p class="text-2xl font-black italic text-emerald-500">₹{{ expense.analysis.annual_projection.total_saving|floatformat:0 }}</p>
+      </div>
+    </div>
+    {% if expense.analysis.annual_projection.if_saved_more %}
+    <div class="mt-4 p-4 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+      <p class="text-sm text-blue-700 dark:text-blue-300">💰 {{ expense.analysis.annual_projection.if_saved_more }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if expense.response %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
+    <h2 class="font-bold mb-4 flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+      CREDA Expense Analysis
+    </h2>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ expense.response|strip_markdown }}</div>
+  </div>
+  {% endif %}
+
+  {% elif expense %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center text-slate-500 text-sm">
+    Analytics returned an unexpected shape. You can still log expenses above; check API logs.
+  </div>
+  {% else %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-10 text-center">
+    <p class="text-slate-500 text-sm mb-2">We could not load charts from the server (is FastAPI running?).</p>
+    <p class="text-slate-400 text-xs">Use the form above to save expenses anyway — they will appear once the API is available.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

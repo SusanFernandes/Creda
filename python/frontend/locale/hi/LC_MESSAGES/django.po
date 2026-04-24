@@ -1,0 +1,242 @@
+# Hindi translations for CREDA
+# Copyright (C) 2025 CREDA
+msgid ""
+msgstr ""
+"Project-Id-Version: CREDA 2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0530\n"
+"PO-Revision-Date: 2025-01-01 00:00+0530\n"
+"Last-Translator: CREDA Team\n"
+"Language-Team: Hindi\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Navigation
+msgid "Dashboard"
+msgstr "डैशबोर्ड"
+
+msgid "AI Chat"
+msgstr "AI चैट"
+
+msgid "Portfolio X-Ray"
+msgstr "पोर्टफोलियो एक्स-रे"
+
+msgid "Money Health"
+msgstr "मनी हेल्थ"
+
+msgid "Market Pulse"
+msgstr "बाज़ार की नब्ज़"
+
+msgid "FIRE Planner"
+msgstr "FIRE प्लानर"
+
+msgid "Tax Wizard"
+msgstr "टैक्स विज़ार्ड"
+
+msgid "Tax Copilot"
+msgstr "टैक्स कोपायलट"
+
+msgid "Budget Coach"
+msgstr "बजट कोच"
+
+msgid "Goals"
+msgstr "लक्ष्य"
+
+msgid "Goal Simulator"
+msgstr "लक्ष्य सिम्युलेटर"
+
+msgid "Stress Test"
+msgstr "स्ट्रेस टेस्ट"
+
+msgid "Couples Finance"
+msgstr "कपल्स फाइनेंस"
+
+msgid "SIP Calculator"
+msgstr "SIP कैलकुलेटर"
+
+msgid "Personality"
+msgstr "पर्सनैलिटी"
+
+msgid "Peer Insights"
+msgstr "पीयर इनसाइट्स"
+
+msgid "Research"
+msgstr "रिसर्च"
+
+msgid "Voice Agent"
+msgstr "वॉइस एजेंट"
+
+msgid "Notifications"
+msgstr "सूचनाएं"
+
+msgid "Settings"
+msgstr "सेटिंग्स"
+
+msgid "Admin"
+msgstr "एडमिन"
+
+msgid "Compliance"
+msgstr "अनुपालन"
+
+# Common UI
+msgid "Overview"
+msgstr "अवलोकन"
+
+msgid "Planning"
+msgstr "योजना"
+
+msgid "Tools"
+msgstr "उपकरण"
+
+msgid "Logout"
+msgstr "लॉग आउट"
+
+msgid "Login"
+msgstr "लॉग इन"
+
+msgid "Sign Up"
+msgstr "साइन अप"
+
+msgid "Submit"
+msgstr "जमा करें"
+
+msgid "Cancel"
+msgstr "रद्द करें"
+
+msgid "Save"
+msgstr "सहेजें"
+
+msgid "Loading..."
+msgstr "लोड हो रहा है..."
+
+msgid "Error"
+msgstr "त्रुटि"
+
+msgid "Success"
+msgstr "सफलता"
+
+# Dashboard
+msgid "Welcome back"
+msgstr "वापसी पर स्वागत"
+
+msgid "Total Invested"
+msgstr "कुल निवेश"
+
+msgid "Current Value"
+msgstr "वर्तमान मूल्य"
+
+msgid "Total Gain"
+msgstr "कुल लाभ"
+
+msgid "Monthly SIP Budget"
+msgstr "मासिक SIP बजट"
+
+# Portfolio
+msgid "Upload CAMS Statement"
+msgstr "CAMS स्टेटमेंट अपलोड करें"
+
+msgid "Holdings"
+msgstr "होल्डिंग्स"
+
+msgid "Fund"
+msgstr "फंड"
+
+msgid "Invested"
+msgstr "निवेशित"
+
+msgid "Current"
+msgstr "वर्तमान"
+
+msgid "Run X-Ray Analysis"
+msgstr "एक्स-रे विश्लेषण चलाएं"
+
+msgid "Compare Funds"
+msgstr "फंड तुलना"
+
+msgid "Refresh NAVs"
+msgstr "NAV रिफ्रेश करें"
+
+# Goals
+msgid "Goal Planner"
+msgstr "लक्ष्य प्लानर"
+
+msgid "Financial Target Tracking & Simulation"
+msgstr "वित्तीय लक्ष्य ट्रैकिंग और सिम्युलेशन"
+
+msgid "My Goals"
+msgstr "मेरे लक्ष्य"
+
+msgid "On Track"
+msgstr "सही राह पर"
+
+msgid "Needs Attention"
+msgstr "ध्यान चाहिए"
+
+msgid "Link Funds to Goals"
+msgstr "लक्ष्यों से फंड जोड़ें"
+
+# Chat
+msgid "Type your message..."
+msgstr "अपना संदेश लिखें..."
+
+msgid "Send"
+msgstr "भेजें"
+
+# Budget
+msgid "Budget Overview"
+msgstr "बजट अवलोकन"
+
+msgid "Planned"
+msgstr "नियोजित"
+
+msgid "Actual"
+msgstr "वास्तविक"
+
+# FIRE
+msgid "FIRE Calculator"
+msgstr "FIRE कैलकुलेटर"
+
+msgid "Years to FIRE"
+msgstr "FIRE तक वर्ष"
+
+msgid "Monthly Savings Needed"
+msgstr "मासिक बचत आवश्यक"
+
+# Notifications
+msgid "All"
+msgstr "सभी"
+
+msgid "SIP"
+msgstr "SIP"
+
+msgid "Rebalance"
+msgstr "रीबैलेंस"
+
+msgid "Tax"
+msgstr "टैक्स"
+
+msgid "Mark all read"
+msgstr "सभी पढ़ा गया चिह्नित करें"
+
+# Export
+msgid "Export as CSV"
+msgstr "CSV के रूप में निर्यात"
+
+msgid "Export as PDF"
+msgstr "PDF के रूप में निर्यात"
+
+# Health Score
+msgid "Money Health Score"
+msgstr "मनी हेल्थ स्कोर"
+
+msgid "Emergency Fund"
+msgstr "आपातकालीन निधि"
+
+msgid "Insurance Coverage"
+msgstr "बीमा कवरेज"
+
+msgid "Debt Level"
+msgstr "ऋण स्तर"

@@ -1,0 +1,145 @@
+{% if error %}
+<div class="glass rounded-xl border border-red-500/30 bg-red-500/5 p-4 mt-4">
+  <div class="flex items-center gap-2">
+    <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p class="text-sm text-red-400">X-Ray failed: {{ error }}</p>
+  </div>
+</div>
+{% elif xray %}
+<div class="space-y-6 mt-6">
+
+  <!-- Summary Banner -->
+  <div class="glass rounded-[2rem] border border-blue-200/50 dark:border-blue-700/50 p-6">
+    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+      X-Ray Analysis Complete
+    </h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">XIRR</p>
+        <p class="text-xl font-black">{{ xray.portfolio_xirr }}%</p>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Gain</p>
+        <p class="text-xl font-black {% if xray.gain_pct >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">{{ xray.gain_pct }}%</p>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Expense Drag (10Y)</p>
+        <p class="text-xl font-black text-amber-600">₹{{ xray.expense_drag_10y|floatformat:0 }}</p>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Alpha vs Nifty</p>
+        {% if xray.alpha_vs_nifty != None %}
+        <p class="text-xl font-black {% if xray.alpha_vs_nifty >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">
+          {% if xray.alpha_vs_nifty >= 0 %}+{% endif %}{{ xray.alpha_vs_nifty }}%
+        </p>
+        {% else %}
+        <p class="text-xl font-black text-slate-400">—</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlap + Benchmark Row -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <!-- Overlap Categories -->
+    <div class="glass rounded-[2rem] border border-amber-200/50 dark:border-amber-700/50 p-6">
+      <h4 class="text-sm font-bold mb-3 flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">OVERLAP</span>
+        Fund Category Concentration
+      </h4>
+      {% for cat, count in xray.overlap_categories.items %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-slate-100 dark:border-slate-800{% endif %}">
+        <span class="text-sm capitalize">{{ cat|cut:"_" }}</span>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm">{{ count }} funds</span>
+          {% if count >= 3 %}
+          <span class="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">HIGH</span>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-emerald-600">No category overlap detected ✓</p>
+      {% endfor %}
+    </div>
+
+    <!-- Benchmark Comparison -->
+    <div class="glass rounded-[2rem] border border-blue-200/50 dark:border-blue-700/50 p-6">
+      <h4 class="text-sm font-bold mb-3 flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">BENCHMARK</span>
+        Nifty 50 Comparison
+      </h4>
+      {% if xray.benchmark %}
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Your XIRR</p>
+          <p class="text-2xl font-black">{{ xray.portfolio_xirr }}%</p>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Nifty 50 3Y CAGR</p>
+          <p class="text-2xl font-black text-blue-600">{{ xray.benchmark.cagr_3y }}%</p>
+        </div>
+      </div>
+      <div class="rounded-xl {% if xray.beating_benchmark %}bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200{% else %}bg-red-50 dark:bg-red-900/10 border border-red-200{% endif %} p-3 text-center">
+        <p class="text-sm font-bold {% if xray.beating_benchmark %}text-emerald-700{% else %}text-red-700{% endif %}">
+          {% if xray.beating_benchmark %}✓ Beating Benchmark{% else %}✗ Underperforming Benchmark{% endif %}
+          · Alpha: {% if xray.alpha_vs_nifty >= 0 %}+{% endif %}{{ xray.alpha_vs_nifty }}%
+        </p>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">Benchmark data unavailable (yfinance)</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Top & Bottom Performers -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="glass rounded-[2rem] border border-emerald-200/50 dark:border-emerald-700/50 p-6">
+      <h4 class="text-sm font-bold mb-3">🏆 Top Performers</h4>
+      {% for fund in xray.top_performers %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-slate-100 dark:border-slate-800{% endif %}">
+        <span class="text-sm truncate max-w-[70%]">{{ fund.name }}</span>
+        <span class="font-bold text-emerald-500 text-sm">{{ fund.xirr }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="glass rounded-[2rem] border border-red-200/50 dark:border-red-700/50 p-6">
+      <h4 class="text-sm font-bold mb-3">⚠ Underperformers</h4>
+      {% for fund in xray.bottom_performers %}
+      <div class="flex items-center justify-between py-1.5 {% if not forloop.last %}border-b border-slate-100 dark:border-slate-800{% endif %}">
+        <span class="text-sm truncate max-w-[70%]">{{ fund.name }}</span>
+        <span class="font-bold text-red-500 text-sm">{{ fund.xirr }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- LLM Recommendations -->
+  {% if xray.recommendations %}
+  <div class="glass rounded-[2rem] border border-purple-200/50 dark:border-purple-700/50 p-6">
+    <h4 class="text-sm font-bold mb-3 flex items-center gap-2">
+      <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700">AI</span>
+      Rebalancing Recommendations
+    </h4>
+    <div class="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-line">{{ xray.recommendations }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{{ xray|json_script:"xray-json-data" }}
+<script>
+// Update the benchmark card in the static section above
+const benchData = JSON.parse(document.getElementById('xray-json-data').textContent);
+if (benchData.benchmark) {
+  const el = document.getElementById('nifty-benchmark');
+  if (el) el.textContent = benchData.benchmark.cagr_3y + '%';
+  const alphaEl = document.getElementById('alpha-display');
+  if (alphaEl) {
+    const alpha = benchData.alpha_vs_nifty;
+    const color = alpha >= 0 ? 'emerald' : 'red';
+    alphaEl.innerHTML = '<div class="rounded-xl bg-' + color + '-50 dark:bg-' + color + '-900/10 border border-' + color + '-200 p-2 text-center"><p class="text-sm font-bold text-' + color + '-700">' +
+      (alpha >= 0 ? '✓ Beating' : '✗ Trailing') + ' · Alpha: ' + (alpha >= 0 ? '+' : '') + alpha + '%</p></div>';
+  }
+}
+</script>
+{% endif %}

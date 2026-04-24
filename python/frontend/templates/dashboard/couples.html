@@ -1,30 +1,92 @@
 {% extends "base_dashboard.html" %}
+{% load creda_filters %}
 {% block title %}Couples Finance{% endblock %}
 {% block page_title %}Couples Finance{% endblock %}
 {% block page_subtitle %}Joint Financial Planning{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
+  <!-- What is Couples Finance? -->
+  <div x-data="{ open: false }" class="glass rounded-[2rem] border border-pink-200/50 dark:border-pink-800/30 bg-pink-50/30 dark:bg-pink-900/10 p-6">
+    <button @click="open = !open" class="w-full flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center"><svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <span class="font-bold text-sm">What is Couples Finance?</span>
+      </div>
+      <svg :class="open && 'rotate-180'" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+      <p>Plan finances as a couple. Link your partner's CREDA account or enter their details manually. Get AI-powered joint analysis: combined income/expenses, recommended expense-splitting strategy (proportional or 50/50), joint savings goals, and tax optimization for both partners.</p>
+    </div>
+  </div>
+
+  {% if partner %}
+  <!-- Linked Partner Badge -->
+  <div class="glass rounded-[2rem] border-2 border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+      <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    </div>
+    <div class="flex-1">
+      <p class="font-bold text-emerald-700 dark:text-emerald-400">{{ partner.name }} is linked as your {{ partner.relationship }}</p>
+      <p class="text-xs text-slate-500">Partner profile auto-detected. Click "Run Joint Analysis" below.</p>
+    </div>
+    <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">LINKED ✓</span>
+  </div>
+  {% else %}
+  <!-- Invite Partner by Email -->
+  <div class="glass rounded-[2rem] border border-pink-200/50 dark:border-pink-700/30 p-8">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <h3 class="font-bold">Invite Your Partner</h3>
+        <p class="text-xs text-slate-500">Send a link request to your partner's CREDA account email. Once they accept, their financial data will be auto-linked for joint analysis.</p>
+      </div>
+    </div>
+    <form method="POST" class="flex flex-col sm:flex-row gap-3 items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="link_partner">
+      <div class="flex-1">
+        <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner's Email</label>
+        <input type="email" name="partner_email" required
+               class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-pink-500 outline-none transition"
+               placeholder="partner@email.com">
+      </div>
+      <button type="submit" class="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] whitespace-nowrap">
+        Send Link Request
+      </button>
+    </form>
+    {% if link_message %}
+    <div class="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-sm text-blue-700 dark:text-blue-300">
+      {{ link_message }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- Input Form -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
     <h3 class="font-bold mb-1">Partner Financial Details</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Enter your partner's information for joint analysis</p>
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">
+      {% if partner %}{{ partner.name }}'s data will be fetched from their linked profile{% else %}Enter your partner's information for joint analysis{% endif %}
+    </p>
     <form method="POST" class="flex flex-col sm:flex-row gap-4 items-end">
       {% csrf_token %}
       <div class="flex-1">
         <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Income (₹)</label>
-        <input type="number" name="partner_income" value="0"
+        <input type="number" name="partner_income" value="{% if partner %}0{% else %}0{% endif %}"
                class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
-               placeholder="50000">
+               placeholder="Auto-detected from linked profile">
       </div>
       <div class="flex-1">
         <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Partner Monthly Expenses (₹)</label>
         <input type="number" name="partner_expenses" value="0"
                class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition"
-               placeholder="30000">
+               placeholder="Auto-detected from linked profile">
       </div>
       <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] whitespace-nowrap">
-        Analyze Together
+        {% if partner %}Run Joint Analysis{% else %}Analyze Together{% endif %}
       </button>
     </form>
   </div>
@@ -54,7 +116,7 @@
       <div class="w-2 h-2 rounded-full bg-blue-600"></div>
       CREDA Joint Strategy
     </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ couples.response }}</div>
+    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ couples.response|strip_markdown }}</div>
   </div>
   {% endif %}
   {% else %}

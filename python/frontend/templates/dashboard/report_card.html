@@ -1,0 +1,132 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Financial Report Card{% endblock %}
+{% block page_title %}Financial Report Card{% endblock %}
+{% block page_subtitle %}Your shareable financial snapshot{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <!-- Screenshot-Friendly Card -->
+  <div id="report-card" class="bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+
+    <!-- Header Gradient -->
+    <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 px-8 py-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-3 mb-1">
+            <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+              <span class="font-black text-sm">C</span>
+            </div>
+            <span class="text-lg font-black tracking-tight italic opacity-90">CREDA</span>
+          </div>
+          <h2 class="text-2xl font-black italic tracking-tight mt-2">Financial Report Card</h2>
+          <p class="text-blue-100 text-sm mt-1">
+            {% if profile %}{{ profile.name|default:"—" }}{% endif %}
+            · {% now "F Y" %}
+          </p>
+        </div>
+        <!-- Grade Badge -->
+        {% if health.analysis.grade %}
+        <div class="w-20 h-20 rounded-2xl flex flex-col items-center justify-center
+                    {% if health.analysis.grade == 'A' %}bg-emerald-500
+                    {% elif health.analysis.grade == 'B' %}bg-blue-400
+                    {% elif health.analysis.grade == 'C' %}bg-amber-500
+                    {% else %}bg-red-500{% endif %}">
+          <span class="text-3xl font-black italic text-white">{{ health.analysis.grade }}</span>
+          <span class="text-[9px] font-bold uppercase tracking-wider text-white/70">GRADE</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Score Section -->
+    <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800">
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Health Score -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">Health Score</p>
+          {% if health.analysis.overall_score %}
+          <p class="text-4xl font-black italic tracking-tight
+                     {% if health.analysis.overall_score >= 70 %}text-emerald-600
+                     {% elif health.analysis.overall_score >= 40 %}text-amber-600
+                     {% else %}text-red-600{% endif %}">
+            {{ health.analysis.overall_score }}<span class="text-lg text-slate-400">/100</span>
+          </p>
+          {% else %}
+          <p class="text-2xl font-black text-slate-300">—</p>
+          {% endif %}
+        </div>
+        <!-- Portfolio -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">Portfolio Value</p>
+          {% if portfolio.current_value %}
+          <p class="text-4xl font-black italic tracking-tight">₹{{ portfolio.current_value|floatformat:0 }}</p>
+          <p class="text-xs mt-1 {% if portfolio.xirr >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">
+            {{ portfolio.xirr|floatformat:1 }}% XIRR
+            {% if portfolio.xirr < 15.8 %}
+            <span class="text-slate-400">· Nifty: 15.8%</span>
+            {% endif %}
+          </p>
+          {% else %}
+          <p class="text-2xl font-black text-slate-300">—</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="px-8 py-5 space-y-4">
+      {% if health.analysis.dimensions %}
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Financial Dimensions</p>
+      <div class="grid grid-cols-3 gap-3">
+        {% for key, dim in health.analysis.dimensions.items %}
+        <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+          <p class="text-xl font-black italic {% if dim.score >= 70 %}text-emerald-600{% elif dim.score >= 40 %}text-amber-600{% else %}text-red-600{% endif %}">{{ dim.score }}</p>
+          <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">{{ key|cut:"_" }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Tax Insight -->
+      {% if tax.analysis %}
+      <div class="flex items-center justify-between p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Tax Savings Available</p>
+          {% if tax.analysis.missed_deductions %}
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">
+            80C Gap: ₹{{ tax.analysis.missed_deductions.section_80c_gap|default:"0"|floatformat:0 }}
+          </p>
+          {% endif %}
+        </div>
+        <p class="text-sm font-bold {% if tax.analysis.better_regime %}text-emerald-600{% endif %}">
+          Better: {{ tax.analysis.better_regime|default:"—"|title }}
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Top Action -->
+      {% if health.analysis.top_3_actions %}
+      <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-200/50">
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 mb-1">Top Priority Action</p>
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ health.analysis.top_3_actions.0 }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Footer CTA -->
+    <div class="bg-slate-50 dark:bg-slate-800/50 px-8 py-4 text-center border-t border-slate-100 dark:border-slate-800">
+      <p class="text-xs text-slate-500">
+        Get your free AI financial checkup at <span class="font-bold text-blue-600">creda.in/check</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Share Hint -->
+  <div class="text-center mt-6">
+    <p class="text-xs text-slate-400 mb-3">Screenshot & share on WhatsApp, LinkedIn, or Twitter</p>
+    <a href="{% url 'dashboard' %}" class="inline-block px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm transition hover:bg-blue-700">
+      ← Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

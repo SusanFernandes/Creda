@@ -83,6 +83,65 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "recommended": "proportional" if abs(income1 - partner_income) > combined_income * 0.2 else "50_50",
     }
 
+    # HRA claim optimization — route HRA through the partner paying more rent
+    rent = profile.get("rent_paid", 0)
+    city = profile.get("city", "").lower()
+    metro_cities = ["mumbai", "delhi", "kolkata", "chennai", "bangalore", "bengaluru", "hyderabad"]
+    hra_pct = 0.50 if city in metro_cities else 0.40
+    if rent > 0:
+        basic1 = income1 * 12 * 0.4
+        basic2 = partner_income * 12 * 0.4
+        hra1 = min(rent * 12, rent * 12 - 0.10 * basic1, hra_pct * basic1)
+        hra2 = min(rent * 12, rent * 12 - 0.10 * basic2, hra_pct * basic2)
+        hra1 = max(hra1, 0)
+        hra2 = max(hra2, 0)
+        best_claimer = "Person 1" if hra1 >= hra2 else "Person 2"
+        hra_savings = max(hra1, hra2) * 0.30  # assume 30% bracket
+        data["hra_optimization"] = {
+            "rent_annual": rent * 12,
+            "hra_if_person1_claims": round(hra1),
+            "hra_if_person2_claims": round(hra2),
+            "recommended_claimer": best_claimer,
+            "tax_saved": round(hra_savings),
+            "tip": f"Route rent agreement to {best_claimer} for ₹{hra_savings:,.0f} extra tax saving.",
+        }
+
+    # NPS matching optimization
+    nps1 = profile.get("nps_contribution", 0)
+    data["nps_optimization"] = {
+        "person1_nps": nps1,
+        "gap_to_max": max(50000 - nps1, 0),
+        "combined_nps_potential": 100000,
+        "tax_saved_if_both_max": round(100000 * 0.30),
+        "tip": "Both partners should invest ₹50K each in NPS for ₹30K combined tax saving under 80CCD(1B).",
+    }
+
+    # Joint insurance analysis
+    life_cover1 = profile.get("life_insurance_cover", 0)
+    has_health1 = profile.get("has_health_insurance", False)
+    combined_annual_income = combined_income * 12
+    recommended_life = combined_annual_income * 10  # 10x combined for couples
+    data["insurance_analysis"] = {
+        "person1_life_cover": life_cover1,
+        "recommended_combined_cover": round(recommended_life),
+        "person1_has_health": has_health1,
+        "recommended_family_floater": 1000000,  # ₹10L
+        "tip": "Get a family floater health policy (₹10L cover) — cheaper than 2 individual plans. "
+               f"Combined term life should be ₹{recommended_life:,.0f} (10x combined income).",
+    }
+
+    # Combined net worth
+    savings1 = profile.get("savings", 0)
+    epf1 = profile.get("epf_balance", 0)
+    ppf1 = profile.get("ppf_balance", 0)
+    portfolio1 = profile.get("portfolio_value", 0) if profile.get("portfolio_value") else 0
+    data["combined_net_worth"] = {
+        "person1_assets": round(savings1 + epf1 + ppf1 + portfolio1),
+        "person2_assets_estimated": round(partner_income * 12 * 0.15),  # estimate: 15% of annual income saved
+        "combined_estimate": round(savings1 + epf1 + ppf1 + portfolio1 + partner_income * 12 * 0.15),
+        "combined_annual_savings_potential": round(combined_savings * 12),
+    }
+
     try:
         result = await primary_llm.ainvoke(_COUPLES_PROMPT.format(data=str(data)))
         data["advice"] = result.content.strip()

@@ -5,7 +5,7 @@ Determines user's financial personality type and customizes advice accordingly.
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.money_personality")
@@ -92,20 +92,39 @@ Valid type keys: {type_keys}"""
 
 
 async def run(state: FinancialState) -> dict[str, Any]:
-    from app.agents.profile_checks import require_complete_profile
-
-    inc = require_complete_profile(state)
-    if inc:
-        return inc
-
     profile = state.get("user_profile") or {}
     portfolio = state.get("portfolio_data") or {}
 
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    if income <= 0 or expenses <= 0:
+        from app.services.profile_completeness import humanize_missing, missing_for_money_personality
+        miss = missing_for_money_personality(profile)
+        return {
+            "profile_incomplete": True,
+            "missing_fields_detail": humanize_missing(miss),
+            "primary_type": None,
+            "secondary_type": None,
+            "personality": {},
+            "confidence": 0,
+            "reasoning": "",
+            "savings_rate": 0.0,
+            "emergency_months": 0.0,
+            "has_insurance": profile.get("has_health_insurance", False),
+            "all_types": {k: {"name": v["name"], "emoji": v["emoji"]} for k, v in _PERSONALITIES.items()},
+            "archetype": "Complete your profile first",
+            "description": "Add monthly income and monthly expenses in Settings. Those two numbers anchor savings rate, stress tests, tax estimates, and this personality view.",
+            "traits": [],
+            "strengths": [],
+            "blind_spots": [],
+            "dimensions": [],
+        }
+
     # Heuristic pre-classification
     risk = profile.get("risk_appetite", "moderate")
-    income = float(profile["monthly_income"])
-    expenses = float(profile["monthly_expenses"])
-    savings_rate = (income - expenses) / income * 100 if income else 0.0
+    savings_rate = 0
+    if income > 0:
+        savings_rate = (income - expenses) / income * 100
 
     has_insurance = profile.get("has_health_insurance", False)
     emergency = profile.get("emergency_fund", 0)
@@ -144,7 +163,6 @@ async def run(state: FinancialState) -> dict[str, Any]:
         confidence = parsed.get("confidence", 70)
         reasoning = parsed.get("reasoning", "")
     except Exception:
-        from app.core.llm import fast_llm  # noqa: reimport for safety
         primary_type = heuristic_type
         secondary_type = heuristic_type
         confidence = 65
@@ -154,6 +172,10 @@ async def run(state: FinancialState) -> dict[str, Any]:
         primary_type = heuristic_type
 
     personality = _PERSONALITIES[primary_type]
+
+    # Flat keys for dashboard templates (archetype / traits / strengths)
+    savings_dim = min(10, max(1, int(min(savings_rate, 50) / 5)))
+    emergency_dim = min(10, max(1, int(min(emergency_months, 12))))
 
     return {
         "primary_type": primary_type,
@@ -165,6 +187,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "emergency_months": round(emergency_months, 1),
         "has_insurance": has_insurance,
         "all_types": {k: {"name": v["name"], "emoji": v["emoji"]} for k, v in _PERSONALITIES.items()},
+        "archetype": f"{personality['emoji']} {personality['name']}",
+        "description": reasoning or f"You map closest to {personality['name']} based on income, expenses, and risk settings.",
+        "traits": personality["traits"],
+        "strengths": personality["strengths"],
+        "blind_spots": personality["blind_spots"],
+        "dimensions": [
+            {"name": "Savings discipline", "score": savings_dim},
+            {"name": "Emergency buffer (months)", "score": emergency_dim},
+        ],
     }
 
 

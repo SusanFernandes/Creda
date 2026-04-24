@@ -1,10 +1,14 @@
 """
 Synthesizer node — converts raw agent output (dicts/numbers) into natural language.
-This is the MOST important node: it's what the user actually reads/hears.
-
-Includes language instruction and voice-mode word limit.
+Falls back to a smaller model, then a structured text summary, when the primary LLM
+hits rate limits or other errors (so dashboards still return 200 with usable content).
 """
-from app.core.llm import primary_llm
+import json
+import logging
+
+from app.core.llm import fast_llm, primary_llm
+
+logger = logging.getLogger("creda.synthesizer")
 
 _SYNTH_PROMPT = """You are CREDA, a friendly AI financial coach for Indian users.
 Merge the agent output below into ONE helpful, conversational response.
@@ -26,8 +30,29 @@ User's original question: {message}
 
 Your response (in {language}):"""
 
+_SYNTH_SHORT = """You are CREDA. Summarize this financial agent output for the user in {language}.
+Keep under {word_limit} words. Use ₹ for money. One clear next step at the end.
+
+Agent: {agent_used}
+Data (JSON):
+{data}
+
+User question: {message}
+
+Response:"""
+
 _VOICE_LINE = "- Keep under 200 words (this is a voice response — short and clear)."
 _TEXT_LINE = "- Keep under 300 words."
+
+
+def _compact_json(data: dict, limit: int = 3500) -> str:
+    try:
+        s = json.dumps(data, ensure_ascii=False, indent=2, default=str)
+    except TypeError:
+        s = str(data)
+    if len(s) > limit:
+        return s[:limit] + "\n…"
+    return s
 
 
 async def synthesize(
@@ -48,5 +73,25 @@ async def synthesize(
         agent_output=str(agent_output),
         message=message,
     )
-    result = await primary_llm.ainvoke(prompt)
-    return result.content.strip()
+    try:
+        result = await primary_llm.ainvoke(prompt)
+        return result.content.strip()
+    except Exception as e:
+        logger.warning("synthesize primary LLM failed (%s): %s", agent_used, e)
+        try:
+            short = _SYNTH_SHORT.format(
+                language=language,
+                word_limit=120 if voice_mode else 200,
+                agent_used=agent_used,
+                data=_compact_json(agent_output, 4000),
+                message=message or "",
+            )
+            result = await fast_llm.ainvoke(short)
+            return result.content.strip()
+        except Exception as e2:
+            logger.warning("synthesize fast LLM failed (%s): %s", agent_used, e2)
+            return (
+                "[CREDA] The AI wording service is temporarily unavailable (rate limit or network). "
+                "Below is a structured summary of your results — you can still use every number shown.\n\n"
+                + _compact_json(agent_output, 6000)
+            )

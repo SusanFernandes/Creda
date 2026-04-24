@@ -10,6 +10,7 @@ from app.auth import AuthContext, get_auth
 from app.database import get_db
 from app.core.profile_guard import check_profile
 from app.models import UserProfile
+from app.services.profile_completeness import profile_extensions
 
 router = APIRouter()
 
@@ -51,6 +52,7 @@ class ProfileUpsertRequest(BaseModel):
     basic_salary: Optional[float] = None
     home_loan_interest: Optional[float] = None
     lta_amount: Optional[float] = None
+    ytd_bonus_income: Optional[float] = None
     fire_target_age: Optional[int] = None
     fire_corpus_target: Optional[float] = None
     completeness_pct: Optional[float] = None
@@ -139,4 +141,5 @@ def _serialize(p: UserProfile) -> dict[str, Any]:
         d["risk_tolerance"] = d["risk_appetite"]
     g12 = check_profile(d, ["tier_1", "tier_2"])
     d["missing_profile_fields"] = g12["missing"]
+    d.update(profile_extensions(d))
     return d

@@ -57,9 +57,18 @@ async def lifespan(app: FastAPI):
     # Load knowledge base into ChromaDB
     await _init_chromadb_if_empty()
 
+    # Pre-load AMFI NAV data
+    try:
+        from app.services.amfi_nav import _fetch_and_parse_amfi, get_cache_stats
+        await _fetch_and_parse_amfi()
+        stats = get_cache_stats()
+        logger.info("AMFI NAV: loaded %d schemes", stats.get("total_schemes", 0))
+    except Exception as e:
+        logger.warning("AMFI NAV preload skipped: %s", e)
+
     # Start nudge scheduler
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
-    from app.services.nudge_worker import run_nudge_checks, run_premarket_briefing
+    from app.services.nudge_worker import run_nudge_checks, run_premarket_briefing, run_portfolio_refresh, run_goal_progress_update
     scheduler = AsyncIOScheduler()
     scheduler.add_job(run_nudge_checks, "cron", hour=9, minute=0, id="daily_nudges")
     scheduler.add_job(run_nudge_checks, "interval", hours=6, id="periodic_nudges")
@@ -67,8 +76,12 @@ async def lifespan(app: FastAPI):
     from app.core.scheduler import register_data_jobs
 
     register_data_jobs(scheduler)
+    scheduler.add_job(run_portfolio_refresh, "cron", hour=16, minute=30, id="portfolio_refresh")
+    scheduler.add_job(run_goal_progress_update, "cron", hour=10, minute=0, id="goal_progress")
     scheduler.start()
-    logger.info("Nudge scheduler: started (daily 9AM + every 6h + pre-market 9:15AM + data crawlers)")
+    logger.info(
+        "Nudge scheduler: started (nudges 9AM+6h, pre-market 9:15AM, portfolio 4:30PM, goals 10AM, data crawlers)"
+    )
 
     yield
 
@@ -91,12 +104,29 @@ _cors_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, "CORS_ORIG
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ── Mount routers ──────────────────────────────────────────────────────
-from app.routers import auth, profile, chat, voice, portfolio, agents, nudges, whatsapp, compliance, family, assumptions  # noqa: E402
+from app.routers import (  # noqa: E402
+    auth,
+    profile,
+    chat,
+    voice,
+    portfolio,
+    agents,
+    nudges,
+    whatsapp,
+    compliance,
+    family,
+    assumptions,
+    export,
+    admin,
+    budget,
+    ws,
+)
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
@@ -109,6 +139,10 @@ app.include_router(nudges.router, prefix="/nudges", tags=["nudges"])
 app.include_router(whatsapp.router, prefix="/whatsapp", tags=["whatsapp"])
 app.include_router(compliance.router, prefix="/compliance", tags=["compliance"])
 app.include_router(family.router, prefix="/family", tags=["family"])
+app.include_router(export.router, tags=["export"])
+app.include_router(admin.router, tags=["admin"])
+app.include_router(budget.router, tags=["budget"])
+app.include_router(ws.router, tags=["websocket"])
 
 
 @app.get("/health")
