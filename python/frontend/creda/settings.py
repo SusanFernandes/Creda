@@ -17,14 +17,31 @@ if _env_path.exists():
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# Hosts Django will accept. Leading-dot entries match any subdomain (e.g. .ngrok-free.app → *.ngrok-free.app).
+_allow_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = [h.strip() for h in _allow_raw.split(",") if h.strip()]
+# Remote tunnels (ngrok, cloudflared, localtunnel): set DJANGO_ALLOW_TUNNEL_HOSTS=false to disable
+if os.environ.get("DJANGO_ALLOW_TUNNEL_HOSTS", "true").lower() in ("1", "true", "yes"):
+    for _suffix in (".ngrok-free.app", ".ngrok.io", ".ngrok.app", ".loca.lt"):
+        if _suffix not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_suffix)
 
 # Ngrok / tunnel support: trust HTTPS behind reverse proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# CSRF: trust ngrok origins (populated from env)
+# CSRF: comma-separated full origins in CSRF_TRUSTED_ORIGINS, plus optional single tunnel URL
 _csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()] if _csrf_origins else []
+CSRF_TRUSTED_ORIGINS = [o.strip().rstrip("/") for o in _csrf_origins.split(",") if o.strip()]
+_tunnel_public = (
+    os.environ.get("TUNNEL_PUBLIC_URL", "").strip()
+    or os.environ.get("NGROK_PUBLIC_URL", "").strip()
+    or os.environ.get("DJANGO_PUBLIC_URL", "").strip()
+)
+if _tunnel_public:
+    _u = _tunnel_public.rstrip("/")
+    if _u.startswith("http") and _u not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_u)
 
 # ── Apps ───────────────────────────────────────────────────
 INSTALLED_APPS = [

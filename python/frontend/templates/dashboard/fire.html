@@ -111,30 +111,64 @@
     if (!chartSeries || !chartSeries.length) return;
 
     const labels = chartSeries.map(function (r) { return r.year === 0 ? 'Now' : 'Y' + r.year; });
-    const projectedValues = chartSeries.map(function (r) { return r.corpus; });
+    const projectedValues = chartSeries.map(function (r) { return Number(r.corpus) || 0; });
     const targetLine = chartSeries.map(function () { return fireNumber; });
 
-    const ctx = document.getElementById('fireChart')?.getContext('2d');
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: years,
-          datasets: [
-            { label: 'Projected Corpus', data: projectedValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
-            { label: 'FIRE Target', data: targetLine, borderColor: '#dc2626', borderDash: [8,4], pointRadius: 0, borderWidth: 2, fill: false },
-          ]
+    function formatINR(v) {
+      v = Number(v) || 0;
+      if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+      if (v >= 1e5) return '₹' + (v / 1e5).toFixed(1) + ' L';
+      if (v >= 1e3) return '₹' + (v / 1e3).toFixed(0) + 'k';
+      return '₹' + Math.round(v);
+    }
+
+    const canvas = document.getElementById('fireChart');
+    if (!canvas) return;
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Projected corpus', data: projectedValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+          { label: 'FIRE target', data: targetLine, borderColor: '#dc2626', borderDash: [8, 4], pointRadius: 0, borderWidth: 2, fill: false },
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var l = ctx.dataset.label || '';
+                return l + ': ' + formatINR(ctx.parsed.y);
+              }
+            }
+          }
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } } },
-          scales: {
-            y: { ticks: { callback: v=>'₹'+(v/10000000).toFixed(1)+'Cr', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.1)' } },
-            x: { ticks: { font: { size: 9 }, maxTicksLimit: 10 }, grid: { display: false } }
+        scales: {
+          y: {
+            ticks: {
+              callback: function(v) { return formatINR(v); },
+              font: { size: 10 },
+              maxTicksLimit: 8
+            },
+            grid: { color: 'rgba(148,163,184,0.12)' }
+          },
+          x: {
+            ticks: { font: { size: 9 }, maxTicksLimit: 12 },
+            grid: { display: false }
           }
         }
-      });
-    }
+      }
+    });
   });
   </script>
 

@@ -70,43 +70,22 @@ async def log_expense(
     db: AsyncSession = Depends(get_db),
 ):
     """Log an actual expense."""
+    from app.services.expense_crud import create_logged_expense
+
     expense_date = date.fromisoformat(body.expense_date) if body.expense_date else date.today()
-
-    expense = Expense(
-        user_id=auth.user_id,
-        category=body.category,
-        amount=body.amount,
-        description=body.description,
-        expense_date=expense_date,
-        payment_method=body.payment_method,
-        is_recurring=body.is_recurring,
-    )
-    db.add(expense)
-    await db.commit()
-
-    # Update budget actual amount
-    month = expense_date.strftime("%Y-%m")
-    result = await db.execute(
-        select(Budget).where(
-            Budget.user_id == auth.user_id,
-            Budget.month == month,
-            Budget.category == body.category,
+    try:
+        expense = await create_logged_expense(
+            db,
+            auth.user_id,
+            category=body.category,
+            amount=body.amount,
+            description=body.description,
+            expense_date=expense_date,
+            payment_method=body.payment_method,
+            is_recurring=body.is_recurring,
         )
-    )
-    budget = result.scalars().first()
-    if budget:
-        # Recalculate actual from all expenses this month in this category
-        actual_sum = (await db.execute(
-            select(func.sum(Expense.amount)).where(
-                Expense.user_id == auth.user_id,
-                Expense.category == body.category,
-                func.to_char(Expense.expense_date, 'YYYY-MM') == month,
-            )
-        )).scalar() or 0
-        budget.actual_amount = actual_sum
-        await db.commit()
-
-    await db.refresh(expense)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return {"status": "ok", "expense_id": expense.id}
 
 

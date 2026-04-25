@@ -41,6 +41,11 @@ async def lifespan(app: FastAPI):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger.info("CREDA FastAPI starting on port %s", settings.FASTAPI_PORT)
+    if settings.WHATSAPP_EXPENSE_TRUST_PUBLIC:
+        logger.warning(
+            "WHATSAPP_EXPENSE_TRUST_PUBLIC is on — POST /expenses has no auth (user_id=%s)",
+            settings.WHATSAPP_EXPENSE_USER_ID,
+        )
 
     # Create tables if they don't exist (Alembic preferred in production)
     async with engine.begin() as conn:
@@ -105,7 +110,7 @@ app.add_middleware(
 )
 
 # ── Mount routers ──────────────────────────────────────────────────────
-from app.routers import auth, profile, chat, voice, portfolio, agents, nudges, whatsapp, compliance, family, export, admin, budget, ws  # noqa: E402
+from app.routers import auth, profile, chat, voice, portfolio, agents, nudges, whatsapp, compliance, family, export, admin, budget, expenses, ws  # noqa: E402
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
@@ -120,6 +125,7 @@ app.include_router(family.router, prefix="/family", tags=["family"])
 app.include_router(export.router, tags=["export"])
 app.include_router(admin.router, tags=["admin"])
 app.include_router(budget.router, tags=["budget"])
+app.include_router(expenses.router)
 app.include_router(ws.router, tags=["websocket"])
 
 

@@ -53,6 +53,13 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None
 
+    # POST /expenses from tools (e.g. WhatsApp “Create function”): if set, callers may send
+    # X-Webhook-Secret or Authorization: Bearer <same value> instead of x-user-id.
+    WHATSAPP_EXPENSE_WEBHOOK_SECRET: Optional[str] = None
+    WHATSAPP_EXPENSE_USER_ID: str = "100"  # demo Arjun in creda_api users (see seed_demo)
+    # Dev / tunnel only: if true, POST /expenses accepts no auth and always logs for WHATSAPP_EXPENSE_USER_ID.
+    WHATSAPP_EXPENSE_TRUST_PUBLIC: bool = False
+
     # ── Server ─────────────────────────────────────────────
     FASTAPI_PORT: int = 8001
     LOG_LEVEL: str = "INFO"

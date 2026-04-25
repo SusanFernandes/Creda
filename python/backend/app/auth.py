@@ -1,9 +1,10 @@
 """
 Auth dependencies for CREDA FastAPI backend.
 
-Two modes:
+Modes:
 1. Header passthrough (get_auth) — Django injects x-user-id, x-user-email headers
 2. JWT bearer (get_current_user) — for WebSocket endpoints
+3. Webhook secret (get_expense_webhook_or_user) — optional X-Webhook-Secret for POST /expenses
 """
 import jwt as pyjwt
 from fastapi import Depends, HTTPException, Request, status
@@ -29,6 +30,39 @@ def get_auth(request: Request) -> AuthContext:
     if not user_id:
         raise HTTPException(status_code=401, detail="Missing x-user-id header")
     return AuthContext(user_id=user_id, email=email)
+
+
+def _bearer_raw_token(request: Request) -> str:
+    h = (request.headers.get("Authorization") or request.headers.get("authorization") or "").strip()
+    if h.lower().startswith("bearer "):
+        return h[7:].strip()
+    return ""
+
+
+def get_expense_webhook_or_user(request: Request) -> AuthContext:
+    """
+    For POST /expenses (in order):
+    1. WHATSAPP_EXPENSE_TRUST_PUBLIC — no credentials; always WHATSAPP_EXPENSE_USER_ID (dev only).
+    2. WHATSAPP_EXPENSE_WEBHOOK_SECRET — X-Webhook-Secret or Bearer token must match.
+    3. Otherwise x-user-id (Django proxy) via get_auth.
+    """
+    webhook_uid = (settings.WHATSAPP_EXPENSE_USER_ID or "100").strip()
+    if settings.WHATSAPP_EXPENSE_TRUST_PUBLIC:
+        return AuthContext(user_id=webhook_uid, email="")
+
+    secret = (settings.WHATSAPP_EXPENSE_WEBHOOK_SECRET or "").strip()
+    if secret:
+        provided = (
+            (request.headers.get("X-Webhook-Secret") or request.headers.get("x-webhook-secret") or "")
+            .strip()
+        )
+        if not provided:
+            provided = _bearer_raw_token(request)
+        if provided:
+            if provided != secret:
+                raise HTTPException(status_code=403, detail="Invalid webhook secret")
+            return AuthContext(user_id=webhook_uid, email="")
+    return get_auth(request)
 
 
 async def get_current_user(
