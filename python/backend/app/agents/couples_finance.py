@@ -1,6 +1,10 @@
 """
-Couples Finance agent — joint budgeting, expense splitting, combined planning.
+Couples Finance agent — joint budgeting, HRA routing, NPS, insurance, combined net worth (CAMS + EPF).
+Partner defaults from profile columns when API sends 0.
 """
+from __future__ import annotations
+
+import re
 from typing import Any
 
 from app.core.llm import primary_llm
@@ -25,26 +29,26 @@ async def run(state: FinancialState) -> dict[str, Any]:
         return inc
 
     profile = state.get("user_profile") or {}
+    message = (state.get("message") or "").lower()
 
-    income1 = profile.get("monthly_income")
-    expenses = profile.get("monthly_expenses")
+    income1 = float(profile.get("monthly_income") or 0)
+    expenses1 = float(profile.get("monthly_expenses") or 0)
 
-    # Partner data: try structured extraction, then natural language
-    message = state.get("message", "")
-    partner_income = _extract_partner_number(message, "income") or profile.get("partner_monthly_income")
-    partner_expenses = _extract_partner_number(message, "expense")
-    if partner_income is None:
+    api_pi = _extract_partner_number(message, "income")
+    api_pe = _extract_partner_number(message, "expense")
+    partner_income = float(api_pi) if api_pi is not None else float(profile.get("partner_monthly_income") or 0)
+    if partner_income <= 0:
         return profile_incomplete_payload(
             {"missing": ["partner_monthly_income"], "completeness_pct": 70.0, "is_complete": False}
         )
-    if partner_expenses is None:
-        partner_expenses = 0.0
+    partner_expenses = (
+        float(api_pe) if api_pe is not None else float(profile.get("partner_monthly_expenses") or 0)
+    )
 
     combined_income = income1 + partner_income
-    combined_expenses = expenses + partner_expenses
+    combined_expenses = expenses1 + partner_expenses
     combined_savings = combined_income - combined_expenses
 
-    # Split strategies
     proportional_share1 = income1 / combined_income if combined_income > 0 else 0.5
     proportional_share2 = 1 - proportional_share1
 
@@ -71,7 +75,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         },
     }
 
-    data = {
+    data: dict[str, Any] = {
+        "partner_name": profile.get("partner_name") or "Partner",
         "person1_income": income1,
         "person2_income": round(partner_income),
         "combined_income": round(combined_income),
@@ -83,63 +88,67 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "recommended": "proportional" if abs(income1 - partner_income) > combined_income * 0.2 else "50_50",
     }
 
-    # HRA claim optimization — route HRA through the partner paying more rent
-    rent = profile.get("rent_paid", 0)
-    city = profile.get("city", "").lower()
+    rent = float(profile.get("rent_paid") or 0)
+    basic1_m = float(profile.get("basic_salary") or 0)
+    city = (profile.get("city") or "").lower()
     metro_cities = ["mumbai", "delhi", "kolkata", "chennai", "bangalore", "bengaluru", "hyderabad"]
-    hra_pct = 0.50 if city in metro_cities else 0.40
-    if rent > 0:
-        basic1 = income1 * 12 * 0.4
-        basic2 = partner_income * 12 * 0.4
-        hra1 = min(rent * 12, rent * 12 - 0.10 * basic1, hra_pct * basic1)
-        hra2 = min(rent * 12, rent * 12 - 0.10 * basic2, hra_pct * basic2)
-        hra1 = max(hra1, 0)
-        hra2 = max(hra2, 0)
-        best_claimer = "Person 1" if hra1 >= hra2 else "Person 2"
-        hra_savings = max(hra1, hra2) * 0.30  # assume 30% bracket
+    is_metro = bool(profile.get("is_metro")) or city in metro_cities
+    hra_pct = 0.50 if is_metro else 0.40
+    if rent > 0 and basic1_m > 0:
+        basic1 = basic1_m * 12
+        basic2 = max(partner_income * 12 * 0.45, 1.0)
+        hra1 = max(0.0, min(rent * 12, rent * 12 - 0.10 * basic1, hra_pct * basic1))
+        hra2 = max(0.0, min(rent * 12, rent * 12 - 0.10 * basic2, hra_pct * basic2))
+        best = "Person 1 (you)" if hra1 >= hra2 else "Partner"
         data["hra_optimization"] = {
             "rent_annual": rent * 12,
             "hra_if_person1_claims": round(hra1),
             "hra_if_person2_claims": round(hra2),
-            "recommended_claimer": best_claimer,
-            "tax_saved": round(hra_savings),
-            "tip": f"Route rent agreement to {best_claimer} for ₹{hra_savings:,.0f} extra tax saving.",
+            "recommended_claimer": best,
+            "estimated_tax_saved_if_optimal_inr": round(max(hra1, hra2) * 0.30),
+        }
+    else:
+        data["hra_optimization"] = {
+            "note": "Add rent_paid and your basic_salary (monthly) for HRA comparison between partners.",
         }
 
-    # NPS matching optimization
-    nps1 = profile.get("nps_contribution", 0)
+    nps1 = float(profile.get("nps_contribution") or 0)
+    nps2 = float(profile.get("partner_nps_contribution") or 0)
     data["nps_optimization"] = {
         "person1_nps": nps1,
-        "gap_to_max": max(50000 - nps1, 0),
-        "combined_nps_potential": 100000,
-        "tax_saved_if_both_max": round(100000 * 0.30),
-        "tip": "Both partners should invest ₹50K each in NPS for ₹30K combined tax saving under 80CCD(1B).",
+        "person2_nps": nps2,
+        "gap_to_max_each": max(50000 - nps1, 0),
+        "combined_tax_saved_if_both_max_inr": round((max(0, 50000 - nps1) + max(0, 50000 - nps2)) * 0.30),
     }
 
-    # Joint insurance analysis
-    life_cover1 = profile.get("life_insurance_cover", 0)
-    has_health1 = profile.get("has_health_insurance", False)
+    portfolio = state.get("portfolio_data") or {}
+    cv = float(portfolio.get("current_value") or 0)
+    savings1 = float(profile.get("savings") or 0)
+    epf1 = float(profile.get("epf_balance") or 0)
+    ppf1 = float(profile.get("ppf_balance") or 0)
+    p2_saved_est = partner_income * 12 * 0.15
+    data["combined_net_worth"] = {
+        "person1_liquid_and_invested": round(savings1 + epf1 + ppf1 + cv),
+        "partner_assets_estimated": round(p2_saved_est),
+        "combined_estimate": round(savings1 + epf1 + ppf1 + cv + p2_saved_est),
+        "note": "Partner assets estimated at ~15% of annual income if no linked portfolio.",
+    }
+
+    life_cover1 = float(profile.get("life_insurance_cover") or 0)
+    has_health1 = bool(profile.get("has_health_insurance"))
     combined_annual_income = combined_income * 12
-    recommended_life = combined_annual_income * 10  # 10x combined for couples
+    recommended_life = combined_annual_income * 10
     data["insurance_analysis"] = {
         "person1_life_cover": life_cover1,
         "recommended_combined_cover": round(recommended_life),
         "person1_has_health": has_health1,
-        "recommended_family_floater": 1000000,  # ₹10L
-        "tip": "Get a family floater health policy (₹10L cover) — cheaper than 2 individual plans. "
-               f"Combined term life should be ₹{recommended_life:,.0f} (10x combined income).",
+        "family_floater_tip": "Family floater often saves 20–40% vs two individual health plans at same cover.",
     }
 
-    # Combined net worth
-    savings1 = profile.get("savings", 0)
-    epf1 = profile.get("epf_balance", 0)
-    ppf1 = profile.get("ppf_balance", 0)
-    portfolio1 = profile.get("portfolio_value", 0) if profile.get("portfolio_value") else 0
-    data["combined_net_worth"] = {
-        "person1_assets": round(savings1 + epf1 + ppf1 + portfolio1),
-        "person2_assets_estimated": round(partner_income * 12 * 0.15),  # estimate: 15% of annual income saved
-        "combined_estimate": round(savings1 + epf1 + ppf1 + portfolio1 + partner_income * 12 * 0.15),
-        "combined_annual_savings_potential": round(combined_savings * 12),
+    br1 = (profile.get("partner_tax_bracket") or "").strip()
+    data["sip_split_tax_hint"] = {
+        "person1_bracket_guess": br1 or "unknown",
+        "tip": "Higher bracket partner can bias debt/indexation-heavy funds; lower bracket can hold more equity LTCG.",
     }
 
     try:
@@ -151,16 +160,32 @@ async def run(state: FinancialState) -> dict[str, Any]:
     return data
 
 
-async def run_couples_finance(profile, partner_income: float, partner_expenses: float,
-                               split_strategy: str, language: str, voice_mode: bool) -> dict:
+async def run_couples_finance(
+    profile,
+    partner_income: float,
+    partner_expenses: float,
+    split_strategy: str,
+    language: str,
+    voice_mode: bool,
+    portfolio_dict: dict | None = None,
+) -> dict:
     from app.agents.synthesizer import synthesize
+
     profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns}
+    if partner_income and partner_income > 0:
+        profile_dict["partner_monthly_income"] = partner_income
+    if partner_expenses and partner_expenses > 0:
+        profile_dict["partner_monthly_expenses"] = partner_expenses
+
     state: FinancialState = {
         "user_id": profile.user_id,
         "message": f"couples finance partner_income={partner_income} partner_expenses={partner_expenses}",
         "intent": "couples_finance",
-        "language": language, "voice_mode": voice_mode, "history": [],
+        "language": language,
+        "voice_mode": voice_mode,
+        "history": [],
         "user_profile": profile_dict,
+        "portfolio_data": portfolio_dict,
     }
     output = await run(state)
     response = await synthesize(output, "couples_finance", "couples finance", language, voice_mode)
@@ -168,20 +193,13 @@ async def run_couples_finance(profile, partner_income: float, partner_expenses: 
 
 
 def _extract_partner_number(message: str, field: str) -> float | None:
-    """Extract partner financial data from natural language or key=value format."""
-    import re
     msg = message.lower()
-
-    # Try key=value format first: "partner_income=50000"
     match = re.search(rf"partner[_\s]*{field}\s*[=:]\s*([\d,]+\.?\d*)", msg)
     if match:
         return float(match.group(1).replace(",", ""))
-
-    # Natural language: "partner earns 50000" / "spouse income is 80k" / "partner's salary 1.2 lakh"
     patterns = [
         rf"(?:partner|spouse|husband|wife)(?:'s)?\s*{field}[s]?\s*(?:is|=|:)?\s*(?:₹|rs\.?)?\s*([\d,]+\.?\d*)",
         rf"(?:partner|spouse|husband|wife)\s*(?:earns?|makes?|gets?)\s*(?:₹|rs\.?)?\s*([\d,]+\.?\d*)",
-        rf"(?:partner|spouse|husband|wife)(?:'s)?\s*(?:monthly\s*)?(?:{field}|salary|earning)\s*(?:is|=|:)?\s*(?:₹|rs\.?)?\s*([\d,]+\.?\d*)",
     ]
     for pat in patterns:
         m = re.search(pat, msg)
@@ -189,7 +207,5 @@ def _extract_partner_number(message: str, field: str) -> float | None:
             val = float(m.group(1).replace(",", ""))
             if "lakh" in msg or "lac" in msg:
                 val *= 100000
-            elif "k" in msg[m.end():m.end()+2]:
-                val *= 1000
             return val
     return None

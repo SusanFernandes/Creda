@@ -89,6 +89,10 @@ _AGENT_MAP = {
     "et_research": "app.agents.et_research",
     "human_handoff": "app.agents.human_handoff",
     "family_wealth": "app.agents.family_wealth",
+    "life_event_advisor": "app.agents.life_event_advisor",
+    "expense_analytics": "app.agents.expense_analytics",
+    "chart_pattern": "app.agents.chart_pattern",
+    "opportunity_radar": "app.agents.opportunity_radar",
 }
 
 

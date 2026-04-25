@@ -1,0 +1,19 @@
+{% load i18n %}
+{# Shown on all dashboard-shell pages when profile exists but is not 100% complete. #}
+{% if user.is_authenticated and request.profile_completeness_pct < 100 %}
+{% if "onboarding" not in request.path %}
+<div class="mb-6 rounded-2xl border border-amber-200/70 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-800/60 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+  <p class="font-semibold">
+    {% trans "Your profile is" %} {{ request.profile_completeness_pct|floatformat:0 }}% {% trans "complete — some results may be estimated." %}
+  </p>
+  {% if request.profile_missing_fields %}
+  <ul class="mt-2 list-disc list-inside text-xs opacity-90">
+    {% for f in request.profile_missing_fields|slice:":8" %}
+    <li>{{ f }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <a href="{% url 'onboarding_resume' %}" class="mt-2 inline-block text-xs font-bold text-amber-900 dark:text-amber-200 underline underline-offset-2">{% trans "Fill missing fields →" %}</a>
+</div>
+{% endif %}
+{% endif %}

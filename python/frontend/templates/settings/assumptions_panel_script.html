@@ -1,0 +1,88 @@
+<script>
+function assumptionsPanel() {
+  return {
+    state: {
+      inflation_rate: 0.06,
+      equity_lc_return: 0.12,
+      equity_mc_return: 0.14,
+      equity_sc_return: 0.16,
+      debt_return: 0.07,
+      sip_stepup_pct: 0.10,
+      stress_scenarios: {},
+    },
+    stress: {
+      job_loss: false, job_months: 6,
+      medical: false, medical_lakh: 5,
+      new_baby: false, baby_k: 25,
+      emi_added: false, emi_amount: 0,
+      parent_support: false, parent_amount: 0,
+    },
+    _t: null,
+    _hydrateStressFromServer(sc) {
+      if (!sc || typeof sc !== 'object') return;
+      if (sc.job_loss?.active) { this.stress.job_loss = true; this.stress.job_months = sc.job_loss.duration_months || 6; }
+      if (sc.medical_emergency?.active) { this.stress.medical = true; this.stress.medical_lakh = Math.round((sc.medical_emergency.one_time_cost || 500000) / 100000); }
+      if (sc.new_baby?.active) { this.stress.new_baby = true; this.stress.baby_k = Math.round((sc.new_baby.monthly_cost || 25000) / 1000); }
+      if (sc.emi_added?.active) { this.stress.emi_added = true; this.stress.emi_amount = sc.emi_added.monthly_cost || 0; }
+      if (sc.parent_support?.active) { this.stress.parent_support = true; this.stress.parent_amount = sc.parent_support.monthly_cost || 0; }
+    },
+    buildStressScenarios() {
+      const s = {};
+      if (this.stress.job_loss) {
+        s.job_loss = { active: true, start_month: 0, duration_months: this.stress.job_months, monthly_cost: 35000 };
+      }
+      if (this.stress.medical) {
+        const one = this.stress.medical_lakh * 100000;
+        s.medical_emergency = { active: true, start_month: 6, duration_months: 12, monthly_cost: one / 12 };
+      }
+      if (this.stress.new_baby) {
+        s.new_baby = { active: true, start_month: 12, duration_months: 24, monthly_cost: this.stress.baby_k * 1000 };
+      }
+      if (this.stress.emi_added && this.stress.emi_amount > 0) {
+        s.emi_added = { active: true, start_month: 0, duration_months: 120, monthly_cost: this.stress.emi_amount };
+      }
+      if (this.stress.parent_support && this.stress.parent_amount > 0) {
+        s.parent_support = { active: true, start_month: 0, duration_months: 120, monthly_cost: this.stress.parent_amount };
+      }
+      return s;
+    },
+    async load() {
+      try {
+        const r = await fetch('/settings/assumptions/', { headers: { Accept: 'application/json' } });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (j && j.inflation_rate != null) {
+          const { stress_scenarios, ...rest } = j;
+          this.state = { ...this.state, ...rest, stress_scenarios: stress_scenarios || {} };
+          this._hydrateStressFromServer(stress_scenarios || {});
+        }
+      } catch (e) {}
+    },
+    debouncedSave() {
+      clearTimeout(this._t);
+      this._t = setTimeout(() => this.save(), 300);
+    },
+    async save() {
+      const payload = { ...this.state, stress_scenarios: this.buildStressScenarios() };
+      await fetch('/settings/assumptions/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+        },
+        body: JSON.stringify(payload),
+      });
+    },
+    riskPreset(which) {
+      if (which === 'conservative') {
+        this.state = { ...this.state, equity_lc_return: 0.10, equity_mc_return: 0.11, equity_sc_return: 0.12, inflation_rate: 0.05 };
+      } else if (which === 'moderate') {
+        this.state = { ...this.state, equity_lc_return: 0.12, equity_mc_return: 0.14, equity_sc_return: 0.16, inflation_rate: 0.06 };
+      } else {
+        this.state = { ...this.state, equity_lc_return: 0.14, equity_mc_return: 0.17, equity_sc_return: 0.19, inflation_rate: 0.065 };
+      }
+      this.save();
+    },
+  };
+}
+</script>

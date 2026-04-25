@@ -1,80 +1,96 @@
-{% extends "base_dashboard.html" %}
-{% block title %}Onboarding{% endblock %}
-{% block page_title %}Welcome{% endblock %}
-{% block page_subtitle %}Step {{ step }} of {{ total }}{% endblock %}
-
-{% block content %}
+{% extends "onboarding/base.html" %}
+{% load i18n %}
+{% block onboarding_content %}
 {% csrf_token %}
-<div class="max-w-xl mx-auto glass rounded-3xl p-8 border border-slate-200/50">
-  <h2 class="text-xl font-bold mb-4">{% if step == 1 %}Who you are{% elif step == 2 %}Your money{% else %}Your goals{% endif %}</h2>
+<div class="max-w-[640px] mx-auto px-6 py-10">
+  <nav class="flex items-center justify-center gap-2 mb-8 text-sm" aria-label="{% trans 'Onboarding steps' %}">
+    <a href="{% url 'onboarding_step' step_number=1 %}" class="px-3 py-1 rounded-full {% if step == 1 %}text-white{% else %}opacity-60{% endif %}" style="{% if step == 1 %}background:var(--primary);{% else %}background:var(--border);{% endif %}">1. {% trans "You" %}</a>
+    <span style="color:var(--text-secondary);">→</span>
+    <a href="{% url 'onboarding_step' step_number=2 %}" class="px-3 py-1 rounded-full {% if step == 2 %}text-white{% else %}opacity-60{% endif %}" style="{% if step == 2 %}background:var(--primary);{% else %}background:var(--border);{% endif %}">2. {% trans "Money" %}</a>
+    <span style="color:var(--text-secondary);">→</span>
+    <a href="{% url 'onboarding_step' step_number=3 %}" class="px-3 py-1 rounded-full {% if step == 3 %}text-white{% else %}opacity-60{% endif %}" style="{% if step == 3 %}background:var(--primary);{% else %}background:var(--border);{% endif %}">3. {% trans "Goals" %}</a>
+  </nav>
 
-  {% if step == 1 %}
-  <form id="wiz" class="space-y-4" onsubmit="return saveStep(event, 1)">
-    <input name="name" placeholder="First name" class="w-full rounded-xl border px-4 py-3" value="{{ profile.name|default:'' }}">
-    <input name="age" type="number" placeholder="Age" class="w-full rounded-xl border px-4 py-3" value="{{ profile.age|default:'' }}">
-    <input name="city" placeholder="City" class="w-full rounded-xl border px-4 py-3" value="{{ profile.city|default:'' }}">
-    <div class="space-y-2">
-      <p class="text-xs font-bold uppercase text-slate-400">Employment</p>
-      <label><input type="radio" name="employment_type" value="salaried" checked> Salaried</label>
-      <label><input type="radio" name="employment_type" value="self_employed"> Self-employed</label>
-      <label><input type="radio" name="employment_type" value="retired"> Retired</label>
-      <label><input type="radio" name="employment_type" value="student"> Student</label>
+  <form id="wiz-form" class="space-y-6" onsubmit="return onboardingSaveStep(event, {{ step }})">
+    {% if step == 1 %}{% include "onboarding/step1.html" %}
+    {% elif step == 2 %}{% include "onboarding/step2.html" %}
+    {% else %}{% include "onboarding/step3.html" %}
+    {% endif %}
+
+    <div class="flex items-center justify-between gap-4 pt-4">
+      {% if step > 1 %}
+      <a href="{% url 'onboarding_step' step_number=step|add:-1 %}" class="creda-secondary-btn no-underline text-center">{% trans "Back" %}</a>
+      {% else %}
+      <span></span>
+      {% endif %}
+      <button type="submit" class="creda-action-btn">
+        {% if step < 3 %}{% trans "Save & continue" %}{% else %}{% trans "Complete" %}{% endif %}
+      </button>
     </div>
-    <div class="space-y-2">
-      <p class="text-xs font-bold uppercase text-slate-400">Risk tolerance</p>
-      <label><input type="radio" name="risk_tolerance" value="conservative"> Conservative</label>
-      <label><input type="radio" name="risk_tolerance" value="moderate" checked> Moderate</label>
-      <label><input type="radio" name="risk_tolerance" value="aggressive"> Aggressive</label>
-    </div>
-    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold">Continue</button>
   </form>
-  {% elif step == 2 %}
-  <form class="space-y-4" onsubmit="return saveStep(event, 2)">
-    <input name="monthly_income" type="number" placeholder="Monthly take-home (₹)" class="w-full rounded-xl border px-4 py-3" required>
-    <input name="monthly_fixed_expenses" type="number" placeholder="Fixed expenses (rent/EMI)" class="w-full rounded-xl border px-4 py-3">
-    <input name="monthly_variable_expenses" type="number" placeholder="Variable expenses" class="w-full rounded-xl border px-4 py-3">
-    <input name="monthly_expenses" type="number" placeholder="Total monthly expenses (if combined)" class="w-full rounded-xl border px-4 py-3">
-    <input name="epf_balance" type="number" placeholder="EPF balance (if salaried)" class="w-full rounded-xl border px-4 py-3">
-    <input name="section_80c_amount" type="number" placeholder="80C invested this year" class="w-full rounded-xl border px-4 py-3">
-    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold">Continue</button>
-  </form>
-  {% else %}
-  <form class="space-y-4" onsubmit="return saveStep(event, 3)">
-    <input name="primary_goal" placeholder="Primary goal (fire/education/home/wealth)" class="w-full rounded-xl border px-4 py-3">
-    <input name="fire_target_age" type="number" placeholder="Target retirement age (if FIRE)" class="w-full rounded-xl border px-4 py-3">
-    <p class="text-xs text-amber-700">Upload CAMS PDF from Portfolio page for live X-Ray, or skip for estimates.</p>
-    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold">Finish</button>
-    <button type="button" onclick="skipCams()" class="w-full py-2 text-sm text-slate-500">Skip CAMS for now</button>
-  </form>
+
+  {% if step == 3 %}
+  <p class="text-center mt-4">
+    <button type="button" class="text-sm underline" style="color:var(--text-secondary);" onclick="onboardingSkipCams()">{% trans "Skip CAMS for now" %}</button>
+  </p>
   {% endif %}
 </div>
 
 <script>
-async function saveStep(ev, n) {
-  ev.preventDefault();
-  const fd = new FormData(ev.target);
-  const body = {};
-  fd.forEach((v, k) => { if (v !== '') body[k] = v === '' ? undefined : (isNaN(+v) ? v : parseFloat(v)); });
+function wizardFormToBody(form) {
+  var fd = new FormData(form);
+  var body = {};
+  fd.forEach(function(v, k) {
+    if (v === '') return;
+    if (v === 'on' || v === 'true') { body[k] = true; return; }
+    var num = parseFloat(v);
+    if (!isNaN(num) && String(v).trim() !== '' && /^-?[0-9.]+$/.test(String(v).trim())) {
+      body[k] = num;
+    } else {
+      body[k] = v;
+    }
+  });
   if (body.age) body.age = parseInt(body.age, 10);
   if (body.fire_target_age) body.fire_target_age = parseInt(body.fire_target_age, 10);
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
-  const resp = await fetch(`/onboarding/save-step/${n}/`, {
+  if (body.goal_target_years) body.goal_target_years = parseInt(body.goal_target_years, 10);
+  var ef = form.querySelector('[name="emergency_fund"]');
+  if (ef && ef.value) body.emergency_fund_amount = parseFloat(ef.value) || 0;
+  return body;
+}
+async function onboardingSaveStep(ev, n) {
+  ev.preventDefault();
+  var form = document.getElementById('wiz-form');
+  var body = wizardFormToBody(form);
+  var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') && document.querySelector('[name=csrfmiddlewaretoken]').value;
+  var resp = await fetch('/onboarding/save-step/' + n + '/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
     body: JSON.stringify(body),
   });
-  const data = await resp.json();
-  if (data.redirect) window.location.href = data.redirect;
-  else window.location.reload();
+  var data = await resp.json().catch(function() { return {}; });
+  if (data.redirect) {
+    if (n >= 3) {
+      fetch('/api/agents/money-health/', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' }).catch(function() {});
+    }
+    window.location.href = data.redirect;
+  } else if (data.next_step) {
+    window.location.href = '/onboarding/step/' + data.next_step + '/';
+  } else {
+    window.location.reload();
+  }
   return false;
 }
-async function skipCams() {
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
-  await fetch(`/onboarding/save-step/3/`, {
+async function onboardingSkipCams() {
+  var form = document.getElementById('wiz-form');
+  var body = wizardFormToBody(form);
+  body.cams_uploaded = false;
+  var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  await fetch('/onboarding/save-step/3/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-    body: JSON.stringify({ primary_goal: 'wealth', cams_uploaded: false }),
+    body: JSON.stringify(body),
   });
+  fetch('/api/agents/money-health/', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' }).catch(function() {});
   window.location.href = '/dashboard/';
 }
 </script>

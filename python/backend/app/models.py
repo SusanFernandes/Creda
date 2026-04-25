@@ -99,7 +99,6 @@ class UserProfile(Base):
     risk_tolerance = Column(String(20), default="")  # conservative | moderate | aggressive
     # ── Tax (explicit FY fields) ──
     basic_salary = Column(Float, default=0)
-    rent_paid = Column(Float, default=0)
     has_nps = Column(Boolean, default=False)
     self_health_premium = Column(Float, default=0)
     parents_health_premium = Column(Float, default=0)
@@ -113,8 +112,24 @@ class UserProfile(Base):
     monthly_fixed_expenses = Column(Float, default=0)
     monthly_variable_expenses = Column(Float, default=0)
     partner_monthly_income = Column(Float, nullable=True)
+    partner_monthly_expenses = Column(Float, nullable=True)
+    partner_name = Column(String(120), default="")
+    partner_section_80c = Column(Float, default=0)
+    partner_nps_contribution = Column(Float, default=0)
+    partner_tax_bracket = Column(String(10), default="")  # e.g. 20, 30
+    monthly_sip_contribution = Column(Float, default=0)  # explicit SIP (overrides surplus-only estimate)
+    whatsapp_phone = Column(String(20), nullable=True)
     # ── Onboarding ──
     onboarding_complete = Column(Boolean, default=False)
+    # ── PS6 / radar / insurance (explicit columns for settings + agents) ──
+    watchlist_stocks = Column(Text, default="")  # comma-separated or JSON
+    sector_interests = Column(Text, default="")  # JSON array of sector names
+    alert_types = Column(Text, default="")  # JSON array
+    term_insurance_cover = Column(Float, default=0)
+    health_insurance_cover = Column(Float, default=0)
+    emergency_fund_amount = Column(Float, default=0)  # liquid + savings (explicit)
+    annual_bonus = Column(Float, default=0)
+    notification_prefs = Column(Text, default="{}")  # JSON: email nudges, reminders, etc.
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -330,6 +345,8 @@ class WhatsAppSession(Base):
     user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     language = Column(String(10), default="hi")
     is_verified = Column(Boolean, default=False)
+    link_code = Column(String(32), nullable=True)
+    link_code_expires_at = Column(DateTime, nullable=True)
     last_message_at = Column(DateTime, server_default=func.now())
     created_at = Column(DateTime, server_default=func.now())
 

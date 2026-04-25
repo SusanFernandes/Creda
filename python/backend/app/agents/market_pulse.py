@@ -68,23 +68,78 @@ async def _fetch_headlines(max_items: int = 10) -> list[dict]:
 
 
 async def _get_market_indices() -> dict:
-    """Fetch current Nifty/Sensex levels via yfinance."""
+    """Fetch current Nifty/Sensex/Midcap/VIX levels via yfinance."""
     try:
         import yfinance as yf
         import asyncio
+
         def _fetch():
-            nifty = yf.Ticker("^NSEI")
-            sensex = yf.Ticker("^BSESN")
+            def pct_change(sym: str) -> tuple[float, float]:
+                t = yf.Ticker(sym)
+                inf = t.info or {}
+                price = float(inf.get("regularMarketPrice") or inf.get("currentPrice") or 0)
+                ch = float(inf.get("regularMarketChangePercent") or 0)
+                if price and not ch:
+                    h = t.history(period="5d")
+                    if h is not None and len(h) >= 2:
+                        ch = (float(h["Close"].iloc[-1]) / float(h["Close"].iloc[0]) - 1) * 100
+                return round(price, 2), round(ch, 2)
+
+            n50, n50c = pct_change("^NSEI")
+            sx, sxc = pct_change("^BSESN")
+            mid, midc = pct_change("^CNXMID")
+            vix, vixc = pct_change("^INDIAVIX")
             return {
-                "nifty50": round(nifty.info.get("regularMarketPrice", 0), 2),
-                "nifty_change": round(nifty.info.get("regularMarketChangePercent", 0), 2),
-                "sensex": round(sensex.info.get("regularMarketPrice", 0), 2),
-                "sensex_change": round(sensex.info.get("regularMarketChangePercent", 0), 2),
+                "nifty50": n50,
+                "nifty_change": n50c,
+                "sensex": sx,
+                "sensex_change": sxc,
+                "nifty_midcap": mid,
+                "nifty_midcap_change": midc,
+                "vix": vix,
+                "vix_change": vixc,
             }
+
         return await asyncio.get_event_loop().run_in_executor(None, _fetch)
     except Exception as e:
         logger.warning("Market indices fetch failed: %s", e)
-        return {"nifty50": 0, "sensex": 0, "nifty_change": 0, "sensex_change": 0}
+        return {
+            "nifty50": 0, "sensex": 0, "nifty_change": 0, "sensex_change": 0,
+            "nifty_midcap": 0, "nifty_midcap_change": 0, "vix": 0, "vix_change": 0,
+        }
+
+
+async def _sector_heatmap() -> list[dict]:
+    """Approximate sector moves via liquid sector ETFs (yfinance)."""
+    try:
+        import asyncio
+        import yfinance as yf
+
+        symbols = {
+            "Bank": "^NSEBANK",
+            "IT": "CNXIT.NS",
+            "Pharma": "CNXPHARMA.NS",
+            "FMCG": "CNXFMCG.NS",
+            "Auto": "CNXAUTO.NS",
+        }
+
+        def _row(sym: str, label: str) -> dict:
+            t = yf.Ticker(sym)
+            h = t.history(period="5d")
+            if h is None or len(h) < 2:
+                return {"sector": label, "change_pct": 0.0, "symbol": sym}
+            ch = (float(h["Close"].iloc[-1]) / float(h["Close"].iloc[0]) - 1) * 100
+            return {"sector": label, "change_pct": round(ch, 2), "symbol": sym}
+
+        loop = asyncio.get_event_loop()
+        out = []
+        for lab, sym in symbols.items():
+            out.append(await loop.run_in_executor(None, _row, sym, lab))
+        out.sort(key=lambda x: -x["change_pct"])
+        return out
+    except Exception as e:
+        logger.debug("sector heatmap failed: %s", e)
+        return []
 
 
 async def _fetch_fii_dii_flows() -> dict:
@@ -175,6 +230,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     headlines = await _fetch_headlines()
     indices = await _get_market_indices()
     fii_dii = await _fetch_fii_dii_flows()
+    sector_heatmap = await _sector_heatmap()
     sentiment = await _score_sentiment(headlines)
 
     portfolio = state.get("portfolio_data") or {}
@@ -207,16 +263,43 @@ async def run(state: FinancialState) -> dict[str, Any]:
     if portfolio and portfolio.get("funds"):
         portfolio_impact_headlines = await _analyze_portfolio_headline_impact(headlines, portfolio)
 
+    vix_level = indices.get("vix") or 0
+    if vix_level >= 20:
+        vix_badge = "HIGH"
+    elif vix_level >= 14:
+        vix_badge = "MODERATE"
+    else:
+        vix_badge = "LOW"
+
+    indices_cards = [
+        {"name": "Nifty 50", "value": indices.get("nifty50", 0), "change_pct": indices.get("nifty_change", 0)},
+        {"name": "Sensex", "value": indices.get("sensex", 0), "change_pct": indices.get("sensex_change", 0)},
+        {"name": "Nifty Midcap", "value": indices.get("nifty_midcap", 0), "change_pct": indices.get("nifty_midcap_change", 0)},
+        {"name": "India VIX", "value": indices.get("vix", 0), "change_pct": indices.get("vix_change", 0), "badge": vix_badge},
+    ]
+
+    pf_lines = []
+    if portfolio_summary.get("funds_count"):
+        pf_lines.append(
+            f"₹{float(portfolio_summary.get('total_value', 0) or 0):,.0f} across "
+            f"{portfolio_summary['funds_count']} holdings ({portfolio_summary.get('risk_appetite', 'moderate')} risk)."
+        )
+
     return {
         "indices": indices,
-        "headlines": headlines[:5],
+        "indices_cards": indices_cards,
+        "headlines": headlines[:10],
+        "headlines_portfolio": portfolio_impact_headlines,
         "analysis": analysis,
         "sentiment": sentiment,
         "fii_dii": fii_dii,
+        "sector_heatmap": sector_heatmap,
         "briefing": briefing,
         "portfolio_impact_headlines": portfolio_impact_headlines,
         "timestamp": datetime.now().isoformat(),
-        "portfolio_impact": portfolio_summary,
+        "portfolio_summary": portfolio_summary,
+        "portfolio_blurb": " ".join(pf_lines) if pf_lines else None,
+        "data_quality": "live" if indices.get("nifty50") else "estimated",
     }
 
 

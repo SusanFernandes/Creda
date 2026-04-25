@@ -1,0 +1,65 @@
+{% load i18n %}
+<div class="creda-card space-y-5">
+  <h2 class="creda-page-heading" style="font-size: 1.25rem;">{% trans "Who you are" %}</h2>
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "Full name" %}</label>
+    <input name="name" required maxlength="255" value="{{ profile.name|default:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+  </div>
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "Age" %}</label>
+    <input name="age" type="number" min="18" max="80" required value="{{ profile.age|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+  </div>
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "City" %}</label>
+    <input name="city" list="metro-cities" value="{{ profile.city|default:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);"
+           placeholder="{% trans 'Start typing…' %}">
+    <datalist id="metro-cities">
+      <option value="Mumbai"><option value="Delhi"><option value="Bangalore"><option value="Chennai">
+      <option value="Hyderabad"><option value="Pune"><option value="Kolkata"><option value="Ahmedabad">
+    </datalist>
+  </div>
+  <div>
+    <p class="creda-sub-label mb-2">{% trans "Employment type" %}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="cursor-pointer rounded-xl border p-3 flex gap-2 items-start has-[:checked]:ring-2" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+        <input type="radio" name="employment_type" value="salaried" class="mt-1" {% if profile.employment_type|default:'salaried' == 'salaried' %}checked{% endif %}>
+        <span><span class="text-lg">💼</span> <strong>{% trans "Salaried" %}</strong><br><span class="text-xs" style="color:var(--text-secondary);">{% trans "Regular paycheck, Form 16" %}</span></span>
+      </label>
+      <label class="cursor-pointer rounded-xl border p-3 flex gap-2 items-start has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="employment_type" value="self-employed" {% if profile.employment_type == 'self-employed' or profile.employment_type == 'business' %}checked{% endif %}>
+        <span><span class="text-lg">🏢</span> <strong>{% trans "Self-employed" %}</strong><br><span class="text-xs" style="color:var(--text-secondary);">{% trans "Business / freelance" %}</span></span>
+      </label>
+      <label class="cursor-pointer rounded-xl border p-3 flex gap-2 items-start has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="employment_type" value="retired" {% if profile.employment_type == 'retired' %}checked{% endif %}>
+        <span><span class="text-lg">🏖️</span> <strong>{% trans "Retired" %}</strong></span>
+      </label>
+      <label class="cursor-pointer rounded-xl border p-3 flex gap-2 items-start has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="employment_type" value="student" {% if profile.employment_type == 'student' %}checked{% endif %}>
+        <span><span class="text-lg">🎓</span> <strong>{% trans "Student" %}</strong></span>
+      </label>
+    </div>
+  </div>
+  <div>
+    <p class="creda-sub-label mb-2">{% trans "Risk tolerance" %}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <label class="cursor-pointer rounded-xl border p-3 text-center flex flex-col items-center gap-1 has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="risk_tolerance" value="conservative" {% if profile.risk_tolerance == 'conservative' or profile.risk_appetite == 'conservative' %}checked{% endif %}>
+        <span class="text-lg">🛡️</span><strong class="text-sm">{% trans "Conservative" %}</strong>
+        <p class="text-[10px]" style="color:var(--text-secondary);">7–9% {% trans "expected" %}</p>
+      </label>
+      <label class="cursor-pointer rounded-xl border p-3 text-center flex flex-col items-center gap-1 has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="risk_tolerance" value="moderate" {% if not profile.risk_tolerance or profile.risk_tolerance == 'moderate' or profile.risk_appetite == 'moderate' %}checked{% endif %}>
+        <span class="text-lg">⚖️</span><strong class="text-sm">{% trans "Moderate" %}</strong>
+        <p class="text-[10px]" style="color:var(--text-secondary);">10–12%</p>
+      </label>
+      <label class="cursor-pointer rounded-xl border p-3 text-center flex flex-col items-center gap-1 has-[:checked]:ring-2" style="border-color: var(--border);">
+        <input type="radio" name="risk_tolerance" value="aggressive" {% if profile.risk_tolerance == 'aggressive' or profile.risk_appetite == 'aggressive' %}checked{% endif %}>
+        <span class="text-lg">🚀</span><strong class="text-sm">{% trans "Aggressive" %}</strong>
+        <p class="text-[10px]" style="color:var(--text-secondary);">12–16%</p>
+      </label>
+    </div>
+  </div>
+</div>

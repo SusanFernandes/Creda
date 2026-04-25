@@ -25,6 +25,9 @@ _REQUIRED_FIELDS = [
     "name", "age", "city", "monthly_income", "monthly_expenses",
     "risk_appetite", "employment_type", "dependents",
     "has_health_insurance", "emergency_fund",
+    # Step 2 — tax / savings (0 treated as missing until user confirms skip in chat)
+    "epf_balance", "fire_target_age", "basic_salary", "rent_paid", "hra",
+    "nps_contribution", "parents_health_premium", "self_health_premium",
 ]
 
 

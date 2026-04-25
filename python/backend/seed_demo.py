@@ -39,11 +39,24 @@ def _hash_pw(password: str) -> str:
     return f"{salt}${h.hex()}"
 
 
+def _utc_naive() -> datetime:
+    """UTC now without tzinfo — matches TIMESTAMP WITHOUT TIME ZONE + asyncpg."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  Demo Data Definitions
 # ═══════════════════════════════════════════════════════════════════
 
 DEMO_PASSWORD = "demo1234"  # shared password for both demo users
+
+# Default stress-test overrides (stored in user_assumptions.stress_scenarios)
+DEMO_STRESS_SCENARIOS = {
+    "job_loss_months": 6,
+    "baby_monthly_cost": 22000,
+    "medical_emergency_cost": 500000,
+    "parent_support_monthly": 12000,
+}
 
 # ═══════════════════════════════════════════════════════════════════
 #  ARJUN MEHTA + PRIYA — THE HACKATHON DEMO SCENARIO
@@ -64,8 +77,11 @@ DEMO_USERS = [
             "language": "en",
             "monthly_income": 180000,
             "monthly_expenses": 95000,   # rent 28k, food 12k, transport 8k, misc 47k
+            "monthly_fixed_expenses": 28000,
+            "monthly_variable_expenses": 67000,
             "savings": 120000,
             "risk_appetite": "moderate",
+            "risk_tolerance": "moderate",
             "employment_type": "salaried",
             "dependents": 0,
             "has_health_insurance": True,  # employer-provided 5L only
@@ -78,12 +94,34 @@ DEMO_USERS = [
             "nps_balance": 0,              # No NPS — gap
             "ppf_balance": 0,
             "investments_80c": 45000,      # only ELSS SIP so far — 1,05,000 remaining!
+            "section_80c_amount": 45000,
             "nps_contribution": 0,
-            "health_insurance_premium": 0,  # employer pays, no personal 80D
-            "hra": 28000,                  # rent in Bengaluru metro
+            "has_nps": False,
+            "health_insurance_premium": 18500,
+            "self_health_premium": 18500,
+            "parents_health_premium": 25000,
+            "parents_age_above_60": False,
+            "hra": 28000,                  # monthly HRA from employer
+            "basic_salary": 72000,         # monthly basic (~40% of gross-style income) for HRA math
+            "rent_paid": 28000,          # must be >0 for tax tier completeness
             "home_loan_interest": 0,
+            "lta_amount": 0,
             "fire_target_age": 50,
             "fire_corpus_target": 72000000,  # FIRE at 50
+            "is_metro": True,
+            "cams_uploaded": True,
+            "completeness_pct": 100.0,
+            "primary_goal": "fire",
+            "goal_target_amount": 72000000,
+            "goal_target_years": 21,
+            "monthly_sip_contribution": 85000,  # income - expenses (explicit SIP for FIRE agent)
+            "partner_name": "Priya Sharma",
+            "partner_monthly_income": 140000,
+            "partner_monthly_expenses": 65000,
+            "partner_section_80c": 72000,
+            "partner_nps_contribution": 0,
+            "partner_tax_bracket": "20",
+            "whatsapp_phone": None,
             "onboarding_complete": True,
         },
         "portfolio": {
@@ -98,6 +136,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "large_cap",
                 "plan_type": "direct",
+                "isin": "INF769K01EW9",
                 "invested": 220000,
                 "current_value": 268000,
                 "units": 2467.89,
@@ -110,6 +149,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "mid_cap",
                 "plan_type": "direct",
+                "isin": "INF746K01EL3",
                 "invested": 150000,
                 "current_value": 205000,
                 "units": 1832.45,
@@ -122,6 +162,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "flexi_cap",
                 "plan_type": "direct",
+                "isin": "INF879O01027",
                 "invested": 180000,
                 "current_value": 231000,
                 "units": 2841.23,
@@ -135,6 +176,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "large_cap",
                 "plan_type": "direct",
+                "isin": "INF109K016L0",
                 "invested": 80000,
                 "current_value": 94000,
                 "units": 1234.56,
@@ -147,6 +189,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "small_cap",
                 "plan_type": "direct",
+                "isin": "INF200K01RJ1",
                 "invested": 60000,
                 "current_value": 88000,
                 "units": 987.65,
@@ -160,6 +203,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "large_cap",
                 "plan_type": "direct",
+                "isin": "INF209K016K0",
                 "invested": 40000,
                 "current_value": 44500,
                 "units": 678.90,
@@ -326,8 +370,11 @@ DEMO_USERS = [
             "language": "en",
             "monthly_income": 140000,
             "monthly_expenses": 65000,
+            "monthly_fixed_expenses": 15000,
+            "monthly_variable_expenses": 50000,
             "savings": 280000,
             "risk_appetite": "moderate",
+            "risk_tolerance": "moderate",
             "employment_type": "salaried",  # Product Manager
             "dependents": 0,
             "has_health_insurance": True,
@@ -340,12 +387,34 @@ DEMO_USERS = [
             "nps_balance": 0,
             "ppf_balance": 0,
             "investments_80c": 72000,
+            "section_80c_amount": 72000,
             "nps_contribution": 0,
-            "health_insurance_premium": 0,
-            "hra": 0,              # Lives with parents — cannot claim HRA
+            "has_nps": False,
+            "health_insurance_premium": 12000,
+            "self_health_premium": 12000,
+            "parents_health_premium": 18000,
+            "parents_age_above_60": False,
+            "hra": 0,
+            "basic_salary": 56000,
+            "rent_paid": 8000,     # contribution to parents' household (non-zero for tax tier)
             "home_loan_interest": 0,
+            "lta_amount": 0,
             "fire_target_age": 50,
             "fire_corpus_target": 50000000,
+            "is_metro": True,
+            "cams_uploaded": True,
+            "completeness_pct": 100.0,
+            "primary_goal": "wealth",
+            "goal_target_amount": 50000000,
+            "goal_target_years": 23,
+            "monthly_sip_contribution": 75000,
+            "partner_name": "Arjun Mehta",
+            "partner_monthly_income": 180000,
+            "partner_monthly_expenses": 95000,
+            "partner_section_80c": 45000,
+            "partner_nps_contribution": 0,
+            "partner_tax_bracket": "30",
+            "whatsapp_phone": None,
             "onboarding_complete": True,
         },
         "portfolio": {
@@ -360,6 +429,7 @@ DEMO_USERS = [
                 "scheme_type": "equity",
                 "category": "large_cap",
                 "plan_type": "direct",
+                "isin": "INF789FC1CT2",
                 "invested": 200000,
                 "current_value": 228000,
                 "units": 1234.56,
@@ -370,8 +440,9 @@ DEMO_USERS = [
                 "fund_name": "HDFC Corporate Bond Fund - Direct Growth",
                 "amc": "HDFC Mutual Fund",
                 "scheme_type": "debt",
-                "category": "corporate_bond",
+                "category": "corporate_debt",
                 "plan_type": "direct",
+                "isin": "INF179K01YE5",
                 "invested": 120000,
                 "current_value": 130000,
                 "units": 3456.78,
@@ -467,11 +538,22 @@ DEMO_EMAILS = {u["email"] for u in DEMO_USERS}
 
 async def seed_fastapi_db():
     """Seed the creda_api database with demo data."""
+    from sqlalchemy import delete, func, select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
     from app.models import (
-        Base, User, UserProfile, Portfolio, PortfolioFund,
-        GoalPlan, Nudge, ConversationMessage, LifeEvent, FamilyLink,
-        Budget, Expense,
+        Base,
+        User,
+        UserProfile,
+        UserAssumptions,
+        Portfolio,
+        PortfolioFund,
+        GoalPlan,
+        Nudge,
+        LifeEvent,
+        FamilyLink,
+        Budget,
+        Expense,
     )
     from app.config import settings
 
@@ -486,102 +568,147 @@ async def seed_fastapi_db():
     async with Session() as db:
         for user_data in DEMO_USERS:
             user_id_str = str(user_data["django_id"])
+            prof_data = user_data["profile"]
 
-            # Check if user already exists (by id or email)
-            from sqlalchemy import select
             existing = await db.execute(
                 select(User).where((User.id == user_id_str) | (User.email == user_data["email"]))
             )
-            if existing.scalar_one_or_none():
-                print(f"  [skip] {user_data['email']} already exists in creda_api")
-                continue
-
-            # Create user (id = str(django_id) so headers match)
-            user = User(
-                id=user_id_str,
-                email=user_data["email"],
-                password_hash=_hash_pw(DEMO_PASSWORD),
-                name=user_data["name"],
-            )
-            db.add(user)
-            await db.flush()
-
-            # Create profile
-            prof_data = user_data["profile"]
-            profile = UserProfile(user_id=user_id_str, **prof_data)
-            db.add(profile)
-
-            # Create portfolio + funds
-            port_data = user_data["portfolio"]
-            portfolio = Portfolio(
-                user_id=user_id_str,
-                total_invested=port_data["total_invested"],
-                current_value=port_data["current_value"],
-                xirr=port_data["xirr"],
-                parsed_at=datetime.now(timezone.utc) - timedelta(days=2),
-            )
-            db.add(portfolio)
-            await db.flush()
-
-            for fund_data in user_data["funds"]:
-                fund = PortfolioFund(portfolio_id=portfolio.id, **fund_data)
-                db.add(fund)
-
-            # Create goals
-            for goal_data in user_data["goals"]:
-                goal = GoalPlan(user_id=user_id_str, **goal_data)
-                db.add(goal)
-
-            # Create nudges
-            now = datetime.now(timezone.utc)
-            for i, nudge_data in enumerate(user_data["nudges"]):
-                nudge = Nudge(
-                    user_id=user_id_str,
-                    sent_at=now - timedelta(hours=i * 6),
-                    **nudge_data,
+            user_row = existing.scalar_one_or_none()
+            is_new_account = False
+            if not user_row:
+                user_row = User(
+                    id=user_id_str,
+                    email=user_data["email"],
+                    password_hash=_hash_pw(DEMO_PASSWORD),
+                    name=user_data["name"],
                 )
-                db.add(nudge)
+                db.add(user_row)
+                await db.flush()
+                is_new_account = True
+                print(f"  [seed] user {user_data['email']}")
+            else:
+                user_row.password_hash = _hash_pw(DEMO_PASSWORD)
+                print(f"  [sync] user {user_data['email']} - password + profile fields refreshed")
 
-            # Create life events
-            for evt in user_data.get("life_events", []):
-                life_event = LifeEvent(
-                    user_id=user_id_str,
-                    event_type=evt["event_type"],
-                    event_date=evt["event_date"],
-                    financial_impact=evt["financial_impact"],
-                    notes=evt.get("notes", ""),
+            # ── Profile: merge all known columns (required for tax/FIRE/tier guards) ──
+            pr = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id_str))
+            profile = pr.scalar_one_or_none()
+            if not profile:
+                profile = UserProfile(user_id=user_id_str)
+                db.add(profile)
+                await db.flush()
+            skip_cols = frozenset({"id", "user_id", "created_at", "updated_at"})
+            for col in UserProfile.__table__.columns:
+                cname = col.name
+                if cname in skip_cols:
+                    continue
+                if cname in prof_data:
+                    setattr(profile, cname, prof_data[cname])
+
+            # ── UserAssumptions (FIRE / SIP / stress sliders) ──
+            ar = await db.execute(select(UserAssumptions).where(UserAssumptions.user_id == user_id_str))
+            ua = ar.scalar_one_or_none()
+            if not ua:
+                db.add(
+                    UserAssumptions(
+                        user_id=user_id_str,
+                        inflation_rate=0.06,
+                        equity_lc_return=0.12,
+                        equity_mc_return=0.14,
+                        equity_sc_return=0.16,
+                        debt_return=0.07,
+                        sip_stepup_pct=0.10,
+                        stress_scenarios=dict(DEMO_STRESS_SCENARIOS),
+                    )
                 )
-                db.add(life_event)
+            else:
+                ua.stress_scenarios = dict(DEMO_STRESS_SCENARIOS)
 
-            # Create budgets (current month)
+            # ── Portfolio + funds (only if none exists) ──
+            port_result = await db.execute(
+                select(Portfolio).where(Portfolio.user_id == user_id_str).order_by(Portfolio.created_at.desc())
+            )
+            portfolio = port_result.scalar_one_or_none()
+            if not portfolio:
+                port_data = user_data["portfolio"]
+                portfolio = Portfolio(
+                    user_id=user_id_str,
+                    total_invested=port_data["total_invested"],
+                    current_value=port_data["current_value"],
+                    xirr=port_data["xirr"],
+                    parsed_at=_utc_naive() - timedelta(days=2),
+                )
+                db.add(portfolio)
+                await db.flush()
+                for fund_data in user_data["funds"]:
+                    db.add(PortfolioFund(portfolio_id=portfolio.id, **fund_data))
+                print(f"    -> portfolio + {len(user_data['funds'])} funds created")
+            else:
+                portfolio.parsed_at = _utc_naive() - timedelta(days=1)
+
+            # ── Goals, nudges, life events (first-time only) ──
+            if is_new_account:
+                for goal_data in user_data["goals"]:
+                    db.add(GoalPlan(user_id=user_id_str, **goal_data))
+                now = _utc_naive()
+                for i, nudge_data in enumerate(user_data["nudges"]):
+                    db.add(
+                        Nudge(
+                            user_id=user_id_str,
+                            sent_at=now - timedelta(hours=i * 6),
+                            **nudge_data,
+                        )
+                    )
+                for evt in user_data.get("life_events", []):
+                    db.add(
+                        LifeEvent(
+                            user_id=user_id_str,
+                            event_type=evt["event_type"],
+                            event_date=evt["event_date"],
+                            financial_impact=evt["financial_impact"],
+                            notes=evt.get("notes", ""),
+                        )
+                    )
+
+            # ── Budgets + expenses: replace current month budgets; append-like expenses if few rows ──
             current_month = datetime.now().strftime("%Y-%m")
+            await db.execute(
+                delete(Budget).where(Budget.user_id == user_id_str, Budget.month == current_month)
+            )
             for bud in user_data.get("budgets", []):
-                budget = Budget(
-                    user_id=user_id_str,
-                    month=current_month,
-                    category=bud["category"],
-                    planned_amount=bud["planned_amount"],
-                    actual_amount=bud["actual_amount"],
+                db.add(
+                    Budget(
+                        user_id=user_id_str,
+                        month=current_month,
+                        category=bud["category"],
+                        planned_amount=bud["planned_amount"],
+                        actual_amount=bud["actual_amount"],
+                    )
                 )
-                db.add(budget)
-
-            # Create expenses (recent)
-            today = date.today()
-            for exp in user_data.get("expenses", []):
-                expense = Expense(
-                    user_id=user_id_str,
-                    category=exp["category"],
-                    amount=exp["amount"],
-                    description=exp.get("description", ""),
-                    expense_date=today - timedelta(days=exp.get("days_ago", 0)),
-                    payment_method=exp.get("payment_method", "upi"),
-                    is_recurring=exp.get("is_recurring", False),
-                )
-                db.add(expense)
+            exp_cnt = (
+                await db.execute(select(func.count()).select_from(Expense).where(Expense.user_id == user_id_str))
+            ).scalar() or 0
+            if exp_cnt < 5:
+                today = date.today()
+                for exp in user_data.get("expenses", []):
+                    db.add(
+                        Expense(
+                            user_id=user_id_str,
+                            category=exp["category"],
+                            amount=exp["amount"],
+                            description=exp.get("description", ""),
+                            expense_date=today - timedelta(days=exp.get("days_ago", 0)),
+                            payment_method=exp.get("payment_method", "upi"),
+                            is_recurring=exp.get("is_recurring", False),
+                        )
+                    )
 
             n_bud = len(user_data.get("budgets", []))
             n_exp = len(user_data.get("expenses", []))
-            print(f"  [seed] {user_data['email']} — profile + {len(user_data['funds'])} funds + {len(user_data['goals'])} goals + {len(user_data['nudges'])} nudges + {n_bud} budgets + {n_exp} expenses")
+            print(
+                f"    -> profile+tier+tax fields, assumptions; "
+                f"budgets {n_bud} (month {current_month}); expenses template {n_exp}"
+            )
 
         # Link Arjun and Priya as spouse pair
         arjun_id = str(DEMO_USERS[0]["django_id"])
@@ -593,14 +720,15 @@ async def seed_fastapi_db():
             )
         )
         if not existing_link.scalar_one_or_none():
-            link = FamilyLink(
-                owner_id=arjun_id,
-                member_id=priya_id,
-                relationship_type="spouse",
-                is_accepted=True,
+            db.add(
+                FamilyLink(
+                    owner_id=arjun_id,
+                    member_id=priya_id,
+                    relationship_type="spouse",
+                    is_accepted=True,
+                )
             )
-            db.add(link)
-            print(f"  [seed] Family link: Arjun ↔ Priya (spouse)")
+            print(f"  [seed] Family link: Arjun <-> Priya (spouse)")
 
         await db.commit()
 
@@ -626,7 +754,7 @@ def seed_django_db():
         if ex:
             ex.set_password(DEMO_PASSWORD)
             ex.save()
-            print(f"  [sync] {user_data['email']} — creda_django password resynced to demo value")
+            print(f"  [sync] {user_data['email']} - creda_django password resynced to demo value")
             continue
 
         user = DjangoUser(

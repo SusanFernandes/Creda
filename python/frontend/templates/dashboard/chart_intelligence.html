@@ -1,0 +1,61 @@
+{% extends "base_dashboard.html" %}
+{% load creda_filters %}
+{% block title %}Chart Intelligence{% endblock %}
+{% block page_title %}Chart Intelligence{% endblock %}
+{% block page_subtitle %}PS6 — RSI &amp; 52-week context (yfinance){% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto px-6 space-y-8" x-data="{ sym: '{{ symbol|escapejs }}', tf: '{{ tf|default:"3mo"|escapejs }}' }">
+  <form method="get" class="glass rounded-2xl border border-slate-200/50 p-6 flex flex-wrap gap-4 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="text-xs font-bold text-slate-500">NSE symbol</label>
+      <input name="symbol" x-model="sym" placeholder="RELIANCE"
+             class="w-full mt-1 border rounded-xl px-3 py-2 text-sm" value="{{ symbol }}">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-slate-500">Window</label>
+      <select name="tf" x-model="tf" class="w-full mt-1 border rounded-xl px-3 py-2 text-sm">
+        <option value="1w">1W</option>
+        <option value="1m">1M</option>
+        <option value="3m" {% if not tf or tf == "3mo" %}selected{% endif %}>3M</option>
+        <option value="1y">1Y</option>
+      </select>
+    </div>
+    <button type="submit" class="px-5 py-2.5 rounded-xl text-white text-sm font-bold" style="background:#0F4C81">Scan</button>
+  </form>
+
+  {% if chart and chart.analysis %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-1 glass rounded-2xl border p-6">
+      <p class="text-[10px] font-bold uppercase text-slate-400">Ticker</p>
+      <p class="text-2xl font-black text-[#0F4C81]">{{ chart.analysis.ticker }}</p>
+      <p class="mt-4 text-sm">Last close: <strong>₹{{ chart.analysis.last_close }}</strong></p>
+      <p class="text-sm">RSI(14): <strong>{{ chart.analysis.rsi_14 }}</strong></p>
+      <p class="text-sm">Vs 52w high: <strong>{{ chart.analysis.distance_from_52w_high_pct }}%</strong></p>
+      {% if chart.analysis.data_quality %}
+      <p class="text-xs mt-2"><span class="badge-est px-2 py-0.5 rounded text-[10px]">{{ chart.analysis.data_quality }}</span></p>
+      {% endif %}
+    </div>
+    <div class="lg:col-span-2 glass rounded-2xl border p-6 space-y-4">
+      {% for p in chart.analysis.patterns %}
+      <div class="rounded-xl border border-slate-200/60 p-4">
+        <span class="text-[10px] font-bold uppercase text-blue-600">{{ p.name }}</span>
+        <p class="text-sm mt-1">{{ p.plain_english }}</p>
+        <p class="text-xs text-slate-400 mt-1">Confidence: {{ p.confidence }}</p>
+      </div>
+      {% empty %}
+      <p class="text-sm text-slate-500">No strong patterns flagged for this window.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% if chart.analysis.error %}
+  <div class="text-amber-700 text-sm">{{ chart.analysis.error }}</div>
+  {% endif %}
+  {% if chart.response %}
+  <div class="glass rounded-2xl border p-6 prose prose-sm dark:prose-invert">{{ chart.response|strip_markdown }}</div>
+  {% endif %}
+  {% else %}
+  <p class="text-center text-slate-500">Enter a symbol and scan, or check the backend.</p>
+  {% endif %}
+</div>
+{% endblock %}

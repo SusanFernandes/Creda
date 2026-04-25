@@ -23,9 +23,14 @@ class FinancialState(TypedDict, total=False):
 
     # ── Stress test: explicit event keys from UI (not parsed from message) ──
     stress_event_keys: Optional[list[str]]
+    # Optional overrides: job_loss_months, baby_monthly_cost, medical_emergency_cost, etc.
+    stress_scenario_params: Optional[dict[str, Any]]
 
     # ── Goal planner: DB-backed goals ──
     stored_goals: Optional[list[dict]]
+
+    # ── SIP calculator (direct /agents/sip-calculator) ──
+    monthly_sip_available: Optional[float]
 
     # ── Misc (DB session for agents that need it) ──
     db: Optional[Any]

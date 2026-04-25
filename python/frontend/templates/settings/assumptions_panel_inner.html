@@ -1,0 +1,83 @@
+  <div class="glass rounded-2xl p-6 border border-slate-200/50">
+    <label class="text-xs font-bold uppercase tracking-widest text-slate-400">Inflation rate</label>
+    <input type="range" min="0.04" max="0.10" step="0.001" x-model.number="state.inflation_rate"
+           @input="debouncedSave()" class="w-full mt-2">
+    <p class="mt-1 text-sm" x-text="(state.inflation_rate * 100).toFixed(1) + '%'"></p>
+    <p class="text-xs text-slate-500 mt-1">Affects FIRE corpus, SIP targets, and stress tests.</p>
+  </div>
+
+  <div class="glass rounded-2xl p-6 border border-slate-200/50 space-y-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Expected equity return</p>
+    <div>
+      <span class="text-sm">Large cap</span>
+      <input type="range" min="0.08" max="0.18" step="0.005" x-model.number="state.equity_lc_return" @input="debouncedSave()" class="w-full">
+      <span class="text-xs" x-text="(state.equity_lc_return * 100).toFixed(1) + '%'"></span>
+    </div>
+    <div>
+      <span class="text-sm">Mid cap</span>
+      <input type="range" min="0.08" max="0.20" step="0.005" x-model.number="state.equity_mc_return" @input="debouncedSave()" class="w-full">
+      <span class="text-xs" x-text="(state.equity_mc_return * 100).toFixed(1) + '%'"></span>
+    </div>
+    <div>
+      <span class="text-sm">Small cap</span>
+      <input type="range" min="0.08" max="0.22" step="0.005" x-model.number="state.equity_sc_return" @input="debouncedSave()" class="w-full">
+      <span class="text-xs" x-text="(state.equity_sc_return * 100).toFixed(1) + '%'"></span>
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-6 border border-slate-200/50">
+    <label class="text-xs font-bold uppercase tracking-widest text-slate-400">Annual SIP step-up</label>
+    <input type="range" min="0" max="0.20" step="0.01" x-model.number="state.sip_stepup_pct" @input="debouncedSave()" class="w-full mt-2">
+    <p class="text-sm mt-1" x-text="(state.sip_stepup_pct * 100).toFixed(0) + '%'"></p>
+  </div>
+
+  <div class="glass rounded-2xl p-6 border border-slate-200/50">
+    <label class="text-xs font-bold uppercase tracking-widest text-slate-400">Debt / fixed income return</label>
+    <input type="range" min="0.04" max="0.12" step="0.005" x-model.number="state.debt_return" @input="debouncedSave()" class="w-full mt-2">
+    <p class="text-sm mt-1" x-text="(state.debt_return * 100).toFixed(1) + '%'"></p>
+  </div>
+
+  <div class="glass rounded-2xl p-6 border border-slate-200/50 space-y-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Stress scenarios (Monte Carlo)</p>
+    <p class="text-xs text-slate-500">Toggled events reduce effective SIP in the stress test agent for the selected months.</p>
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" x-model="stress.job_loss" @change="debouncedSave()"> Job loss
+    </label>
+    <div class="flex flex-wrap gap-2 text-xs" x-show="stress.job_loss">
+      <template x-for="m in [3,6,12]"><button type="button" class="px-2 py-1 rounded border"
+        :class="stress.job_months === m ? 'bg-slate-800 text-white' : ''"
+        @click="stress.job_months = m; debouncedSave()" x-text="m + ' mo'"></button></template>
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" x-model="stress.medical" @change="debouncedSave()"> Medical emergency
+    </label>
+    <div class="flex flex-wrap gap-2 text-xs" x-show="stress.medical">
+      <template x-for="l in [2,5,10]"><button type="button" class="px-2 py-1 rounded border"
+        :class="stress.medical_lakh === l ? 'bg-slate-800 text-white' : ''"
+        @click="stress.medical_lakh = l; debouncedSave()" x-text="'₹' + l + 'L'"></button></template>
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" x-model="stress.new_baby" @change="debouncedSave()"> New baby
+    </label>
+    <div class="flex flex-wrap gap-2 text-xs" x-show="stress.new_baby">
+      <template x-for="c in [15,25,35]"><button type="button" class="px-2 py-1 rounded border"
+        :class="stress.baby_k === c ? 'bg-slate-800 text-white' : ''"
+        @click="stress.baby_k = c; debouncedSave()" x-text="'₹' + c + 'k/mo'"></button></template>
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" x-model="stress.emi_added" @change="debouncedSave()"> EMI added
+    </label>
+    <input x-show="stress.emi_added" type="number" min="0" step="1000" class="w-full border rounded-lg px-2 py-1 text-sm"
+           x-model.number="stress.emi_amount" @input="debouncedSave()" placeholder="₹ / month">
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" x-model="stress.parent_support" @change="debouncedSave()"> Parent support
+    </label>
+    <input x-show="stress.parent_support" type="number" min="0" step="1000" class="w-full border rounded-lg px-2 py-1 text-sm"
+           x-model.number="stress.parent_amount" @input="debouncedSave()" placeholder="₹ / month">
+  </div>
+
+  <div class="flex gap-2">
+    <button type="button" @click="riskPreset('conservative')" class="px-3 py-2 rounded-xl border text-sm">Conservative</button>
+    <button type="button" @click="riskPreset('moderate')" class="px-3 py-2 rounded-xl border text-sm bg-blue-600 text-white">Moderate</button>
+    <button type="button" @click="riskPreset('aggressive')" class="px-3 py-2 rounded-xl border text-sm">Aggressive</button>
+  </div>

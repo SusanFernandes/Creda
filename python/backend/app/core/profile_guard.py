@@ -75,6 +75,8 @@ SKIP_PROFILE_GUARD = frozenset({
     "human_handoff",
     "et_research",
     "market_pulse",
+    "chart_pattern",
+    "opportunity_radar",
 })
 
 
@@ -100,4 +102,6 @@ def guard_for_intent(intent: str, profile: dict[str, Any] | None) -> dict[str, A
         return {"missing": [], "completeness_pct": 100.0, "is_complete": True}
     if intent in ("tax_wizard", "tax_copilot"):
         return check_profile(p, ["tier_1", "tax"])
+    if intent in ("life_event_advisor", "expense_analytics"):
+        return check_profile(p, ["tier_1"])
     return check_profile(p, ["tier_1"])

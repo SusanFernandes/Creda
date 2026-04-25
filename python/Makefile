@@ -234,7 +234,7 @@ superuser:
 	cd frontend && "$(PYTHON)" manage.py createsuperuser
 
 .PHONY: seed
-seed:
+seed: migrate-alembic
 	@echo Seeding demo data...
 	cd backend && "$(PYTHON)" seed_demo.py
 	@echo Demo data seeded.

@@ -49,6 +49,14 @@ _EVENT_STRATEGIES = {
         "priorities": ["down_payment", "emi_planning", "insurance", "tax_benefits"],
         "description": "Property purchase",
     },
+    "job_loss": {
+        "priorities": ["emergency_runway", "emi_discipline", "insurance_continuity", "liquidity"],
+        "description": "Job loss / unemployment",
+    },
+    "parent_support": {
+        "priorities": ["cashflow", "emergency_buffer", "tax_planning"],
+        "description": "Parent dependency / elder support",
+    },
 }
 
 
@@ -91,6 +99,21 @@ def _detect_event_type(message: str) -> tuple[str, float]:
         return "job_change", amount
     if any(w in msg for w in ["property", "house", "flat", "apartment", "real estate", "home buy"]):
         return "property_purchase", amount
+    if any(
+        w in msg
+        for w in [
+            "lost my job",
+            "lost job",
+            "got fired",
+            "laid off",
+            "layoff",
+            "unemployed",
+            "lost employment",
+        ]
+    ):
+        return "job_loss", amount
+    if any(w in msg for w in ["parent depend", "parents moving", "elder care", "support parents"]):
+        return "parent_support", amount
 
     return "bonus", amount  # default to bonus if unclear
 
@@ -278,6 +301,37 @@ def _build_deployment_plan(
             "pct": 0,
             "reason": "Update all MF nominations, insurance beneficiary, and create a will.",
             "action": "Use online will service or consult lawyer",
+        })
+
+    elif event_type == "job_loss":
+        runway = expenses * 6
+        months_cover = (float(emergency or 0) / expenses) if expenses > 0 else 0
+        if amount > 0:
+            park = round(amount * 0.65)
+            allocations.append({
+                "category": "Severance — park in liquid",
+                "amount": park,
+                "pct": 65,
+                "reason": f"Keep most severance liquid while job hunting. Current runway ~{months_cover:.1f} months of expenses.",
+                "action": "Liquid / money-market funds",
+            })
+        allocations.append({
+            "category": "Emergency runway target",
+            "amount": 0,
+            "pct": 0,
+            "reason": f"Aim for ₹{runway:,.0f} (6 months). You have ₹{float(emergency or 0):,.0f} — gap ₹{max(runway - float(emergency or 0), 0):,.0f}.",
+            "action": "Pause discretionary SIPs if needed; keep health insurance active",
+        })
+
+    elif event_type == "parent_support":
+        monthly_support = amount if amount > 0 else round(expenses * 0.12)
+        annual = monthly_support * 12
+        allocations.append({
+            "category": "Parent support (annualised)",
+            "amount": annual,
+            "pct": 100,
+            "reason": f"Budget ~₹{monthly_support:,.0f}/month for support; track separately from your FIRE SIPs.",
+            "action": "Standing instruction + document 80D premiums if paying parents' health cover",
         })
 
     else:

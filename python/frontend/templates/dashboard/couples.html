@@ -94,6 +94,23 @@
   {% if couples %}
   <!-- Joint Summary -->
   {% if couples.analysis %}
+  {% if couples.analysis.hra_optimization %}
+  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-6 mb-6">
+    <h3 class="font-bold text-sm mb-2">HRA optimisation (joint)</h3>
+    {% if couples.analysis.hra_optimization.note %}
+    <p class="text-sm text-slate-600 dark:text-slate-300">{{ couples.analysis.hra_optimization.note }}</p>
+    {% else %}
+    <p class="text-sm">Annual rent ₹{{ couples.analysis.hra_optimization.rent_annual|floatformat:0|indian_number }} ·
+      If you claim: <strong>₹{{ couples.analysis.hra_optimization.hra_if_person1_claims|floatformat:0|indian_number }}</strong> ·
+      If partner claims: <strong>₹{{ couples.analysis.hra_optimization.hra_if_person2_claims|floatformat:0|indian_number }}</strong></p>
+    <p class="text-sm mt-2 font-semibold text-emerald-700 dark:text-emerald-300">Recommended: {{ couples.analysis.hra_optimization.recommended_claimer }}</p>
+    <p class="text-xs text-slate-500 mt-1">Indicative tax saved at optimal claimer (~30% slab): ₹{{ couples.analysis.hra_optimization.estimated_tax_saved_if_optimal_inr|floatformat:0|indian_number }}</p>
+    {% endif %}
+    {% if profile.rent_paid %}
+    <p class="text-xs text-slate-500 mt-2">Your rent (monthly): ₹{{ profile.rent_paid|floatformat:0 }} · Basic: ₹{{ profile.basic_salary|default:0|floatformat:0 }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Combined Income</p>
@@ -105,9 +122,30 @@
     </div>
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Split Strategy</p>
-      <p class="text-xl font-bold capitalize">{{ couples.analysis.recommended_split|default:"Proportional" }}</p>
+      <p class="text-xl font-bold capitalize">{{ couples.analysis.recommended|default:couples.analysis.recommended_split|default:"Proportional" }}</p>
     </div>
   </div>
+  {% if couples.analysis.strategies %}
+  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6 overflow-x-auto">
+    <h3 class="font-bold text-sm mb-4">Who pays what (monthly)</h3>
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+        <th class="py-2">Mode</th><th class="py-2 text-right">You</th><th class="py-2 text-right">Partner</th><th class="py-2">Notes</th>
+      </tr></thead>
+      <tbody>
+        {% for key, s in couples.analysis.strategies.items %}
+        <tr class="border-b border-slate-100 dark:border-slate-800">
+          <td class="py-2 font-medium capitalize">{{ key|cut:"_" }}</td>
+          <td class="py-2 text-right tabular-nums">{% if s.person1_pays %}₹{{ s.person1_pays|floatformat:0 }}{% elif s.shared_pool %}pool ₹{{ s.shared_pool|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td class="py-2 text-right tabular-nums">{% if s.person2_pays %}₹{{ s.person2_pays|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td class="py-2 text-xs text-slate-500">{{ s.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-500 mt-2">You: ₹{{ couples.analysis.person1_income|floatformat:0 }}/mo · Partner: ₹{{ couples.analysis.person2_income|floatformat:0 }}/mo (as analysed)</p>
+  </div>
+  {% endif %}
   {% endif %}
 
   {% if couples.response %}

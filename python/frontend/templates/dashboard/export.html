@@ -1,0 +1,39 @@
+{% extends "base_dashboard.html" %}
+{% load i18n %}
+{% block title %}{% trans "Export Reports" %}{% endblock %}
+{% block page_title %}{% trans "Export Reports" %}{% endblock %}
+{% block page_subtitle %}{% trans "Download portfolio, goals, and compliance data" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto space-y-8">
+  <p class="text-sm" style="color: var(--text-secondary);">
+    {% trans "Exports are generated from your live CREDA data via the API. Choose a format — your browser will download the file." %}
+  </p>
+
+  <div class="creda-card-grid">
+    <div class="creda-card">
+      <h2 class="creda-card-heading mb-2">{% trans "Portfolio" %}</h2>
+      <p class="text-sm mb-4" style="color: var(--text-secondary);">{% trans "Holdings, values, and X-Ray-related fields as CSV or a printable PDF summary." %}</p>
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'api_export_csv' 'portfolio' %}" class="creda-action-btn text-sm no-underline">{% trans "CSV" %}</a>
+        <a href="{% url 'api_export_pdf' 'portfolio' %}" class="creda-secondary-btn text-sm no-underline">{% trans "PDF" %}</a>
+      </div>
+    </div>
+    <div class="creda-card">
+      <h2 class="creda-card-heading mb-2">{% trans "Goals" %}</h2>
+      <p class="text-sm mb-4" style="color: var(--text-secondary);">{% trans "Goal targets and linked fund allocations." %}</p>
+      <a href="{% url 'api_export_csv' 'goals' %}" class="creda-action-btn text-sm no-underline inline-flex">{% trans "Download CSV" %}</a>
+    </div>
+    <div class="creda-card">
+      <h2 class="creda-card-heading mb-2">{% trans "Compliance" %}</h2>
+      <p class="text-sm mb-4" style="color: var(--text-secondary);">{% trans "Annual compliance checklist export." %}</p>
+      <a href="{% url 'api_export_csv' 'compliance' %}" class="creda-action-btn text-sm no-underline inline-flex">{% trans "Download CSV" %}</a>
+    </div>
+  </div>
+
+  <p class="text-xs" style="color: var(--text-secondary);">
+    {% trans "Tip: upload CAMS on Portfolio for richer exports. For a single printable overview, use" %}
+    <a href="{% url 'report_card' %}" class="font-semibold underline" style="color: var(--primary);">{% trans "Report Card" %}</a>.
+  </p>
+</div>
+{% endblock %}

@@ -33,6 +33,11 @@
 
   {% if research %}
   {% if research.analysis %}
+  {% if research.analysis.portfolio_context_used %}
+  <div class="rounded-xl border border-emerald-200/50 bg-emerald-50/40 dark:bg-emerald-900/15 px-4 py-3 text-sm text-emerald-900 dark:text-emerald-100">
+    Portfolio-aware mode: answers consider your uploaded holdings context.
+  </div>
+  {% endif %}
   <!-- Confidence + Source badges -->
   <div class="flex items-center gap-3 flex-wrap">
     {% if research.analysis.confidence_score %}
@@ -66,12 +71,14 @@
           {% endif %}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm truncate">{{ src.title }}</p>
+          <p class="font-semibold text-sm truncate">{% firstof src.title src.name "Source" %}</p>
           {% if src.url %}
           <a href="{{ src.url }}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-blue-500 hover:underline truncate block">{{ src.url|truncatechars:60 }}</a>
           {% endif %}
           {% if src.snippet %}
           <p class="text-xs text-slate-500 mt-1">{{ src.snippet|truncatechars:120 }}</p>
+          {% elif src.key_fact %}
+          <p class="text-xs text-slate-500 mt-1">{{ src.key_fact|truncatechars:160 }}</p>
           {% endif %}
           {% if src.score %}
           <p class="text-xs text-slate-400 mt-0.5">Relevance: {{ src.score|floatformat:0 }}%</p>

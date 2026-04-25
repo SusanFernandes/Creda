@@ -14,6 +14,8 @@ _VALID_INTENTS = {
     "sip_calculator", "rag_query", "general_chat",
     "market_pulse", "tax_copilot", "money_personality", "goal_simulator",
     "social_proof", "et_research", "human_handoff", "family_wealth",
+    "life_event_advisor", "expense_analytics", "onboarding",
+    "chart_pattern", "opportunity_radar",
 }
 
 _BASE_PROMPT = """Classify the user message into EXACTLY ONE intent. Respond with ONLY the intent name, nothing else.
@@ -33,7 +35,12 @@ Intents:
 • money_personality → financial personality, investor type, risk profile assessment
 • goal_simulator → what-if scenarios for goals, adjust SIP/returns, simulation sliders
 • social_proof → peer comparison, how others invest, age group benchmarks
-• et_research → deep research, explain concepts, articles, knowledge, detailed analysis
+• et_research → deep research, macro/RBI/FII, portfolio impact of news, sector/index comparison, detailed analysis
+• life_event_advisor → bonus, inheritance, marriage, baby, job loss, home purchase, parent dependency, windfall allocation
+• expense_analytics → spending breakdown, category-wise expenses, where money goes, expense analysis
+• onboarding → new user, setup profile, complete onboarding, first time here
+• opportunity_radar → insider trades, bulk/block deals, earnings surprises, opportunity signals, filings
+• chart_pattern → RSI divergence, MACD cross, golden cross, breakout, 52-week high, technical patterns
 • human_handoff → talk to human, advisor, stressed, complex situation, SEBI complaint, fraud
 • family_wealth → family finances, household wealth, spouse/parent/child portfolio, combined net worth
 • rag_query → RBI/SEBI regulations, PPF/NPS/EPF rules, government schemes, Sukanya/PMJJBY

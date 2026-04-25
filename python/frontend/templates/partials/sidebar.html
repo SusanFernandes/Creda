@@ -1,0 +1,216 @@
+{% load i18n %}
+{# CREDA sidebar — design system; context: request.sidebar_profile, request.sidebar_nudge_count #}
+{% with sp=request.sidebar_profile %}
+<div class="flex flex-col h-full min-h-0 min-w-0">
+  <!-- Logo + collapse -->
+  <div class="flex items-center justify-between px-4 py-4 border-b border-[var(--border)] shrink-0">
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-sm" style="background: var(--primary);">
+        C
+      </div>
+      <div class="min-w-0" {% if not sidebar_mobile %}x-show="sidebarOpen" x-transition{% endif %}>
+        <span class="text-base font-black tracking-tight italic truncate block" style="color: var(--text-primary);">CREDA</span>
+        <span class="inline-flex mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide" style="background: var(--badge-est); color: #92400e;">ET AI Hackathon</span>
+      </div>
+    </a>
+    {% if not sidebar_mobile %}
+    <button type="button" @click="sidebarOpen = !sidebarOpen" class="p-1.5 rounded-lg shrink-0 hover:opacity-80" style="color: var(--text-secondary);" aria-label="{% trans 'Toggle sidebar' %}">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="creda-sidebar-scroll sidebar-scroll px-3 py-4 flex flex-col gap-1 min-h-0">
+    <!-- Profile completeness -->
+    <div class="rounded-xl border px-3 py-3 mb-2" style="border-color: var(--border); background: var(--surface);">
+      {% if sp %}
+      {% with pct=sp.completeness_pct|default_if_none:0 %}
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 text-white" style="background: var(--primary);">
+          {% if sp.name %}
+            {{ sp.name|slice:":2"|upper }}
+          {% else %}
+            {{ request.user.email|slice:":2"|upper }}
+          {% endif %}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-sm font-semibold truncate" style="color: var(--text-primary);">{% firstof sp.name request.user.get_full_name request.user.email %}</span>
+          </div>
+          <a href="{% url 'settings' %}" class="text-xs font-medium hover:underline" style="color: var(--primary-light);">{% trans "View Profile" %}</a>
+          <div class="mt-2 {% if pct < 50 %}creda-profile-bar--low{% elif pct < 80 %}creda-profile-bar--mid{% else %}creda-profile-bar--high{% endif %} creda-profile-bar">
+            <div class="creda-profile-bar__fill" style="width: {{ pct|floatformat:0 }}%; max-width: 100%;"></div>
+          </div>
+          <div class="flex items-center justify-between mt-1">
+            <span class="text-[11px] font-medium" style="color: var(--text-secondary);">{{ pct|floatformat:0 }}% {% trans "complete" %}</span>
+            {% if pct < 100 %}
+            <span class="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <a href="{% url 'onboarding_wizard' %}" class="hover:underline">{% trans "Complete profile" %}</a>
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+      {% else %}
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 text-white" style="background: var(--primary);">{{ request.user.email|slice:":2"|upper }}</div>
+        <div class="min-w-0 flex-1">
+          <span class="text-sm font-semibold truncate block" style="color: var(--text-primary);">{{ request.user.email }}</span>
+          <a href="{% url 'settings' %}" class="text-xs font-medium hover:underline" style="color: var(--primary-light);">{% trans "View Profile" %}</a>
+          <div class="mt-2 creda-profile-bar creda-profile-bar--low">
+            <div class="creda-profile-bar__fill" style="width: 0%;"></div>
+          </div>
+          <span class="text-[11px] font-medium" style="color: var(--text-secondary);">0% {% trans "complete" %}</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <p class="creda-nav-section-label mt-1" {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "My Finances" %}</p>
+    <a href="{% url 'dashboard' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🏠</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Dashboard" %}</span>
+    </a>
+    <a href="{% url 'chat' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'chat' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">💬</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Chat with CREDA" %}</span>
+    </a>
+    <a href="{% url 'portfolio' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'portfolio' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">📊</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Portfolio X-Ray" %}</span>
+    </a>
+    <a href="{% url 'health' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'health' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">❤️</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Money Health" %}</span>
+    </a>
+
+    <p class="creda-nav-section-label" {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Planning" %}</p>
+    <a href="{% url 'fire' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'fire' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🔥</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "FIRE Planner" %}</span>
+    </a>
+    <a href="{% url 'tax' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'tax' or request.resolver_match.url_name == 'tax_copilot' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🧾</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Tax Wizard" %}</span>
+    </a>
+    <a href="{% url 'sip_calculator' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'sip_calculator' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">💡</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "SIP Calculator" %}</span>
+    </a>
+    <a href="{% url 'goals' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'goals' or request.resolver_match.url_name == 'goal_simulator' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🎯</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Goals" %}</span>
+    </a>
+    <a href="{% url 'stress_test' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'stress_test' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">😰</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Stress Test" %}</span>
+    </a>
+
+    <p class="creda-nav-section-label" {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Life Events" %}</p>
+    <a href="{% url 'life_events' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'life_events' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🎉</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Life Event Advisor" %}</span>
+    </a>
+    <a href="{% url 'couples' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'couples' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">👫</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Couples Planner" %}</span>
+    </a>
+    <a href="{% url 'family' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'family' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">👨‍👩‍👧</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Family Wealth" %}</span>
+    </a>
+
+    <p class="creda-nav-section-label" {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "ET Intelligence (PS6)" %}</p>
+    <a href="{% url 'opportunity_radar' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'opportunity_radar' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🔭</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Opportunity Radar" %}</span>
+    </a>
+    <a href="{% url 'chart_intelligence' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'chart_intelligence' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">📈</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Chart Intelligence" %}</span>
+    </a>
+    <a href="{% url 'market_pulse' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'market_pulse' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🌍</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Market Pulse" %}</span>
+    </a>
+    <a href="{% url 'research' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'research' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">🔬</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "ET Research" %}</span>
+    </a>
+
+    <p class="creda-nav-section-label" {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Tools" %}</p>
+    <a href="{% url 'budget' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'budget' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">💸</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Budget & Expenses" %}</span>
+    </a>
+    <a href="{% url 'export_reports' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'export_reports' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">📁</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Export Reports" %}</span>
+    </a>
+    <a href="{% url 'settings' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'settings' or request.resolver_match.url_name == 'settings_assumptions' %}creda-nav-link--active{% endif %}">
+      <span class="text-base shrink-0" aria-hidden="true">⚙️</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Settings & Assumptions" %}</span>
+    </a>
+  </div>
+
+  <div class="px-3 py-3 border-t border-[var(--border)] space-y-1 shrink-0">
+    {% if not sidebar_mobile %}
+    <div class="relative" x-data="{ nudgeOpen: false, nudges: [], nudgeLoading: false, async loadNudges() { this.nudgeLoading = true; try { const r = await fetch('{% url 'api_nudges_pending' %}'); this.nudges = await r.json(); if (!Array.isArray(this.nudges)) this.nudges = []; } catch (e) { this.nudges = []; } this.nudgeLoading = false; } }">
+      <button type="button" @click="nudgeOpen = !nudgeOpen; if (nudgeOpen) loadNudges();"
+              class="creda-nav-link w-full text-left border-0 bg-transparent cursor-pointer relative">
+        <span class="text-base shrink-0" aria-hidden="true">🔔</span>
+        <span x-show="sidebarOpen">{% trans "Nudges" %}</span>
+        {% if request.sidebar_nudge_count %}
+        <span class="ml-auto text-[10px] font-bold text-white rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center" style="background: var(--accent-red);">{{ request.sidebar_nudge_count }}</span>
+        {% endif %}
+      </button>
+      <div x-show="nudgeOpen" @click.outside="nudgeOpen = false" x-transition
+           class="absolute bottom-full left-0 mb-1 w-[min(100vw-2rem,320px)] max-h-72 overflow-y-auto rounded-xl border shadow-xl z-50 p-2 text-left"
+           style="background: var(--card); border-color: var(--border);">
+        <p class="text-[10px] font-bold uppercase tracking-wide px-2 py-1" style="color: var(--text-secondary);">{% trans "Pending" %}</p>
+        <template x-if="nudgeLoading"><p class="text-xs px-2 py-2" style="color: var(--text-secondary);">{% trans "Loading…" %}</p></template>
+        <template x-if="!nudgeLoading && nudges.length === 0"><p class="text-xs px-2 py-2" style="color: var(--text-secondary);">{% trans "No nudges right now." %}</p></template>
+        <template x-for="n in nudges" :key="n.id">
+          <a :href="n.action_url || '{% url 'notifications' %}'" class="block text-xs px-2 py-2 rounded-lg hover:opacity-90" style="color: var(--text-primary);">
+            <span class="font-semibold" x-text="n.title || 'Nudge'"></span>
+            <span class="block text-[11px] opacity-80 mt-0.5" x-text="n.body || ''"></span>
+          </a>
+        </template>
+        <a href="{% url 'notifications' %}" class="block text-center text-xs font-semibold mt-1 py-2 rounded-lg" style="color: var(--primary);">{% trans "View all →" %}</a>
+      </div>
+    </div>
+    {% else %}
+    <a href="{% url 'notifications' %}" class="creda-nav-link {% if request.resolver_match.url_name == 'notifications' %}creda-nav-link--active{% endif %} relative">
+      <span class="text-base shrink-0" aria-hidden="true">🔔</span>
+      <span>{% trans "Nudges" %}</span>
+      {% if request.sidebar_nudge_count %}
+      <span class="ml-auto text-[10px] font-bold text-white rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center" style="background: var(--accent-red);">{{ request.sidebar_nudge_count }}</span>
+      {% endif %}
+    </a>
+    {% endif %}
+    <a href="{% url 'logout' %}" class="creda-nav-link">
+      <span class="text-base shrink-0" aria-hidden="true">⎋</span>
+      <span {% if not sidebar_mobile %}x-show="sidebarOpen"{% endif %}>{% trans "Logout" %}</span>
+    </a>
+    {% if not sidebar_mobile %}
+    <div x-show="sidebarOpen" class="px-1 pt-2">
+      <form method="post" action="{% url 'set_language' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <select name="language" onchange="this.form.submit()"
+                class="w-full text-xs rounded-lg px-2 py-1.5 border outline-none cursor-pointer"
+                style="border-color: var(--border); color: var(--text-secondary); background: transparent;">
+          {% get_current_language as LANGUAGE_CODE %}
+          {% get_available_languages as LANGUAGES %}
+          {% for lang_code, lang_name in LANGUAGES %}
+          <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}

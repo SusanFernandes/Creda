@@ -43,19 +43,86 @@ Return ONLY a valid JSON object (no markdown, no explanation) with this structur
 }}"""
 
 
+def _heuristic_expense_categories(
+    income: float,
+    expenses: float,
+    emi: float,
+    profile: dict,
+    surplus: float,
+) -> dict[str, Any]:
+    """Rule-based Indian urban split when LLM is unavailable; uses fixed vs variable hints."""
+    fixed = float(profile.get("monthly_fixed_expenses") or 0)
+    variable = float(profile.get("monthly_variable_expenses") or 0)
+    if fixed > 0 and variable > 0 and fixed + variable <= expenses * 1.05:
+        rent_like = fixed * 0.55
+        ins_emi = fixed * 0.25 + emi
+        util = fixed * 0.20
+        gro = variable * 0.35
+        dine = variable * 0.20
+        shop = variable * 0.25
+        trans = variable * 0.20
+    else:
+        rent_like = expenses * 0.28
+        gro = expenses * 0.16
+        trans = expenses * 0.10
+        util = expenses * 0.08
+        dine = expenses * 0.12
+        shop = expenses * 0.09
+        ins_emi = emi + expenses * 0.07
+    other = max(0.0, expenses - rent_like - gro - trans - util - dine - shop - ins_emi)
+    cats = [
+        {"name": "Rent / housing", "amount": int(rent_like), "pct": 0, "trend": "stable",
+         "insight": "From profile fixed/variable split when available."},
+        {"name": "Groceries", "amount": int(gro), "pct": 0, "trend": "stable", "insight": ""},
+        {"name": "Transport", "amount": int(trans), "pct": 0, "trend": "stable", "insight": ""},
+        {"name": "Utilities", "amount": int(util), "pct": 0, "trend": "stable", "insight": ""},
+        {"name": "Dining out", "amount": int(dine), "pct": 0, "trend": "up", "insight": ""},
+        {"name": "Shopping", "amount": int(shop), "pct": 0, "trend": "stable", "insight": ""},
+        {"name": "EMI & insurance-like", "amount": int(ins_emi), "pct": 0, "trend": "stable", "insight": ""},
+        {"name": "Other", "amount": int(other), "pct": 0, "trend": "stable", "insight": ""},
+    ]
+    tot = sum(c["amount"] for c in cats) or 1
+    for c in cats:
+        c["pct"] = int(round(c["amount"] / tot * 100))
+    tips = []
+    if dine > income * 0.12:
+        tips.append({"category": "Dining out", "tip": "Cap dining at 10–12% of income for quicker goals."})
+    if emi > income * 0.35:
+        tips.append({"category": "EMI", "tip": "EMI above 35% of income is a stress-test red flag."})
+    return {
+        "categories": cats,
+        "top_savings_opportunities": tips[:3],
+        "spending_score": 65,
+        "spending_personality": "Average Spender",
+        "monthly_surplus": int(surplus),
+        "categorization": "heuristic_indian_buckets",
+        "annual_projection": {
+            "total_spending": int(expenses * 12),
+            "total_saving": int(surplus * 12),
+        },
+    }
+
+
 async def run(state: FinancialState) -> dict[str, Any]:
     """Generate expense analytics from profile data or real expenses."""
+    from app.agents.profile_checks import profile_incomplete_payload
+    from app.core.profile_guard import guard_for_intent
+
     profile = state.get("user_profile") or {}
+    guard = guard_for_intent("expense_analytics", profile)
+    if not guard["is_complete"]:
+        return profile_incomplete_payload(guard)
+
     real_expenses = state.get("real_expenses")
     budget_data = state.get("budget_data")
 
-    income = profile.get("monthly_income", 50000)
-    expenses = profile.get("monthly_expenses", 30000)
-    emi = profile.get("monthly_emi", 0)
-    city = profile.get("city", "Mumbai")
-    age = profile.get("age", 30)
-    employment = profile.get("employment_type", "salaried")
-    dependents = profile.get("dependents", 0)
+    income = float(profile.get("monthly_income") or 0)
+    expenses = float(profile.get("monthly_expenses") or 0)
+    emi = float(profile.get("monthly_emi") or 0)
+    city = profile.get("city") or "Not set"
+    age = int(profile.get("age") or 0)
+    employment = profile.get("employment_type") or "salaried"
+    dependents = int(profile.get("dependents") or 0)
     surplus = income - expenses
 
     # If real expense data exists, build analysis from it (no LLM needed for categories)
@@ -131,26 +198,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
             analysis = json.loads(text)
         except Exception as e:
             logger.error("Expense analytics LLM failed: %s", e)
-            analysis = {
-                "categories": [
-                    {"name": "Rent/Housing", "amount": int(expenses * 0.30), "pct": 30, "trend": "stable", "insight": ""},
-                    {"name": "Groceries", "amount": int(expenses * 0.15), "pct": 15, "trend": "stable", "insight": ""},
-                    {"name": "Transport", "amount": int(expenses * 0.10), "pct": 10, "trend": "stable", "insight": ""},
-                    {"name": "Utilities", "amount": int(expenses * 0.08), "pct": 8, "trend": "stable", "insight": ""},
-                    {"name": "Dining Out", "amount": int(expenses * 0.10), "pct": 10, "trend": "up", "insight": ""},
-                    {"name": "Shopping", "amount": int(expenses * 0.10), "pct": 10, "trend": "stable", "insight": ""},
-                    {"name": "EMI", "amount": int(emi), "pct": int(emi / expenses * 100) if expenses else 0, "trend": "stable", "insight": ""},
-                    {"name": "Other", "amount": int(expenses * 0.07), "pct": 7, "trend": "stable", "insight": ""},
-                ],
-                "top_savings_opportunities": [],
-                "spending_score": 65,
-                "spending_personality": "Average Spender",
-                "monthly_surplus": surplus,
-                "annual_projection": {
-                    "total_spending": int(expenses * 12),
-                    "total_saving": int(surplus * 12),
-                },
-            }
+            analysis = _heuristic_expense_categories(income, expenses, emi, profile, surplus)
 
     # Add summary stats
     analysis["monthly_income"] = income

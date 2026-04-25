@@ -63,6 +63,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "bottom_performers": [{"name": f.get("fund_name"), "xirr": f.get("xirr")} for f in bottom_3],
     }
 
+    await _enrich_ter_overlap_alpha(state, funds, analysis)
+
     # Benchmark comparison: Nifty 50 via yfinance
     try:
         benchmark = await _fetch_nifty_benchmark()
@@ -155,6 +157,116 @@ async def parse_cams_statement(pdf_bytes: bytes, password: str | None = None) ->
         }
     finally:
         os.unlink(tmp_path)
+
+
+async def _enrich_ter_overlap_alpha(
+    state: FinancialState,
+    funds: list[dict],
+    analysis: dict[str, Any],
+) -> None:
+    """Attach AMFI TER (DB), holding overlap summary, per-fund alpha vs category benchmark, regular→direct savings."""
+    try:
+        from sqlalchemy import select
+        from app.database import AsyncSessionLocal
+        from app.models import FundTer
+        from app.core.holdings_db import compute_overlap, fetch_holding_name, get_latest_holdings_month
+
+        isins = [f.get("isin") for f in funds if f.get("isin")]
+        ter_map: dict[str, float] = {}
+        async with AsyncSessionLocal() as db:
+            if isins:
+                r = await db.execute(select(FundTer).where(FundTer.isin.in_(isins)))
+                for row in r.scalars().all():
+                    ter_map[row.isin] = float(row.ter or 0)
+            overlaps_raw = (
+                await compute_overlap(isins, db) if len(isins) >= 2 else []
+            )
+            month = await get_latest_holdings_month(db)
+            overlap_stocks: list[dict[str, Any]] = []
+            for o in overlaps_raw[:12]:
+                nm = await fetch_holding_name(db, o["holding_isin"], month)
+                overlap_stocks.append({
+                    "holding": nm or o["holding_isin"],
+                    "fund_a": o["fund_a"],
+                    "fund_b": o["fund_b"],
+                    "weight_a_pct": round(o["weight_a"] * 100, 1),
+                    "weight_b_pct": round(o["weight_b"] * 100, 1),
+                })
+        analysis["overlap_holdings"] = overlap_stocks
+        analysis["overlap_note"] = (
+            "Common underlying stocks (AMFI holdings DB) where both funds hold >2% each."
+            if overlap_stocks else "No overlap rows (missing ISINs or holdings data)."
+        )
+    except Exception as e:
+        logger.debug("TER/overlap enrich skipped: %s", e)
+        analysis["overlap_holdings"] = []
+        ter_map = {}
+
+    bench_cache: dict[str, float] = {}
+
+    async def _cagr(sym: str) -> float:
+        if sym in bench_cache:
+            return bench_cache[sym]
+        try:
+            import asyncio
+            import yfinance as yf
+            from datetime import datetime, timedelta
+
+            def _one() -> float:
+                t = yf.Ticker(sym)
+                h = t.history(period="3y")
+                if h is None or len(h) < 50:
+                    return 12.0
+                cur = float(h["Close"].iloc[-1])
+                start = float(h["Close"].iloc[0])
+                years = max((h.index[-1] - h.index[0]).days / 365.25, 0.5)
+                return ((cur / start) ** (1 / years) - 1) * 100
+
+            v = float(await asyncio.get_event_loop().run_in_executor(None, _one))
+        except Exception:
+            v = 12.0
+        bench_cache[sym] = v
+        return v
+
+    nifty_cagr = await _cagr("^NSEI")
+    mid_cagr = await _cagr("^CNXMIDCAP")
+    cat_bench = {
+        "large_cap": nifty_cagr,
+        "index": nifty_cagr,
+        "elss": nifty_cagr,
+        "flexi_cap": nifty_cagr,
+        "equity_other": nifty_cagr,
+        "mid_cap": mid_cagr,
+        "small_cap": mid_cagr,
+        "hybrid": nifty_cagr * 0.85,
+        "liquid": 6.0,
+        "short_debt": 6.5,
+    }
+    fund_rows = []
+    annual_regular_savings = 0.0
+    for f in funds:
+        isin = f.get("isin") or ""
+        cat = (f.get("category") or "equity_other").lower()
+        bc = float(cat_bench.get(cat, nifty_cagr))
+        xirr = float(f.get("xirr") or 0)
+        ter_db = ter_map.get(isin, 0.0)
+        ter_use = float(ter_db or f.get("expense_ratio") or 0)
+        plan = (f.get("plan_type") or "").lower()
+        est_direct_ter = max(0.05, ter_use * 0.45) if plan == "regular" else ter_use
+        if plan == "regular" and f.get("current_value"):
+            cv = float(f.get("current_value") or 0)
+            annual_regular_savings += cv * max(0, (ter_use - est_direct_ter) / 100.0)
+        fund_rows.append({
+            "fund_name": f.get("fund_name"),
+            "current_value": f.get("current_value"),
+            "xirr": xirr,
+            "benchmark_3y_cagr_pct": round(bc, 2),
+            "alpha_vs_benchmark": round(xirr - bc, 2),
+            "ter_pct": round(ter_use, 3),
+            "plan_type": plan or "unknown",
+        })
+    analysis["fund_table"] = fund_rows
+    analysis["annual_regular_to_direct_savings_estimate"] = round(annual_regular_savings, 0)
 
 
 async def run_xray_analysis(portfolio, funds, user_id: str) -> dict:

@@ -2,50 +2,72 @@
 {% load creda_filters %}
 {% block title %}Life Event Advisor{% endblock %}
 {% block page_title %}Life Event Advisor{% endblock %}
-{% block page_subtitle %}Smart Money Moves for Life's Big Moments{% endblock %}
+{% block page_subtitle %}Plans for bonuses, babies, job changes, and more{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
-  <!-- Input Form -->
+<div class="max-w-[1200px] mx-auto px-6 space-y-8" x-data="lifeEventWizard()">
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h3 class="font-bold mb-1">What's happening in your life?</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Tell us about a bonus, inheritance, marriage, new baby, job change, or property purchase</p>
-    <form method="POST" class="space-y-4">
+    <h3 class="font-bold mb-2">What is happening?</h3>
+    <p class="text-xs text-slate-500 mb-6">Pick an event, fill the short form — we send a structured note to the CREDA advisor.</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <template x-for="ev in events" :key="ev.id">
+        <button type="button" @click="pick(ev.id)"
+                :class="type===ev.id ? 'ring-2 ring-[#0F4C81] bg-blue-50/50 dark:bg-blue-900/20' : ''"
+                class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 text-left text-sm font-semibold hover:border-blue-400 transition">
+          <span x-text="ev.icon"></span> <span x-text="ev.label"></span>
+        </button>
+      </template>
+    </div>
+
+    <form method="post" class="space-y-4">
       {% csrf_token %}
-      <!-- Quick Event Buttons -->
-      <div class="flex flex-wrap gap-2 mb-4">
-        <button type="button" onclick="setEvent('I just got a ₹3 lakh performance bonus')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          🎉 Bonus
-        </button>
-        <button type="button" onclick="setEvent('I am getting married in 6 months')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          💍 Marriage
-        </button>
-        <button type="button" onclick="setEvent('We are expecting a baby')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          👶 New Baby
-        </button>
-        <button type="button" onclick="setEvent('I inherited ₹10 lakh')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          🏠 Inheritance
-        </button>
-        <button type="button" onclick="setEvent('I changed jobs with a 40% hike')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          💼 Job Change
-        </button>
-        <button type="button" onclick="setEvent('I want to buy a flat in Bengaluru for ₹80 lakh')"
-                class="px-4 py-2 glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
-          🏢 Property
-        </button>
+      <input type="hidden" name="message" :value="compiled()">
+
+      <div x-show="type==='bonus'" x-cloak class="space-y-3 glass rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+        <label class="text-xs font-bold text-slate-500">Bonus amount (₹)</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="bonusAmt">
+        <label class="text-xs font-bold text-slate-500">When</label>
+        <select class="w-full border rounded-lg px-3 py-2 text-sm" x-model="bonusWhen">
+          <option>This month</option><option>Last month</option><option>Next month</option>
+        </select>
+        {% if profile.section_80c_amount is not None or profile.investments_80c is not None %}
+        <p class="text-xs text-slate-500">Current 80C on profile: ₹{{ profile.section_80c_amount|default:profile.investments_80c|default_if_none:0|floatformat:0|indian_number }} / ₹1,50,000</p>
+        {% endif %}
       </div>
-      <div>
-        <textarea name="message" id="eventInput" rows="3"
-                  class="w-full glass border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm bg-transparent focus:border-blue-500 outline-none transition resize-none"
-                  placeholder="e.g. I just received a ₹3 lakh bonus and I'm getting married in 6 months...">{{ message }}</textarea>
+
+      <div x-show="type==='new_baby'" x-cloak class="space-y-3 glass rounded-xl p-4 border border-slate-200/50">
+        <label class="text-xs font-bold text-slate-500">Expected extra monthly cost (₹)</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="babyMo">
+        <label class="text-xs font-bold text-slate-500">One-time hospital (₹)</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="babyHosp">
       </div>
-      <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]">
-        Get My Action Plan
+
+      <div x-show="type==='job_loss'" x-cloak class="space-y-3 glass rounded-xl p-4 border border-slate-200/50">
+        <label class="text-xs font-bold text-slate-500">Severance received (₹)</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="severance">
+        <label class="text-xs font-bold text-slate-500">Expected search duration</label>
+        <select class="w-full border rounded-lg px-3 py-2 text-sm" x-model="searchMo">
+          <option value="3">1–3 months</option>
+          <option value="6">3–6 months</option>
+          <option value="12">6–12 months</option>
+        </select>
+      </div>
+
+      <div x-show="type==='parent_support'" x-cloak class="space-y-3 glass rounded-xl p-4 border border-slate-200/50">
+        <label class="text-xs font-bold text-slate-500">Monthly support to parents (₹)</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="parentMo">
+      </div>
+
+      <div x-show="type && !['bonus','new_baby','job_loss','parent_support'].includes(type)" x-cloak class="glass rounded-xl p-4 border border-slate-200/50">
+        <label class="text-xs font-bold text-slate-500">Amount involved (₹), if any</label>
+        <input type="number" class="w-full border rounded-lg px-3 py-2 text-sm" x-model.number="genericAmt">
+        <label class="text-xs font-bold text-slate-500 mt-3 block">Short description</label>
+        <textarea rows="2" class="w-full border rounded-lg px-3 py-2 text-sm" x-model="genericNote" placeholder="Context for CREDA…"></textarea>
+      </div>
+
+      <button type="submit" class="px-6 py-3 rounded-xl text-white text-sm font-bold disabled:opacity-40" style="background:#0F4C81" :disabled="!type">
+        Get allocation plan
       </button>
     </form>
   </div>
@@ -53,73 +75,58 @@
   {% if result %}
   {% if result.bonus_recorded %}
   <div class="glass rounded-[2rem] border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-5 text-sm text-emerald-900 dark:text-emerald-100">
-    This bonus was added to your profile as <strong>one-time income</strong> (not recurring salary). Running YTD bonus total on file: <strong>₹{{ result.ytd_bonus_income|floatformat:0 }}</strong>. You can see tax and planning agents use your monthly income separately from this field.
+    Bonus recorded as one-time income. YTD bonus on file: <strong>₹{{ result.ytd_bonus_income|floatformat:0 }}</strong>.
   </div>
   {% endif %}
   {% with analysis=result.analysis %}
-  <!-- Health Score Before/After -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Event Type</p>
-      <p class="text-2xl font-black italic tracking-tight text-blue-600 capitalize">{{ analysis.event_type|default:"—" }}</p>
-      {% if analysis.event_amount %}
-      <p class="text-sm text-slate-500 mt-1">₹{{ analysis.event_amount|floatformat:0 }}</p>
-      {% endif %}
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50">
+      <p class="text-[10px] font-bold uppercase text-slate-400 mb-2">Event</p>
+      <p class="text-xl font-black text-blue-600 capitalize">{{ analysis.event_type|default:"—" }}</p>
+      {% if analysis.event_amount %}<p class="text-sm text-slate-500 mt-1">₹{{ analysis.event_amount|floatformat:0 }}</p>{% endif %}
     </div>
-    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Current Health Score</p>
-      <p class="text-3xl font-black italic tracking-tight text-orange-500">{{ analysis.current_health_score }}</p>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50">
+      <p class="text-[10px] font-bold uppercase text-slate-400 mb-2">Health score (est.)</p>
+      <p class="text-3xl font-black text-orange-500">{{ analysis.current_health_score }}</p>
     </div>
-    <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Projected Score</p>
-      <p class="text-3xl font-black italic tracking-tight text-emerald-500">{{ analysis.projected_health_score }}</p>
+    <div class="glass rounded-[2rem] p-6 border border-slate-200/50">
+      <p class="text-[10px] font-bold uppercase text-slate-400 mb-2">Projected</p>
+      <p class="text-3xl font-black text-emerald-500">{{ analysis.projected_health_score }}</p>
       {% if analysis.score_improvement > 0 %}
-      <p class="text-sm text-emerald-500 mt-1">+{{ analysis.score_improvement }} points improvement</p>
+      <p class="text-sm text-emerald-600 mt-1">+{{ analysis.score_improvement }} pts</p>
       {% endif %}
     </div>
   </div>
 
-  <!-- Deployment Plan -->
   {% if analysis.allocations %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h3 class="font-bold mb-1">Your Deployment Plan</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Priority-ordered allocation of ₹{{ analysis.total_deployed|floatformat:0 }}</p>
+  <div class="glass rounded-[2rem] border border-slate-200/50 p-8">
+    <h3 class="font-bold mb-4">Recommended allocation</h3>
     <div class="space-y-4">
       {% for alloc in analysis.allocations %}
-      <div class="glass rounded-xl p-5 border border-slate-200/50 dark:border-slate-700/50">
-        <div class="flex items-center justify-between mb-2">
+      <div class="rounded-xl p-5 border border-slate-200/50 dark:border-slate-700/50">
+        <div class="flex justify-between items-center mb-2">
           <h4 class="font-bold text-sm">{{ alloc.category }}</h4>
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-blue-600">{{ alloc.pct }}%</span>
-            <span class="font-bold text-sm">₹{{ alloc.amount|floatformat:0 }}</span>
-          </div>
+          <span class="text-sm font-bold text-blue-600">₹{{ alloc.amount|floatformat:0|indian_number }} · {{ alloc.pct }}%</span>
         </div>
-        <!-- Progress bar -->
-        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-3">
-          <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: {{ alloc.pct }}%"></div>
+        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-2">
+          <div class="h-2 rounded-full bg-[#0F4C81]" style="width: {{ alloc.pct }}%"></div>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">{{ alloc.reason }}</p>
-        <p class="text-xs font-semibold text-blue-600">→ {{ alloc.action }}</p>
+        <p class="text-xs text-slate-500">{{ alloc.reason }}</p>
+        <p class="text-xs font-semibold text-blue-600 mt-1">→ {{ alloc.action }}</p>
       </div>
       {% endfor %}
     </div>
+    <p class="text-xs text-slate-500 mt-4">FIRE impact: investing the long-term slice on schedule moves your plan earlier — see <a href="{% url 'fire' %}" class="text-blue-600 font-semibold">FIRE Planner</a>.</p>
   </div>
   {% endif %}
 
-  <!-- AI Advice -->
   {% if analysis.advice %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h3 class="font-bold mb-1">Expert Analysis</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">AI-powered personalized advice</p>
-    <div class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed whitespace-pre-line">{{ analysis.advice }}</div>
-  </div>
+  <div class="glass rounded-[2rem] border border-slate-200/50 p-8 prose prose-sm dark:prose-invert max-w-none whitespace-pre-line">{{ analysis.advice }}</div>
   {% endif %}
-
-  <!-- Response (synthesized) -->
   {% if result.response %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h3 class="font-bold mb-4">Summary</h3>
-    <div class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed whitespace-pre-line">{{ result.response|strip_markdown }}</div>
+  <div class="glass rounded-[2rem] border border-slate-200/50 p-8">
+    <h3 class="font-bold mb-2">Summary</h3>
+    <div class="prose prose-sm dark:prose-invert whitespace-pre-line">{{ result.response|strip_markdown }}</div>
   </div>
   {% endif %}
   {% endwith %}
@@ -127,8 +134,41 @@
 </div>
 
 <script>
-function setEvent(text) {
-  document.getElementById('eventInput').value = text;
+function lifeEventWizard() {
+  return {
+    type: '',
+    bonusAmt: 300000,
+    bonusWhen: 'This month',
+    babyMo: 20000,
+    babyHosp: 150000,
+    severance: 0,
+    searchMo: '6',
+    parentMo: 25000,
+    genericAmt: 0,
+    genericNote: '',
+    events: [
+      { id: 'bonus', label: 'Bonus', icon: '🎁' },
+      { id: 'inheritance', label: 'Inheritance', icon: '🏠' },
+      { id: 'marriage', label: 'Marriage', icon: '💍' },
+      { id: 'new_baby', label: 'New baby', icon: '👶' },
+      { id: 'job_loss', label: 'Job loss', icon: '😓' },
+      { id: 'property_purchase', label: 'Home buy', icon: '🏡' },
+      { id: 'job_change', label: 'Job change', icon: '📈' },
+      { id: 'parent_support', label: 'Parent care', icon: '👴' },
+    ],
+    pick(id) { this.type = id; },
+    compiled() {
+      if (this.type === 'bonus') return `I received a performance bonus of ₹${this.bonusAmt} (${this.bonusWhen}).`;
+      if (this.type === 'new_baby') return `We are expecting a baby. Extra monthly cost ₹${this.babyMo}, hospital estimate ₹${this.babyHosp}.`;
+      if (this.type === 'job_loss') return `I lost my job. Severance ₹${this.severance}. Expected job search ~${this.searchMo} months.`;
+      if (this.type === 'parent_support') return `I need to support parents with ₹${this.parentMo} per month.`;
+      if (this.type === 'marriage') return `I am getting married in 6 months. Budget ₹${this.genericAmt || 500000}. ${this.genericNote}`;
+      if (this.type === 'inheritance') return `I inherited ₹${this.genericAmt || 0}. ${this.genericNote}`;
+      if (this.type === 'property_purchase') return `I want to buy a home. Down payment plan ₹${this.genericAmt}. ${this.genericNote}`;
+      if (this.type === 'job_change') return `I changed jobs with higher salary. ${this.genericNote}`;
+      return this.genericNote || 'Life event advisory';
+    },
+  };
 }
 </script>
 {% endblock %}

@@ -5,7 +5,7 @@
 {% block page_subtitle %}Holdings Intelligence{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8">
+<div class="max-w-[1200px] mx-auto px-6 space-y-8" style="--primary:#0F4C81;--accent:#F5A623;--border:#E5E7EB;">
 
   <!-- Upload -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
@@ -37,6 +37,21 @@
   </div>
 
   {% if portfolio %}
+  <div class="space-y-6" x-data="{ tab: 'overview' }">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs text-slate-500">{% if portfolio.parsed_at %}Parsed {{ portfolio.parsed_at|slice:":10" }}{% endif %}{% if portfolio.last_xray_at %} · X-Ray {{ portfolio.last_xray_at|slice:":10" }}{% endif %}</p>
+        <p class="text-lg font-bold text-slate-800 dark:text-slate-100">Holdings</p>
+      </div>
+      <div class="flex flex-wrap gap-1 rounded-xl border p-1 bg-slate-50/80 dark:bg-slate-900/50" style="border-color:var(--border,#E5E7EB)">
+        <button type="button" @click="tab='overview'" :class="tab==='overview' ? 'border-b-2 font-bold' : 'opacity-70'" class="px-3 py-2 text-xs rounded-lg" style="border-color:#0F4C81;color:#0F4C81">Overview</button>
+        <button type="button" @click="tab='funds'" :class="tab==='funds' ? 'border-b-2 font-bold' : 'opacity-70'" class="px-3 py-2 text-xs rounded-lg" style="border-color:#0F4C81;color:#0F4C81">Fund details</button>
+        <button type="button" @click="tab='overlap'" :class="tab==='overlap' ? 'border-b-2 font-bold' : 'opacity-70'" class="px-3 py-2 text-xs rounded-lg" style="border-color:#0F4C81;color:#0F4C81">Overlap</button>
+        <button type="button" @click="tab='rebalance'" :class="tab==='rebalance' ? 'border-b-2 font-bold' : 'opacity-70'" class="px-3 py-2 text-xs rounded-lg" style="border-color:#0F4C81;color:#0F4C81">Rebalancing</button>
+      </div>
+    </div>
+
+  <div x-show="tab==='overview'" class="space-y-8">
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
@@ -369,7 +384,10 @@
     };
   }
   </script>
+  </div>
 
+  <!-- TAB: Fund details -->
+  <div x-show="tab==='funds'" class="space-y-6" x-cloak>
   <!-- Holdings Table -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
     <div class="px-8 py-5 flex justify-between items-center border-b border-slate-200/50 dark:border-slate-700/50">
@@ -427,7 +445,87 @@
       </table>
     </div>
   </div>
-  <div id="xray-result"></div>
+  {% if xray and xray.fund_table %}
+  <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-6 mt-4">
+    <h3 class="text-sm font-bold mb-3">Benchmark &amp; TER (X-Ray)</h3>
+    <div class="overflow-x-auto text-sm">
+      <table class="w-full">
+        <thead>
+          <tr class="text-left text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+            <th class="py-2 pr-4">Fund</th>
+            <th class="py-2 text-right">Value</th>
+            <th class="py-2 text-right">XIRR</th>
+            <th class="py-2 text-right">Bench 3Y</th>
+            <th class="py-2 text-right">Alpha</th>
+            <th class="py-2 text-right">TER</th>
+            <th class="py-2">Plan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fr in xray.fund_table %}
+          <tr class="border-b border-slate-100 dark:border-slate-800/80">
+            <td class="py-2 pr-4 max-w-[200px] truncate">{{ fr.fund_name }}</td>
+            <td class="py-2 text-right">₹{{ fr.current_value|floatformat:0 }}</td>
+            <td class="py-2 text-right">{{ fr.xirr }}%</td>
+            <td class="py-2 text-right">{{ fr.benchmark_3y_cagr_pct }}%</td>
+            <td class="py-2 text-right font-semibold {% if fr.alpha_vs_benchmark >= 2 %}text-emerald-600{% elif fr.alpha_vs_benchmark <= -2 %}text-red-600{% endif %}">{{ fr.alpha_vs_benchmark }}%</td>
+            <td class="py-2 text-right">{{ fr.ter_pct }}%</td>
+            <td class="py-2 text-xs capitalize">{{ fr.plan_type }}{% if fr.plan_type == 'regular' %} <span class="text-amber-600" title="Higher TER">⚠</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if xray.annual_regular_to_direct_savings_estimate %}
+    <p class="text-xs text-slate-500 mt-3">Switching regular → direct (est.): save <strong>₹{{ xray.annual_regular_to_direct_savings_estimate|floatformat:0 }}</strong>/yr on TER.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  </div>
+
+  <div x-show="tab==='overlap'" class="space-y-6" x-cloak>
+    {% if xray and xray.overlap_holdings %}
+    <div class="rounded-xl border border-amber-200/60 bg-amber-50/30 dark:bg-amber-900/10 p-4 text-sm font-semibold text-amber-900 dark:text-amber-100">
+      {{ xray.overlap_holdings|length }} overlapping underlying positions (AMFI holdings)
+    </div>
+    {% for o in xray.overlap_holdings %}
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-5">
+      <p class="font-bold text-slate-900 dark:text-slate-100">{{ o.holding }}</p>
+      <p class="text-xs text-slate-500 mt-1">{{ o.fund_a }} · {{ o.fund_b }}</p>
+      <div class="mt-3 flex gap-4 text-sm">
+        <span>Fund A weight <strong>{{ o.weight_a_pct }}%</strong></span>
+        <span>Fund B weight <strong>{{ o.weight_b_pct }}%</strong></span>
+      </div>
+      <div class="mt-2 h-2 rounded-full bg-slate-200 overflow-hidden flex">
+        <div class="h-full bg-blue-600" style="width: {{ o.weight_a_pct }}%"></div>
+        <div class="h-full bg-violet-500" style="width: {{ o.weight_b_pct }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+    {% elif xray and xray.overlap_categories %}
+    <p class="text-sm text-slate-600">Category overlap (funds per category):</p>
+    {% for cat, count in xray.overlap_categories.items %}
+    <div class="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700 text-sm"><span class="capitalize">{{ cat|cut:"_" }}</span><span>{{ count }} funds</span></div>
+    {% endfor %}
+    {% else %}
+    <div class="glass rounded-2xl p-8 text-center text-slate-500 text-sm">Run <strong>Run X-Ray Analysis</strong> below or upload CAMS with ISINs for stock-level overlap.</div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='rebalance'" class="space-y-6" x-cloak>
+    {% if xray and xray.recommendations %}
+    <div class="glass rounded-2xl border border-purple-200/50 dark:border-purple-800/40 p-6 prose prose-sm dark:prose-invert max-w-none whitespace-pre-line">{{ xray.recommendations }}</div>
+    {% else %}
+    <p class="text-sm text-slate-500">Run X-Ray to generate AI rebalancing steps.</p>
+    {% endif %}
+    <button hx-post="{% url 'portfolio_xray' %}" hx-target="#xray-result" type="button"
+            class="px-5 py-2.5 rounded-xl text-white text-sm font-semibold" style="background:#0F4C81">
+      Re-run X-Ray analysis
+    </button>
+    <div id="xray-result"></div>
+  </div>
+
+  </div>
 
   {% else %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">

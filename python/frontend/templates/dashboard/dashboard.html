@@ -4,22 +4,6 @@
 {% block page_subtitle %}Your Financial Overview{% endblock %}
 
 {% block content %}
-{% if first_report_banner %}
-<div class="mb-6 glass rounded-2xl p-4 border border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-900/20">
-  <p class="font-semibold text-emerald-800 dark:text-emerald-200">Your first report is ready — explore Money Health and FIRE from the sidebar.</p>
-</div>
-{% endif %}
-
-<div class="profile-completeness mb-6 glass rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-  <span class="text-sm font-medium">Profile {{ completeness_pct|floatformat:1 }}% complete</span>
-  <div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-    <div class="h-full bg-blue-600 rounded-full transition-all" style="width: {{ completeness_pct|default:0 }}%"></div>
-  </div>
-  {% if missing_profile_fields %}
-  <a href="{% url 'onboarding_resume' %}" class="text-xs text-blue-600 mt-2 inline-block">Complete profile → unlock accurate results</a>
-  {% endif %}
-</div>
-
 <!-- Nudges -->
 {% if nudges %}
 <div class="mb-8 space-y-3">

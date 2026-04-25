@@ -5,6 +5,8 @@ CREDA End-to-End Demo Test
 Tests all 11 scenes from the hackathon demo scenario end-to-end.
 Requires: FastAPI backend on port 8001, seeded with demo data.
 
+API paths used: ``GET /profile/{user_id}`` (not ``/profile``), ``GET /nudges/pending``.
+
 Usage:
     python test_e2e_demo.py               # full run
     python test_e2e_demo.py --scene 2     # run single scene
@@ -44,7 +46,7 @@ def _check(condition: bool, msg: str) -> None:
 async def scene_1(client: httpx.AsyncClient):
     """Scene 1 — Dashboard: Money Health Score + Nudges"""
     # Get profile
-    r = await client.get(f"{BACKEND}/profile", headers=ARJUN)
+    r = await client.get(f"{BACKEND}/profile/100", headers=ARJUN)
     _check(r.status_code == 200, f"Profile GET failed: {r.status_code}")
     profile = r.json()
     _check(profile.get("full_name") == "Arjun Mehta", f"Wrong name: {profile.get('full_name')}")
@@ -54,7 +56,7 @@ async def scene_1(client: httpx.AsyncClient):
     _check(r.status_code == 200, f"Nudge generate failed: {r.status_code}")
 
     # Fetch nudges
-    r = await client.get(f"{BACKEND}/nudges", headers=ARJUN)
+    r = await client.get(f"{BACKEND}/nudges/pending", headers=ARJUN)
     _check(r.status_code == 200, f"Nudges GET failed: {r.status_code}")
     nudges = r.json()
     _check(len(nudges) > 0, "No nudges returned")

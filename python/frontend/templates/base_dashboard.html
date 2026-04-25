@@ -28,6 +28,29 @@
       </button>
     </div>
 
+    {% if user.is_authenticated %}
+    <div class="px-6 py-3 border-b border-slate-100 dark:border-slate-800" x-show="sidebarOpen">
+      {% if request.sidebar_profile %}
+      <p class="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{{ request.sidebar_profile.name|default:request.user.email }}</p>
+      <div class="mt-2 flex items-center gap-2">
+        <div class="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+          <div class="h-full rounded-full bg-blue-500 transition-all" style="width: {{ request.sidebar_profile.completeness_pct|default:0|floatformat:0 }}%"></div>
+        </div>
+        <span class="text-[10px] font-bold text-slate-500 tabular-nums">{{ request.sidebar_profile.completeness_pct|floatformat:0 }}%</span>
+      </div>
+      {% with n=request.profile_missing_fields|length %}
+      {% if n > 0 %}
+      <a href="{% url 'onboarding_resume' %}" class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-1.5 inline-block hover:underline">
+        {{ n }} {% trans "fields missing — resume" %}
+      </a>
+      {% endif %}
+      {% endwith %}
+      {% else %}
+      <p class="text-xs text-slate-500">{% trans "Open any page to sync profile" %}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
       <p class="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Overview" %}</p>
@@ -101,6 +124,20 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </div>
         <span x-show="sidebarOpen">{% trans "Market Pulse" %}</span>
+      </a>
+
+      <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "ET intelligence" %}</p>
+      <a href="{% url 'opportunity_radar' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'opportunity_radar' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'opportunity_radar' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"/></svg>
+        </div>
+        <span x-show="sidebarOpen">{% trans "Opportunity Radar" %}</span>
+      </a>
+      <a href="{% url 'chart_intelligence' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'chart_intelligence' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if request.resolver_match.url_name == 'chart_intelligence' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-600 group-hover:text-white{% endif %} transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21h12a2 2 0 002-2v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2z"/></svg>
+        </div>
+        <span x-show="sidebarOpen">{% trans "Chart Intelligence" %}</span>
       </a>
 
       <p class="px-3 mt-6 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400" x-show="sidebarOpen">{% trans "Planning" %}</p>
@@ -239,14 +276,19 @@
       <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
         <!-- Voice, Notifications, Settings (navbar) -->
         <nav class="flex items-center gap-0.5 sm:gap-1 border-r border-slate-200 dark:border-slate-700 pr-1.5 sm:pr-3 mr-0.5 sm:mr-1" aria-label="{% trans 'Quick links' %}">
+          {% if CREDA_VOICE_UI %}
           <a href="{% url 'voice' %}" title="{% trans 'Voice Agent' %}"
              class="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'voice' %}bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{% else %}text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
             <span class="hidden md:inline">{% trans "Voice" %}</span>
           </a>
+          {% endif %}
           <a href="{% url 'notifications' %}" title="{% trans 'Notifications' %}"
-             class="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'notifications' %}bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{% else %}text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+             class="relative flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'notifications' %}bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{% else %}text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            {% if request.sidebar_nudge_count %}
+            <span class="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5 flex items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-white">{{ request.sidebar_nudge_count }}</span>
+            {% endif %}
             <span class="hidden md:inline">{% trans "Alerts" %}</span>
           </a>
           <a href="{% url 'settings' %}" title="{% trans 'Settings' %}"
@@ -294,10 +336,12 @@
 
     <!-- Page content -->
     <div class="px-6 lg:px-10 pt-8 pb-20 animate-fade-in">
+      {% include "partials/profile_incomplete_banner.html" %}
       {% block content %}{% endblock %}
     </div>
   </main>
 
+  {% if CREDA_VOICE_UI %}
   <!-- Global Voice Navigation FAB (Hero Feature) -->
   <div x-data="globalVoiceMic()" class="fixed bottom-8 right-8 z-50" @keydown.escape.window="cancelRecording()">
     <!-- Status overlay -->
@@ -501,6 +545,7 @@
     };
   }
   </script>
+  {% endif %}
 
   <!-- Global HTMX Loading Bar + Toast Error System -->
   <div id="global-loading-bar" class="fixed top-0 left-0 right-0 h-1 z-[9999] pointer-events-none" style="display:none;">

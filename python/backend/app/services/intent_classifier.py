@@ -23,11 +23,33 @@ _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
     (re.compile(r"\b(mutual.?fund|portfolio|holdings|nav|sip.?return)\b", re.I), "portfolio_xray", 1.5),
     (re.compile(r"\b(पोर्टफोलियो|म्यूचुअल.?फंड|म्युचुअल|निवेश|ம்யூசுவல்|போர்ட்ஃபோலியோ|পোর্টফোলিও|মিউচুয়াল|పోర్ట్‌ఫోలియో|మ్యూచువల్|ಮ್ಯೂಚುಯಲ್|पोर्टफोलिओ)\b", re.I), "portfolio_xray", 1.5),
 
-    # ── Stress Test ──
+    # ── Stress Test (avoid generic "life event" — routes to life_event_advisor) ──
     (re.compile(r"\b(stress.?test|monte.?carlo)\b", re.I), "stress_test", 3.0),
-    (re.compile(r"\b(market.?crash|job.?loss|recession)\b", re.I), "stress_test", 2.5),
-    (re.compile(r"\b(baby|marriage.?impact|life.?event|scenario)\b", re.I), "stress_test", 1.5),
+    (re.compile(r"\b(market.?crash|job.?loss|recession|what.?if.+lose.?my.?job)\b", re.I), "stress_test", 2.5),
+    (re.compile(r"\b(portfolio.?scenario|financial.?scenario|crash.?simulation)\b", re.I), "stress_test", 2.0),
     (re.compile(r"\b(तनाव.?परीक्षण|नौकरी.?छूट|बाजार.?गिरावट)\b", re.I), "stress_test", 2.0),
+
+    # ── Life Event Advisor ──
+    (re.compile(r"\b(bonus|performance.?bonus|variable.?pay|windfall|inheritance|inherited)\b", re.I), "life_event_advisor", 3.0),
+    (re.compile(r"\b(new.?baby|baby.?born|pregnancy|got.?married|marriage|job.?loss|laid.?off|lost.?my.?job)\b", re.I), "life_event_advisor", 2.8),
+    (re.compile(r"\b(home.?purchase|bought.?a.?house|property.?purchase|parent.?depend|elder.?care)\b", re.I), "life_event_advisor", 2.5),
+    (re.compile(r"\b(life.?event.?advisor|life.?event.?money|lump.?sum.?received)\b", re.I), "life_event_advisor", 3.0),
+
+    # ── Expense Analytics ──
+    (re.compile(r"\b(expense.?analytics|spending.?breakdown|category.?wise.?spending|where(.?does)?.?my.?money)\b", re.I), "expense_analytics", 3.0),
+    (re.compile(r"\b(spending.?analysis|spending.?by.?category|analyze.?my.?expenses|expense.?categories)\b", re.I), "expense_analytics", 2.5),
+
+    # ── Onboarding ──
+    (re.compile(r"\b(onboarding|setup.?my.?profile|complete.?my.?profile|new.?to.?creda|first.?time.?here)\b", re.I), "onboarding", 3.0),
+    (re.compile(r"\b(fill.?profile|profile.?wizard|start.?onboarding)\b", re.I), "onboarding", 2.5),
+
+    # ── PS6: Opportunity Radar ──
+    (re.compile(r"\b(opportunity.?radar|bulk.?deal|block.?deal|insider.?buy|insider.?trading|earnings.?surprise)\b", re.I), "opportunity_radar", 3.0),
+    (re.compile(r"\b(corporate.?filing|nse.?announcement|stock.?signals|deal.?alert)\b", re.I), "opportunity_radar", 2.0),
+
+    # ── PS6: Chart Pattern Intelligence ──
+    (re.compile(r"\b(chart.?pattern|technical.?pattern|candlestick.?pattern|rsi.?divergence|macd.?cross|golden.?cross|death.?cross)\b", re.I), "chart_pattern", 3.0),
+    (re.compile(r"\b(52.?week.?high|breakout|support.?and.?resistance|double.?top|head.?and.?shoulders)\b", re.I), "chart_pattern", 2.5),
 
     # ── FIRE Planner ──
     (re.compile(r"\b(fire.?number|fire.?plan|4%.?rule|corpus.?target)\b", re.I), "fire_planner", 3.0),
@@ -95,10 +117,12 @@ _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
     (re.compile(r"\b(peer|benchmark|compare)\b", re.I), "social_proof", 1.5),
     (re.compile(r"\b(तुलना|ஒப்பீடு|তুলনা|పోల్చండి)\b", re.I), "social_proof", 2.0),
 
-    # ── ET Research ──
-    (re.compile(r"\b(deep.?dive|detailed.?guide|research.?on|article)\b", re.I), "et_research", 3.0),
-    (re.compile(r"\b(explain|what.?is|how.?does|guide|knowledge)\b", re.I), "et_research", 0.5),
-    (re.compile(r"\b(समझाओ|बताओ|जानकारी|விளக்கம்|ব্যাখ্যা|వివరించు)\b", re.I), "et_research", 0.5),
+    # ── ET Research / macro (PS6) — keep "explain" weak so general_chat can win ──
+    (re.compile(r"\b(deep.?dive|detailed.?guide|research.?report|macro.?view|rbi.?policy|repo.?rate|fii.?flow)\b", re.I), "et_research", 3.0),
+    (re.compile(r"\b(how.?will.+affect.+my.?portfolio|portfolio.?impact|sector.?rotation|compare.?nifty)\b", re.I), "et_research", 2.8),
+    (re.compile(r"\b(research.?on|market.?research|economic.?outlook)\b", re.I), "et_research", 2.0),
+    (re.compile(r"\b(explain|what.?is|how.?does|guide|knowledge)\b", re.I), "et_research", 0.35),
+    (re.compile(r"\b(समझाओ|बताओ|जानकारी|விளக்கம்|ব্যাখ্যা|వివరించు)\b", re.I), "et_research", 0.35),
 
     # ── Human Handoff ──
     (re.compile(r"\b(talk.?to.+human|mis.?sell|sebi.?complaint|fraud)\b", re.I), "human_handoff", 3.0),

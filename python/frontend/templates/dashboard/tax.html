@@ -5,7 +5,7 @@
 {% block page_subtitle %}Regime Comparison & Year-Round Optimization{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8" x-data="{ tab: '{{ active_tab|default:'regime' }}' }">
+<div class="max-w-[1200px] mx-auto px-6 space-y-8" x-data="{ tab: '{{ active_tab|default:'regime' }}' }">
 
   <!-- What is Tax Wizard? -->
   <div x-data="{ open: false }" class="glass rounded-[2rem] border border-violet-200/50 dark:border-violet-800/30 bg-violet-50/30 dark:bg-violet-900/10 p-6">
@@ -30,6 +30,10 @@
     <button @click="tab = 'copilot'" :class="tab === 'copilot' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
             class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
       Year-Round Copilot
+    </button>
+    <button @click="tab = 'form16'" :class="tab === 'form16' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all">
+      Form 16
     </button>
   </div>
 
@@ -89,6 +93,30 @@
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-1">Potential Savings</p>
       <p class="text-2xl font-black italic text-blue-600">₹{{ tax.analysis.savings|floatformat:0 }}</p>
       <p class="text-sm text-slate-500 mt-1">with the {{ tax.analysis.better_regime }} regime</p>
+    </div>
+
+    {% if tax.analysis.old_regime.deductions %}
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6 overflow-x-auto">
+      <h3 class="font-bold text-sm mb-3">Deduction breakdown (old regime)</h3>
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+          <th class="py-2">Section</th><th class="py-2 text-right">Claimed</th>
+        </tr></thead>
+        <tbody>
+          {% for sec, val in tax.analysis.old_regime.deductions.items %}
+          <tr class="border-b border-slate-100 dark:border-slate-800"><td class="py-2">{{ sec }}</td><td class="py-2 text-right">₹{{ val|floatformat:0 }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6" x-data="{ extraNps: 0, slab: 0.3 }">
+      <h3 class="font-bold text-sm mb-2">What-if: more NPS (80CCD 1B)</h3>
+      <p class="text-xs text-slate-500 mb-3">Rough extra saving at ~30% slab (illustrative).</p>
+      <label class="text-xs font-semibold text-slate-600">Extra NPS ₹ / year</label>
+      <input type="number" step="5000" x-model.number="extraNps" class="w-full border rounded-lg px-3 py-2 text-sm mt-1 mb-2">
+      <p class="text-sm">Estimated tax drop: <strong class="text-emerald-600">₹<span x-text="Math.round(extraNps * slab).toLocaleString('en-IN')"></span></strong></p>
     </div>
 
     <!-- 80C Breakdown (auto-detected from portfolio) -->
@@ -378,6 +406,13 @@
       <p class="text-slate-500 text-sm">Complete your profile to unlock year-round tax optimization.</p>
     </div>
     {% endif %}
+  </div>
+
+  <div x-show="tab === 'form16'" x-transition class="space-y-6">
+    <div class="glass rounded-[2rem] border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-2">Upload your Form 16 PDF for field extraction.</p>
+      <p class="text-xs text-slate-500">Use the FastAPI endpoint <code class="bg-slate-100 dark:bg-slate-800 px-1 rounded">POST /agents/form16-parse</code> from the API console, or ask your team to wire this dropzone to the backend proxy.</p>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,130 @@
+{% load i18n %}
+<div class="creda-card space-y-6" x-data="{ ps6open: false, goal: '{{ profile.primary_goal|default:'wealth'|escapejs }}' }">
+  <h2 class="creda-page-heading" style="font-size: 1.25rem;">{% trans "Your goals + portfolio" %}</h2>
+  <input type="hidden" name="primary_goal" :value="goal">
+  <p class="creda-sub-label">{% trans "Primary goal" %}</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <button type="button" @click="goal='fire'" :class="goal==='fire' ? 'ring-2' : ''" class="rounded-xl border p-3 text-left" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+      <span class="text-lg">🔥</span> <strong>{% trans "FIRE" %}</strong>
+      <p class="text-xs mt-1" style="color:var(--text-secondary);">{% trans "Financial independence" %}</p>
+    </button>
+    <button type="button" @click="goal='education'" :class="goal==='education' ? 'ring-2' : ''" class="rounded-xl border p-3 text-left" style="border-color: var(--border);">
+      <span class="text-lg">🎓</span> <strong>{% trans "Education" %}</strong>
+    </button>
+    <button type="button" @click="goal='home'" :class="goal==='home' ? 'ring-2' : ''" class="rounded-xl border p-3 text-left" style="border-color: var(--border);">
+      <span class="text-lg">🏠</span> <strong>{% trans "Home purchase" %}</strong>
+    </button>
+    <button type="button" @click="goal='wealth'" :class="goal==='wealth' ? 'ring-2' : ''" class="rounded-xl border p-3 text-left" style="border-color: var(--border);">
+      <span class="text-lg">📈</span> <strong>{% trans "Wealth building" %}</strong>
+    </button>
+  </div>
+
+  <div x-show="goal==='fire'" x-cloak class="space-y-2">
+    <label class="text-sm font-medium">{% trans "Target retirement age" %} (40–65)</label>
+    <input name="fire_target_age" type="number" min="40" max="65" value="{{ profile.fire_target_age|default_if_none:55 }}"
+           class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+  </div>
+  <div x-show="goal==='education' || goal==='home'" x-cloak class="space-y-2">
+    <input name="goal_target_amount" type="number" min="0" step="10000" placeholder="{% trans "Target amount ₹" %}" value="{{ profile.goal_target_amount|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+    <input name="goal_target_years" type="number" min="1" max="40" placeholder="{% trans "Years to goal" %}" value="{{ profile.goal_target_years|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+  </div>
+
+  <div class="border-t pt-6" style="border-color: var(--border);">
+    <p class="text-sm font-semibold mb-2">{% trans "CAMS / KFintech statement" %}</p>
+    <div id="cams-drop" class="rounded-xl border-2 border-dashed px-4 py-8 text-center cursor-pointer" style="border-color: var(--primary-light);">
+      <input type="file" id="cams-file" accept="application/pdf" class="hidden">
+      <p class="text-sm">{% trans "Drop PDF here or click to upload" %}</p>
+      <p class="text-xs mt-2" style="color:var(--text-secondary);">{% trans "Improves X-Ray & XIRR" %}</p>
+    </div>
+    <div id="cams-result" class="mt-3 text-sm hidden"></div>
+    <div id="cams-progress" class="mt-2 h-2 rounded-full bg-slate-200 hidden"><div class="h-2 rounded-full bg-emerald-500 transition-all" id="cams-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="border-t pt-4" style="border-color: var(--border);">
+    <button type="button" class="text-sm font-semibold flex items-center gap-2" @click="ps6open=!ps6open" style="color: var(--primary);">
+      <span x-text="ps6open ? '▼' : '▶'"></span> {% trans "Unlock ET Intelligence (optional)" %}
+    </button>
+    <div x-show="ps6open" x-cloak class="mt-4 space-y-3">
+      <p class="text-xs" style="color:var(--text-secondary);">{% trans "Sectors of interest" %}</p>
+      <div class="flex flex-wrap gap-2">
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Banking">Banking</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="IT">IT</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Pharma">Pharma</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="FMCG">FMCG</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Energy">Energy</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Manufacturing">Manufacturing</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Infrastructure">Infrastructure</label>
+        <label class="text-xs px-2 py-1 rounded-full border cursor-pointer has-[:checked]:bg-[#0F4C81] has-[:checked]:text-white" style="border-color:var(--border);"><input type="checkbox" class="sector-cb hidden" value="Telecom">Telecom</label>
+      </div>
+      <input type="hidden" name="sector_interests" id="sector-json" value="{{ profile.sector_interests|default:''|escapejs }}">
+      <label class="text-xs block">{% trans "Watchlist (comma tickers)" %}</label>
+      <input name="watchlist_stocks" type="text" placeholder="RELIANCE, HDFCBANK" value="{{ profile.watchlist_stocks|default:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+      <p class="text-xs font-medium">{% trans "Alert types" %}</p>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <label><input type="checkbox" class="alert-cb" value="insider"> {% trans "Insider trades" %}</label>
+        <label><input type="checkbox" class="alert-cb" value="bulk"> {% trans "Bulk deals" %}</label>
+        <label><input type="checkbox" class="alert-cb" value="earnings"> {% trans "Earnings" %}</label>
+        <label><input type="checkbox" class="alert-cb" value="breakout"> {% trans "Breakouts" %}</label>
+      </div>
+      <input type="hidden" name="alert_types" id="alert-json" value="{{ profile.alert_types|default:''|escapejs }}">
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var drop = document.getElementById('cams-drop'), fi = document.getElementById('cams-file');
+  if (drop && fi) {
+    drop.addEventListener('click', function() { fi.click(); });
+    fi.addEventListener('change', async function() {
+      if (!fi.files || !fi.files[0]) return;
+      var fd = new FormData();
+      fd.append('file', fi.files[0]);
+      fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+      document.getElementById('cams-progress').classList.remove('hidden');
+      document.getElementById('cams-bar').style.width = '40%';
+      try {
+        var r = await fetch('{% url "portfolio_upload" %}', { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd, credentials: 'same-origin' });
+        var j = await r.json();
+        document.getElementById('cams-bar').style.width = '100%';
+        var el = document.getElementById('cams-result');
+        el.classList.remove('hidden');
+        if (j.ok && j.funds_count != null) {
+          el.className = 'mt-3 text-sm creda-success-card';
+          el.textContent = 'Found ' + j.funds_count + ' funds — corpus ₹' + Number(j.current_value||0).toLocaleString('en-IN');
+        } else {
+          el.className = 'mt-3 text-sm creda-alert-card';
+          el.textContent = j.error || j.detail || 'Upload failed';
+        }
+      } catch (e) {
+        document.getElementById('cams-result').classList.remove('hidden');
+        document.getElementById('cams-result').textContent = String(e);
+      }
+    });
+  }
+  function syncSectors() {
+    var arr = [].map.call(document.querySelectorAll('.sector-cb:checked'), function(c) { return c.value; });
+    var el = document.getElementById('sector-json');
+    if (el) el.value = JSON.stringify(arr);
+  }
+  function syncAlerts() {
+    var arr = [].map.call(document.querySelectorAll('.alert-cb:checked'), function(c) { return c.value; });
+    var el = document.getElementById('alert-json');
+    if (el) el.value = JSON.stringify(arr);
+  }
+  document.querySelectorAll('.sector-cb').forEach(function(c) { c.addEventListener('change', syncSectors); });
+  document.querySelectorAll('.alert-cb').forEach(function(c) { c.addEventListener('change', syncAlerts); });
+  try {
+    var sj = document.getElementById('sector-json');
+    if (sj && sj.value && sj.value[0] === '[') JSON.parse(sj.value).forEach(function(s) {
+      document.querySelectorAll('.sector-cb').forEach(function(c) { if (c.value === s) c.checked = true; });
+    });
+    var aj = document.getElementById('alert-json');
+    if (aj && aj.value && aj.value[0] === '[') JSON.parse(aj.value).forEach(function(s) {
+      document.querySelectorAll('.alert-cb').forEach(function(c) { if (c.value === s) c.checked = true; });
+    });
+  } catch (e) {}
+})();
+</script>

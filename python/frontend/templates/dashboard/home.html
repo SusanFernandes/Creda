@@ -1,0 +1,245 @@
+{% extends "base_dashboard.html" %}
+{% load i18n %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}{% trans "Your financial overview" %}{% endblock %}
+
+{% block content %}
+
+{% if first_report_banner %}
+<div class="mb-6 rounded-2xl border border-emerald-200/80 bg-emerald-50/90 dark:bg-emerald-950/40 dark:border-emerald-800/60 px-4 py-3 text-sm text-emerald-950 dark:text-emerald-100">
+  <p class="font-semibold">{% trans "Your first analysis is ready." %}</p>
+  <p class="text-xs mt-1 opacity-90">{% trans "Explore Money Health and Portfolio X-Ray when you have a moment." %}</p>
+</div>
+{% endif %}
+
+{% if profile_error %}
+<div class="mb-6 rounded-2xl border border-red-200/80 bg-red-50/90 dark:bg-red-950/30 px-4 py-3 text-sm text-red-900 dark:text-red-100">
+  {% trans "Something went wrong loading your profile." %} <button type="button" onclick="location.reload()" class="font-bold underline">{% trans "Try again" %}</button>
+</div>
+{% endif %}
+
+{% if profile and profile_warning_80 %}
+<div class="mb-6 rounded-2xl border border-amber-200/70 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-800/60 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+  <p class="font-semibold">{% trans "Your results may be estimated. Profile is" %} {{ completeness_pct|floatformat:0 }}% {% trans "complete." %}</p>
+  {% if missing_field_labels %}
+  <ul class="mt-2 list-disc list-inside text-xs opacity-90">
+    {% for label in missing_field_labels %}
+    <li><a href="{% url 'onboarding_resume' %}" class="underline underline-offset-2">{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <a href="{% url 'settings' %}" class="mt-2 inline-block text-xs font-bold underline underline-offset-2">{% trans "Open settings" %}</a>
+</div>
+{% endif %}
+
+<!-- Key metrics -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-10">
+  <div class="glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{% trans "Net worth" %}</p>
+    {% if profile %}
+      {% if dash_metrics.net_worth_note == "portfolio_upload" and dash_metrics.net_worth is not None %}
+        <p class="text-2xl font-black tracking-tight">₹{{ dash_metrics.net_worth|floatformat:0 }} <span class="text-xs font-normal text-slate-500">[partial]</span></p>
+        <p class="text-xs text-amber-600 dark:text-amber-400 mt-2">{% trans "Portfolio treated as ₹0 until CAMS —" %} <a href="{% url 'portfolio' %}" class="font-bold underline">{% trans "upload CAMS" %}</a></p>
+      {% elif dash_metrics.net_worth_note == "portfolio_upload" %}
+        <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+        <p class="text-xs text-amber-600 dark:text-amber-400 mt-2">{% trans "Add EPF / emergency fund in Settings, or" %} <a href="{% url 'portfolio' %}" class="font-bold underline">{% trans "upload CAMS" %}</a></p>
+      {% elif dash_metrics.net_worth is not None %}
+        <p class="text-2xl font-black tracking-tight">₹{{ dash_metrics.net_worth|floatformat:0 }}
+          {% if dash_metrics.net_worth_dq == "estimated" %}<span class="text-xs font-normal text-slate-500">[est]</span>{% elif dash_metrics.net_worth_dq == "partial" %}<span class="text-xs font-normal text-slate-500">[partial]</span>{% endif %}
+        </p>
+      {% else %}
+        <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+        <a href="{% url 'settings' %}" class="text-xs text-blue-600 dark:text-blue-400 underline mt-2 inline-block">{% trans "Add savings & EPF" %}</a>
+      {% endif %}
+    {% else %}
+      <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{% trans "Monthly surplus" %}</p>
+    {% if dash_metrics.surplus_note == "income_or_expenses" %}
+      <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+      <a href="{% url 'onboarding_resume' %}" class="text-xs text-blue-600 dark:text-blue-400 underline mt-2 inline-block">{% trans "Add income & expenses" %}</a>
+    {% elif dash_metrics.surplus is not None %}
+      <p class="text-2xl font-black tracking-tight">₹{{ dash_metrics.surplus|floatformat:0 }}{% if dash_metrics.surplus_dq == "estimated" %} <span class="text-xs font-normal text-slate-500">[est]</span>{% endif %}</p>
+    {% else %}
+      <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{% trans "Emergency fund" %}</p>
+    {% if dash_metrics.ef_months is not None %}
+      <p class="text-2xl font-black tracking-tight">{{ dash_metrics.ef_months }} <span class="text-base font-semibold text-slate-500">{% trans "mo" %}</span></p>
+      <p class="text-xs text-slate-500 mt-1">{% trans "Coverage vs monthly expenses" %}</p>
+    {% else %}
+      <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+      <a href="{% url 'settings' %}" class="text-xs text-blue-600 dark:text-blue-400 underline mt-2 inline-block">{% trans "[add in settings]" %}</a>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50">
+    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{% trans "FIRE progress" %}</p>
+    {% if dash_metrics.fire_note == "run_fire" %}
+      <p class="text-lg font-bold text-slate-600 dark:text-slate-300">{% trans "Not calculated yet" %}</p>
+      <a href="{% url 'fire' %}" class="text-xs text-blue-600 dark:text-blue-400 underline mt-2 inline-block">{% trans "Run FIRE planner" %}</a>
+    {% elif dash_metrics.fire_pct is not None %}
+      <p class="text-2xl font-black tracking-tight">{{ dash_metrics.fire_pct }}%</p>
+      <p class="text-xs text-slate-500 mt-1">{% trans "Current corpus vs target" %}</p>
+    {% else %}
+      <p class="text-2xl font-black tracking-tight text-slate-400">—</p>
+      <a href="{% url 'fire' %}" class="text-xs underline mt-2 inline-block">{% trans "Run FIRE planner" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Quick actions (6) -->
+<div class="mb-4">
+  <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{% trans "Quick actions" %}</h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+  <a href="{% url 'portfolio' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "Portfolio X-Ray" %}</p>
+    <p class="text-xs text-slate-500 mt-1">
+      {% if portfolio and portfolio.last_xray_at %}{% trans "Last run:" %} {{ portfolio.last_xray_at|slice:":10" }}{% elif portfolio %}{% trans "CAMS on file — open for full X-Ray" %}{% else %}{% trans "Not yet run —" %} <span class="text-amber-600">{% trans "upload CAMS" %}</span>{% endif %}
+    </p>
+  </a>
+  <a href="{% url 'tax' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "Tax opportunity" %}</p>
+    <p class="text-xs text-slate-500 mt-1">{% trans "Calculate now" %}</p>
+  </a>
+  <a href="{% url 'fire' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-violet-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "FIRE status" %}</p>
+    <p class="text-xs text-slate-500 mt-1">
+      {% if dash_metrics.fire_pct is not None %}
+        {% if dash_metrics.fire_pct >= 100 %}{% trans "Target reached (on track)" %}{% elif dash_metrics.fire_pct >= 50 %}{% trans "On track — keep investing" %}{% else %}{% trans "Behind — see FIRE planner" %}{% endif %}
+      {% else %}{% trans "Not calculated yet" %}{% endif %}
+    </p>
+  </a>
+  <a href="{% url 'stress_test' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "Stress test" %}</p>
+    <p class="text-xs text-slate-500 mt-1">{% trans "Run your first stress test" %}</p>
+  </a>
+  <a href="{% url 'life_events' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-cyan-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "Life event" %}</p>
+    <p class="text-xs text-slate-500 mt-1">{% trans "Add a life event for personalised advice" %}</p>
+  </a>
+  <a href="{% url 'opportunity_radar' %}" class="group glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50 hover:border-indigo-500/30 transition-all">
+    <p class="font-semibold text-sm">{% trans "Opportunity radar" %}</p>
+    <p class="text-xs text-slate-500 mt-1">
+      {% if signal_count is not None %}{{ signal_count }} {% trans "signals today" %}{% elif radar_error %}{% trans "Could not load — tap to retry" %}{% else %}{% trans "Set up radar" %}{% endif %}
+    </p>
+  </a>
+</div>
+
+<!-- Money Health mini -->
+<div class="glass rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 mb-10">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{% trans "Money Health" %}</h2>
+    {% if health_cached %}<span class="text-[10px] text-slate-400">{% trans "Cached 1h" %}</span>{% endif %}
+  </div>
+  {% if health_error %}
+  <p class="text-sm text-red-600 dark:text-red-400">{% trans "Something went wrong. Try again." %}</p>
+  <button type="button" onclick="location.reload()" class="mt-2 text-sm font-bold text-blue-600 underline">{% trans "Retry" %}</button>
+  {% elif health and health.analysis %}
+  <div class="flex flex-wrap items-end gap-4">
+    <div>
+      {% if health.analysis.overall_score != None %}
+      <p class="text-4xl font-black italic text-emerald-600">{{ health.analysis.overall_score }}</p>
+      {% else %}
+      <p class="text-4xl font-black italic text-slate-400">—</p>
+      {% endif %}
+      <p class="text-xs text-slate-500">/100 · {% trans "Grade" %} {{ health.analysis.grade|default:"—" }}</p>
+    </div>
+    <div class="flex-1 min-w-[200px]">
+      {% if weak_dimensions %}
+      <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{% trans "Weakest dimensions" %}</p>
+      <ul class="text-sm space-y-1">
+        {% for d in weak_dimensions %}
+        <li>{{ d.label }}: <span class="font-semibold">{{ d.score }}</span></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    <a href="{% url 'health' %}" class="text-sm font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">{% trans "See full report →" %}</a>
+  </div>
+  {% else %}
+  <p class="text-sm text-slate-500">{% trans "No Money Health data yet." %} <a href="{% url 'health' %}" class="font-bold text-blue-600 underline">{% trans "Open Money Health" %}</a></p>
+  {% endif %}
+</div>
+
+<!-- Recent nudges -->
+<div class="glass rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 mb-10">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{% trans "Recent nudges" %}</h2>
+    <a href="{% url 'notifications' %}" class="text-xs font-bold text-blue-600 dark:text-blue-400">{% trans "View all →" %}</a>
+  </div>
+  {% if nudges_error %}
+  <p class="text-sm text-red-600">{% trans "Could not load nudges." %} <button type="button" onclick="location.reload()" class="font-bold underline">{% trans "Retry" %}</button></p>
+  {% elif nudges %}
+  <ul class="space-y-3">
+    {% for n in nudges|slice:":3" %}
+    <li class="text-sm border-b border-slate-200/50 dark:border-slate-700/50 pb-2 last:border-0">
+      <span class="font-medium">{{ n.title }}</span>
+      {% if n.body %}<p class="text-xs text-slate-500 mt-0.5">{{ n.body }}</p>{% endif %}
+      {% if n.action_url %}<a href="{{ n.action_url }}" class="text-xs text-blue-600 underline mt-1 inline-block">{% trans "Open" %}</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-sm text-slate-500">{% trans "No pending nudges." %}</p>
+  {% endif %}
+</div>
+
+<!-- Market pulse mini -->
+<div class="glass rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 mb-6">
+  <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">{% trans "Market pulse" %}</h2>
+  {% if market_error %}
+  <p class="text-sm text-red-600">{% trans "Market data unavailable." %} <button type="button" onclick="location.reload()" class="font-bold underline">{% trans "Retry" %}</button></p>
+  {% elif market_pulse and market_pulse.analysis %}
+    {% with a=market_pulse.analysis %}
+    <div class="flex flex-wrap gap-4 mb-4">
+      {% if a.indices_cards %}
+        {% for card in a.indices_cards %}
+        <div class="rounded-xl bg-slate-100/80 dark:bg-slate-800/50 px-3 py-2 min-w-[120px]">
+          <p class="text-[10px] text-slate-500">{{ card.name }}</p>
+          <p class="text-lg font-bold">{{ card.value|floatformat:2 }}</p>
+          <p class="text-xs {% if card.change_pct >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">{{ card.change_pct|floatformat:2 }}%</p>
+        </div>
+        {% endfor %}
+      {% elif a.indices %}
+        <div class="rounded-xl bg-slate-100/80 dark:bg-slate-800/50 px-3 py-2">
+          <p class="text-[10px] text-slate-500">Nifty 50</p>
+          <p class="text-lg font-bold">{{ a.indices.nifty50|floatformat:2 }}</p>
+          <p class="text-xs {% if a.indices.nifty_change >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">{{ a.indices.nifty_change|floatformat:2 }}%</p>
+        </div>
+      {% endif %}
+    </div>
+    <p class="text-[10px] text-slate-400 mb-2">{{ a.timestamp|default:"" }}</p>
+    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{% trans "Headlines" %}</p>
+    <ul class="text-sm space-y-2">
+      {% for h in a.headlines|slice:":3" %}
+      <li class="text-slate-700 dark:text-slate-200"><span class="text-slate-400 text-xs">{{ h.source }} ·</span> {{ h.title }}</li>
+      {% empty %}
+      <li class="text-slate-500">{% trans "No headlines loaded." %}</li>
+      {% endfor %}
+    </ul>
+    {% if profile and profile.cams_uploaded and portfolio %}
+    <p class="text-xs text-slate-500 mt-4">{% trans "Your portfolio:" %} ₹{{ portfolio.current_value|floatformat:0 }} {% trans "(see Market Pulse for day moves)" %}</p>
+    {% elif profile and not profile.cams_uploaded %}
+    <p class="text-xs text-amber-600 mt-4">{% trans "Upload your CAMS to see portfolio-relevant news in Market Pulse." %}</p>
+    {% endif %}
+    <a href="{% url 'market_pulse' %}" class="inline-block mt-4 text-sm font-bold text-blue-600">{% trans "Full Market Pulse →" %}</a>
+    {% endwith %}
+  {% else %}
+  <p class="text-sm text-slate-500">{% trans "Calculating…" %}</p>
+  {% endif %}
+</div>
+
+{% if assumptions_error %}
+<p class="text-xs text-amber-600">{% trans "Assumptions could not be loaded — FIRE and stress pages may use defaults until you open Settings." %}</p>
+{% endif %}
+
+{% endblock %}

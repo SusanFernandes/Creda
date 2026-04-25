@@ -117,6 +117,7 @@ async def classify_intent(
             )
 
     # ── Tier 3: Embedding similarity (~10ms) ──
+    top3: list[tuple[str, float]] = []
     try:
         from app.services.intent_embeddings import embedding_match
         emb_intent, emb_sim, top3 = embedding_match(message)

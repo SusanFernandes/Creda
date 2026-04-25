@@ -1,167 +1,305 @@
 {% extends "base_dashboard.html" %}
 {% block title %}AI Chat{% endblock %}
-{% block page_title %}AI Chat{% endblock %}
-{% block page_subtitle %}AI Financial Intelligence{% endblock %}
+{% block page_title %}Chat with CREDA{% endblock %}
+{% block page_subtitle %}Answers, profile prompts, and agent summaries{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto h-[calc(100vh-12rem)] flex flex-col" x-data="chatApp()">
+<div class="max-w-4xl mx-auto h-[calc(100vh-11rem)] flex flex-col relative pb-16" x-data="chatApp()" x-init="initFromQuery()">
 
-  <!-- Messages -->
   <div class="flex-1 overflow-y-auto space-y-4 pb-4 pr-2 scrollbar-thin" id="chat-messages" x-ref="messages">
-    <!-- Welcome message -->
-    <div x-show="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center">
-      <div class="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mb-4">
-        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      </div>
-      <h3 class="text-xl font-bold italic mb-2">CREDA AI Chat</h3>
-      <p class="text-sm text-slate-500 max-w-md">Ask me anything about your finances — investments, tax planning, budgeting, insurance, or just general money questions. I understand Hindi, Tamil, Telugu and more.</p>
-      <div class="grid grid-cols-2 gap-3 mt-6 max-w-md w-full">
-        <button @click="input = 'Analyze my portfolio risk'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
-          <p class="font-semibold mb-0.5">Portfolio Analysis</p>
-          <p class="text-slate-400">Check risk & allocation</p>
-        </button>
-        <button @click="input = 'How can I save more on taxes?'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
-          <p class="font-semibold mb-0.5">Tax Optimization</p>
-          <p class="text-slate-400">Save on income tax</p>
-        </button>
-        <button @click="input = 'What is my FIRE number?'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
-          <p class="font-semibold mb-0.5">FIRE Planning</p>
-          <p class="text-slate-400">Early retirement path</p>
-        </button>
-        <button @click="input = 'Create a monthly budget for me'; sendMessage()" class="glass rounded-xl p-3 text-left border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all text-xs">
-          <p class="font-semibold mb-0.5">Budget Coach</p>
-          <p class="text-slate-400">50/30/20 breakdown</p>
-        </button>
+
+    <div x-show="messages.length === 0" class="flex flex-col items-center justify-center min-h-[240px] text-center px-2">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-white font-black" style="background:#0F4C81">C</div>
+      <h3 class="text-xl font-bold mb-2">CREDA</h3>
+      <p class="text-sm text-slate-500 max-w-md">{% if CREDA_VOICE_UI %}Ask about FIRE, tax, portfolio, stress tests, and markets. The mic sends audio to the same pipeline.{% else %}Ask about FIRE, tax, portfolio, stress tests, and markets — type below to get started.{% endif %}</p>
+      <div class="grid grid-cols-2 gap-2 mt-6 max-w-md w-full text-left">
+        <button type="button" @click="input = 'What is my FIRE number?'; sendMessage()" class="glass rounded-xl p-3 border border-slate-200/50 text-xs">FIRE number</button>
+        <button type="button" @click="input = 'Analyse my portfolio'; sendMessage()" class="glass rounded-xl p-3 border border-slate-200/50 text-xs">Portfolio</button>
+        <button type="button" @click="input = 'How much tax can I save?'; sendMessage()" class="glass rounded-xl p-3 border border-slate-200/50 text-xs">Tax savings</button>
+        <button type="button" @click="input = 'Run a stress test'; sendMessage()" class="glass rounded-xl p-3 border border-slate-200/50 text-xs">Stress test</button>
       </div>
     </div>
 
     <template x-for="msg in messages" :key="msg.id">
-      <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'" class="animate-slide-up">
-        <div :class="msg.role === 'user'
-              ? 'bg-blue-600 text-white rounded-[1.5rem] rounded-br-lg px-5 py-3 max-w-[75%] shadow-lg shadow-blue-500/10'
-              : 'glass border border-slate-200/50 dark:border-slate-700/50 rounded-[1.5rem] rounded-bl-lg px-5 py-3 max-w-[75%]'">
-          <p class="text-sm whitespace-pre-wrap leading-relaxed" x-text="msg.content"></p>
-          <div x-show="msg.agent" class="mt-2 flex items-center gap-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.15em] opacity-50" x-text="msg.agent"></p>
+      <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+        <!-- User -->
+        <template x-if="msg.role === 'user'">
+          <div class="max-w-[80%] rounded-[1.25rem] rounded-br-md px-4 py-3 text-white text-sm shadow" style="background:#0F4C81">
+            <p class="whitespace-pre-wrap" x-text="msg.content"></p>
           </div>
-        </div>
+        </template>
+        <!-- Assistant: field request -->
+        <template x-if="msg.role === 'assistant' && msg.kind === 'field_request'">
+          <div class="max-w-[85%] glass border border-slate-200/50 rounded-[1.25rem] rounded-bl-md px-4 py-3 text-sm">
+            <p class="text-xs text-slate-500 mb-2" x-text="msg.hint"></p>
+            <div class="rounded-xl border border-amber-200/60 bg-amber-50/50 dark:bg-amber-900/20 p-4 space-y-3">
+              <label class="text-[10px] font-bold uppercase text-amber-900/80" x-text="'Field: ' + (msg.field || '')"></label>
+              <input type="text" x-model="msg._val" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Value">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="px-4 py-2 rounded-lg text-white text-xs font-bold" style="background:#0F4C81" @click="saveFieldAndContinue(msg)">Save &amp; Continue</button>
+                <button type="button" class="px-4 py-2 rounded-lg border text-xs font-semibold" @click="skipFieldAndContinue(msg)" x-text="msg.skipLabel || 'Skip — estimate'"></button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <!-- Assistant: rich (cards + text) -->
+        <template x-if="msg.role === 'assistant' && msg.kind === 'rich'">
+          <div class="max-w-[85%] space-y-2">
+            <template x-for="c in (msg.cards || [])" :key="c.title">
+              <div class="glass border border-slate-200/50 rounded-xl p-4 text-sm">
+                <p class="text-[10px] font-bold uppercase text-slate-400" x-text="c.title"></p>
+                <p class="mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-200" x-text="c.body"></p>
+              </div>
+            </template>
+            <div class="glass border border-slate-200/50 rounded-[1.25rem] rounded-bl-md px-4 py-3 text-sm">
+              <p class="whitespace-pre-wrap" x-text="msg.content"></p>
+              <p class="text-[10px] uppercase tracking-wide text-slate-400 mt-2" x-show="msg.agent" x-text="msg.agent"></p>
+            </div>
+            <template x-if="msg.sources && msg.sources.length">
+              <div class="text-xs text-slate-500">Sources:
+                <template x-for="s in msg.sources" :key="s.url || s.name">
+                  <a :href="s.url || '#'" class="inline-block mr-1 mb-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800" x-text="s.name || s.title || 'link'"></a>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+        <!-- Assistant: plain text -->
+        <template x-if="msg.role === 'assistant' && (!msg.kind || msg.kind === 'text')">
+          <div class="max-w-[80%] glass border border-slate-200/50 rounded-[1.25rem] rounded-bl-md px-4 py-3 text-sm">
+            <p class="whitespace-pre-wrap" x-text="msg.content"></p>
+            <p class="text-[10px] uppercase tracking-wide text-slate-400 mt-2" x-show="msg.agent" x-text="msg.agent"></p>
+          </div>
+        </template>
       </div>
     </template>
 
-    <!-- Typing indicator -->
-    <div x-show="loading" class="flex justify-start animate-fade-in">
-      <div class="glass border border-slate-200/50 dark:border-slate-700/50 rounded-[1.5rem] rounded-bl-lg px-5 py-4">
-        <div class="flex gap-1.5">
-          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.15s"></span>
-          <span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.3s"></span>
-        </div>
+    <div x-show="loading" class="flex justify-start">
+      <div class="glass border rounded-[1.25rem] rounded-bl-md px-4 py-3 flex gap-1">
+        <span class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></span>
+        <span class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay:.12s"></span>
+        <span class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay:.24s"></span>
       </div>
     </div>
   </div>
 
-  <!-- Input -->
-  <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-3 mt-4">
-    <form @submit.prevent="sendMessage" class="flex gap-3 items-center">
-      <input x-model="input" type="text" placeholder="Ask CREDA anything about your finances..."
-             class="flex-1 px-4 py-3 bg-transparent rounded-xl outline-none text-sm placeholder:text-slate-400"
-             :disabled="loading" @keydown.enter="sendMessage">
+  <div class="glass rounded-2xl border border-slate-200/50 p-3 mt-2 shrink-0">
+    <form @submit.prevent="sendMessage" class="flex gap-2 items-center">
+      <input x-model="input" type="text" placeholder="Message CREDA…"
+             class="flex-1 px-3 py-2.5 bg-transparent rounded-xl outline-none text-sm" :disabled="loading">
       <button type="submit" :disabled="loading || !input.trim()"
-              class="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white flex items-center justify-center transition-all hover:scale-105 disabled:scale-100">
+              class="w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0 disabled:opacity-40" style="background:#0F4C81">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
       </button>
     </form>
   </div>
+
+  {% if CREDA_VOICE_UI %}
+  <!-- Voice FAB -->
+  <button type="button" @click="toggleVoice()"
+          class="fixed bottom-24 right-6 z-30 w-14 h-14 rounded-full shadow-lg text-white flex items-center justify-center"
+          :class="recording ? 'animate-pulse' : ''"
+          style="background:#0F4C81" title="Voice">
+    <svg x-show="!recording" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+    <span x-show="recording" class="text-xs font-bold">●</span>
+  </button>
+  {% endif %}
 </div>
 
 <script>
 function chatApp() {
+  const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
   return {
     messages: [],
     input: '',
     loading: false,
     msgId: 0,
     sessionId: crypto.randomUUID(),
+    recording: false,
+    mediaRecorder: null,
+    chunks: [],
+
+    initFromQuery() {
+      const p = new URLSearchParams(window.location.search).get('prefill');
+      if (p) this.input = decodeURIComponent(p);
+    },
+
+    scrollEnd() {
+      this.$nextTick(() => {
+        const el = this.$refs.messages;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    },
+
+    cardsFromAgentOutputs(data) {
+      const ao = data.agent_outputs;
+      if (!ao || typeof ao !== 'object') return [];
+      const key = data.agent_used || data.intent || Object.keys(ao)[0];
+      const v = ao[key];
+      if (!v || typeof v !== 'object') return [];
+      const cards = [];
+      if (v.fire_number != null) {
+        cards.push({ title: 'FIRE', body: `FIRE number ≈ ₹${Number(v.fire_number).toLocaleString('en-IN')}. Required SIP ₹${Number(v.required_sip||0).toLocaleString('en-IN')}/mo. On track: ${v.on_track ? 'yes' : 'review'}.` });
+      }
+      if (v.overall_score != null) {
+        cards.push({ title: 'Money Health', body: `Score ${v.overall_score}/100 · Grade ${v.grade || '—'}` });
+      }
+      if (v.old_regime_tax != null || v.new_regime_tax != null) {
+        cards.push({ title: 'Tax', body: `Old regime tax ≈ ₹${v.old_regime_tax||0} · New ≈ ₹${v.new_regime_tax||0}` });
+      }
+      if (v.p10 != null && v.p50 != null) {
+        cards.push({ title: 'Stress test', body: `P10 ₹${v.p10} · P50 ₹${v.p50} · P90 ₹${v.p90} · Survival ${v.survival_probability_pct||v.survival_pct||'—'}%` });
+      }
+      if (v.total_value != null || v.current_value != null || v.xirr != null) {
+        cards.push({ title: 'Portfolio', body: `Corpus ₹${Number(v.total_value||v.current_value||0).toLocaleString('en-IN')} · XIRR ${v.xirr||'—'}%` });
+      }
+      return cards.slice(0, 3);
+    },
+
+    async postChat(message) {
+      const resp = await fetch('{% url "api_chat" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        body: JSON.stringify({ message, session_id: this.sessionId, language: 'en', voice_mode: false }),
+      });
+      return resp.json();
+    },
 
     async sendMessage() {
       const text = this.input.trim();
       if (!text || this.loading) return;
-
-      this.messages.push({ id: ++this.msgId, role: 'user', content: text });
       this.input = '';
+      this.messages.push({ id: ++this.msgId, role: 'user', content: text });
       this.loading = true;
-
-      this.$nextTick(() => {
-        this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
-      });
-
-      // Add placeholder for streaming response
-      const assistantMsg = { id: ++this.msgId, role: 'assistant', content: '', agent: '' };
-      this.messages.push(assistantMsg);
-
+      this.scrollEnd();
       try {
-        // Try SSE streaming first
-        const resp = await fetch('/api/chat/stream/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
-          },
-          body: JSON.stringify({ message: text, session_id: this.sessionId }),
-        });
-
-        if (resp.ok && resp.headers.get('content-type')?.includes('event-stream')) {
-          const reader = resp.body.getReader();
-          const decoder = new TextDecoder();
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            // Parse SSE: lines starting with "data: "
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') break;
-                assistantMsg.content += data;
-                this.$nextTick(() => {
-                  this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
-                });
-              }
-            }
-          }
+        const data = await this.postChat(text);
+        if (data.type === 'field_request') {
+          this.messages.push({
+            id: ++this.msgId,
+            role: 'assistant',
+            kind: 'field_request',
+            field: data.field || '',
+            hint: data.message || 'Please provide:',
+            intent: data.intent || '',
+            originalMessage: text,
+            skipLabel: data.skip_label || 'Skip — use estimate',
+            _val: '',
+          });
         } else {
-          // Fallback to regular chat endpoint
-          const data = await resp.json();
-          assistantMsg.content = data.response || data.error || 'No response';
-          assistantMsg.agent = data.agent_used || '';
+          const cards = this.cardsFromAgentOutputs(data);
+          const sources = [];
+          if (data.sources && Array.isArray(data.sources)) {
+            data.sources.forEach(s => sources.push({ name: s.name || s.title, url: s.url }));
+          }
+          this.messages.push({
+            id: ++this.msgId,
+            role: 'assistant',
+            kind: cards.length ? 'rich' : 'text',
+            content: data.response || data.error || 'No response.',
+            agent: data.agent_used || data.intent || '',
+            cards,
+            sources,
+          });
         }
       } catch (e) {
-        // Fallback to non-streaming endpoint
-        try {
-          const resp2 = await fetch('/api/chat/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
-            },
-            body: JSON.stringify({ message: text, session_id: this.sessionId }),
-          });
-          const data = await resp2.json();
-          assistantMsg.content = data.response || data.error || 'Connection interrupted.';
-          assistantMsg.agent = data.agent_used || '';
-        } catch (e2) {
-          assistantMsg.content = 'Connection interrupted. Please try again.';
-        }
+        this.messages.push({ id: ++this.msgId, role: 'assistant', kind: 'text', content: 'Could not reach CREDA. Try again.', agent: '' });
       }
-
       this.loading = false;
-      this.$nextTick(() => {
-        this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
-      });
-    }
+      this.scrollEnd();
+    },
+
+    async saveFieldAndContinue(msg) {
+      const raw = (msg._val || '').trim();
+      if (!raw) return;
+      let val = raw;
+      if (!isNaN(Number(raw.replace(/,/g, '')))) val = Number(raw.replace(/,/g, ''));
+      const patch = { [msg.field]: val };
+      try {
+        await fetch('{% url "api_profile_patch" %}', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+          body: JSON.stringify(patch),
+        });
+      } catch (e) { /* continue anyway */ }
+      this.messages = this.messages.filter(m => m.id !== msg.id);
+      this.loading = true;
+      this.scrollEnd();
+      try {
+        const data = await this.postChat(msg.originalMessage);
+        if (data.type === 'field_request') {
+          this.messages.push({
+            id: ++this.msgId, role: 'assistant', kind: 'field_request',
+            field: data.field || '', hint: data.message || '', intent: data.intent || '',
+            originalMessage: msg.originalMessage, skipLabel: data.skip_label, _val: '',
+          });
+        } else {
+          const cards = this.cardsFromAgentOutputs(data);
+          this.messages.push({
+            id: ++this.msgId, role: 'assistant', kind: cards.length ? 'rich' : 'text',
+            content: data.response || '', agent: data.agent_used || '', cards, sources: [],
+          });
+        }
+      } catch (e) {}
+      this.loading = false;
+      this.scrollEnd();
+    },
+
+    async skipFieldAndContinue(msg) {
+      this.messages = this.messages.filter(m => m.id !== msg.id);
+      const follow = `Use a reasonable estimate for ${msg.field || 'missing field'} and continue. ` + msg.originalMessage;
+      this.loading = true;
+      try {
+        const data = await this.postChat(follow);
+        const cards = this.cardsFromAgentOutputs(data);
+        this.messages.push({
+          id: ++this.msgId, role: 'assistant', kind: cards.length ? 'rich' : 'text',
+          content: data.response || '', agent: data.agent_used || '', cards, sources: [],
+        });
+      } catch (e) {}
+      this.loading = false;
+      this.scrollEnd();
+    },
+
+    async toggleVoice() {
+      if (!navigator.mediaDevices?.getUserMedia) { alert('Microphone not supported'); return; }
+      if (this.recording && this.mediaRecorder) {
+        this.mediaRecorder.stop();
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.chunks = [];
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.mediaRecorder.ondataavailable = e => { if (e.data.size) this.chunks.push(e.data); };
+      this.mediaRecorder.onstop = async () => {
+        this.recording = false;
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(this.chunks, { type: this.mediaRecorder.mimeType || 'audio/webm' });
+        const fd = new FormData();
+        fd.append('audio', blob, 'clip.webm');
+        fd.append('language', 'en');
+        this.loading = true;
+        try {
+          const resp = await fetch('{% url "api_voice" %}', { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd });
+          const data = await resp.json();
+          const t = data.transcript || data.message || '';
+          if (t) {
+            this.input = t;
+            await this.sendMessage();
+          }
+          if (data.audio_data) {
+            const bin = atob(data.audio_data);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            const url = URL.createObjectURL(new Blob([arr], { type: 'audio/wav' }));
+            new Audio(url).play();
+          }
+        } catch (e) {}
+        this.loading = false;
+      };
+      this.mediaRecorder.start();
+      this.recording = true;
+    },
   };
 }
 </script>

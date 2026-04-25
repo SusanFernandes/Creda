@@ -2,102 +2,174 @@
 {% load creda_filters %}
 {% block title %}Stress Test{% endblock %}
 {% block page_title %}Stress Test{% endblock %}
-{% block page_subtitle %}Portfolio Stress Test{% endblock %}
+{% block page_subtitle %}Monte Carlo scenarios{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
-  <!-- What is Stress Test? -->
-  <div x-data="{ open: false }" class="glass rounded-[2rem] border border-red-200/50 dark:border-red-800/30 bg-red-50/30 dark:bg-red-900/10 p-6">
-    <button @click="open = !open" class="w-full flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center"><svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-        <span class="font-bold text-sm">What is Stress Test?</span>
+<div class="max-w-[1200px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8"
+     x-data="stressPage({ events: {{ events|to_json }}, csrf: '{{ csrf_token }}', runUrl: '{% url 'stress_test_run' %}' })"
+     x-init="initFromAssumptions({{ assumptions|to_json }}); run()">
+  <div class="lg:col-span-4 space-y-6">
+    <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-6" style="--primary:#0F4C81">
+      <h3 class="font-bold text-sm mb-1">Configure scenarios</h3>
+      <p class="text-[10px] uppercase tracking-widest text-slate-400 mb-4">Toggle events and tune parameters</p>
+
+      <div class="space-y-4 text-sm">
+        <label class="flex items-center gap-2"><input type="checkbox" value="job_loss" x-model="sel.job"> Job loss</label>
+        <div class="pl-6 flex gap-2 flex-wrap text-xs" x-show="sel.job">
+          <template x-for="m in [3,6,12]"><button type="button" class="px-2 py-1 rounded border"
+            :class="params.job_loss_months===m ? 'bg-slate-900 text-white' : ''" @click="params.job_loss_months=m" x-text="m+' mo'"></button></template>
+        </div>
+
+        <label class="flex items-center gap-2"><input type="checkbox" value="medical_emergency" x-model="sel.med"> Medical emergency</label>
+        <div class="pl-6 flex gap-2 flex-wrap text-xs" x-show="sel.med">
+          <template x-for="l in [2,5,10]"><button type="button" class="px-2 py-1 rounded border"
+            :class="medLakh===l ? 'bg-slate-900 text-white' : ''" @click="medLakh=l; params.medical_emergency_cost=l*100000" x-text="'₹'+l+'L'"></button></template>
+        </div>
+
+        <label class="flex items-center gap-2"><input type="checkbox" value="baby" x-model="sel.baby"> New baby</label>
+        <div class="pl-6 flex gap-2 flex-wrap text-xs" x-show="sel.baby">
+          <template x-for="c in [15,25,35]"><button type="button" class="px-2 py-1 rounded border"
+            :class="params.baby_monthly_cost===c*1000 ? 'bg-slate-900 text-white' : ''" @click="params.baby_monthly_cost=c*1000" x-text="'₹'+c+'k/mo'"></button></template>
+        </div>
+
+        <label class="flex items-center gap-2"><input type="checkbox" value="market_crash_30" x-model="sel.crash30"> Market crash −30%</label>
+        <label class="flex items-center gap-2"><input type="checkbox" value="market_crash_50" x-model="sel.crash50"> Market crash −50%</label>
+
+        <label class="flex items-center gap-2"><input type="checkbox" value="parent_support" x-model="sel.par"> Parent support</label>
+        <div class="pl-6" x-show="sel.par">
+          <input type="number" class="w-full border rounded-lg px-2 py-1 text-sm" placeholder="₹/month" x-model.number="params.parent_support_monthly">
+        </div>
       </div>
-      <svg :class="open && 'rotate-180'" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-    </button>
-    <div x-show="open" x-collapse class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-      <p>Stress Test simulates the impact of life events (market crash, job loss, medical emergency, new baby, marriage) on your finances. Select scenarios to see how your portfolio, savings, and goals would be affected — and get AI recommendations for building resilience.</p>
+
+      <button type="button" @click="run()" class="mt-4 w-full py-3 rounded-xl text-white text-sm font-bold" style="background:#0F4C81">Run stress test</button>
+      <p class="text-xs text-red-600 mt-2" x-show="err" x-text="err"></p>
     </div>
   </div>
 
-  <!-- Event Selector -->
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h3 class="font-bold mb-1">Select Life Events</h3>
-    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-5">Test your financial resilience</p>
-    <form method="GET" class="flex flex-wrap gap-3">
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="market_crash_30" {% if "market_crash_30" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Market Crash 30%</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="market_crash_50" {% if "market_crash_50" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Market Crash 50%</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="baby" {% if "baby" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Having a Baby</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="job_loss" {% if "job_loss" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Job Loss</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="marriage" {% if "marriage" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Marriage</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="retirement" {% if "retirement" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Retirement</span>
-      </label>
-      <label class="flex items-center gap-2 glass px-4 py-2.5 rounded-xl cursor-pointer border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/30 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/20">
-        <input type="checkbox" name="events" value="job_change" {% if "job_change" in events %}checked{% endif %} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span class="text-sm font-medium">Salary bump (+30%)</span>
-      </label>
-      <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all hover:scale-[1.02]">
-        Run Simulation
-      </button>
-    </form>
-  </div>
+  <div class="lg:col-span-8 space-y-6">
+    <div x-show="loading" class="glass rounded-2xl p-8 text-center text-slate-500 text-sm">Running simulation…</div>
 
-  {% if stress and stress.analysis.input_required %}
-  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8">
-    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">{{ stress.analysis.profile_message }}</p>
-    <a href="{% url 'settings' %}" class="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">Open Settings</a>
-  </div>
-  {% elif stress %}
-  {% for event_key, result in stress.analysis.results.items %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
-    <h3 class="font-bold mb-5">{{ result.label }}</h3>
-    <div class="grid grid-cols-3 gap-5 text-center">
-      <div class="glass rounded-2xl p-5 border border-red-200/50 bg-red-50/30 dark:bg-red-900/10">
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-red-400 mb-2">Pessimistic (P10)</p>
-        <p class="text-2xl font-black italic text-red-500">₹{{ result.p10|floatformat:0 }}</p>
+    <template x-if="!loading && out && out.analysis && out.analysis.input_required">
+      <div class="glass rounded-2xl border border-amber-200/50 bg-amber-50/30 p-6 text-sm">
+        <p x-text="out.analysis.profile_message"></p>
+        <a href="{% url 'settings' %}" class="inline-block mt-3 px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0F4C81">Settings</a>
       </div>
-      <div class="glass rounded-2xl p-5 border border-slate-200/50 dark:border-slate-700/50">
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Median (P50)</p>
-        <p class="text-2xl font-black italic">₹{{ result.p50|floatformat:0 }}</p>
+    </template>
+
+    <template x-if="!loading && out && out.analysis && !out.analysis.input_required">
+      <div class="space-y-6">
+        <template x-for="(row, key) in out.analysis.results" :key="key">
+          <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+            <h3 class="font-bold mb-4" x-text="row.label"></h3>
+            <p class="text-xs text-slate-500 mb-2">Survival probability: <strong class="text-slate-900 dark:text-white" x-text="row.survival_probability_pct + '%'"></strong></p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div class="rounded-xl border border-red-200/50 bg-red-50/20 p-4">
+                <p class="text-[10px] font-bold uppercase text-red-500 mb-1">P10 Worst</p>
+                <p class="text-xl font-black text-red-600" x-text="'₹' + Number(row.p10).toLocaleString('en-IN')"></p>
+              </div>
+              <div class="rounded-xl border border-slate-200/50 p-4">
+                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">P50 Median</p>
+                <p class="text-xl font-black" x-text="'₹' + Number(row.p50).toLocaleString('en-IN')"></p>
+              </div>
+              <div class="rounded-xl border border-emerald-200/50 bg-emerald-50/20 p-4">
+                <p class="text-[10px] font-bold uppercase text-emerald-600 mb-1">P90 Best</p>
+                <p class="text-xl font-black text-emerald-600" x-text="'₹' + Number(row.p90).toLocaleString('en-IN')"></p>
+              </div>
+            </div>
+            <div class="mt-4 h-3 rounded-full bg-slate-200 overflow-hidden flex text-[10px]">
+              <div class="h-full bg-red-500" :style="'width:' + (row.p10 / (row.p90||1) * 30) + '%'"></div>
+              <div class="h-full bg-slate-500" :style="'width:' + (row.p50 / (row.p90||1) * 40) + '%'"></div>
+              <div class="h-full bg-emerald-500 flex-1"></div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2" x-show="row.emergency_fund_gap">Emergency gap (est.): ₹<span x-text="Number(row.emergency_fund_gap).toLocaleString('en-IN')"></span></p>
+          </div>
+        </template>
+        <div class="glass rounded-2xl border border-slate-200/50 p-6" x-show="out.response">
+          <h3 class="font-bold text-sm mb-2">Mitigation</h3>
+          <div class="prose prose-sm dark:prose-invert whitespace-pre-wrap text-slate-600" x-text="out.response"></div>
+        </div>
       </div>
-      <div class="glass rounded-2xl p-5 border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10">
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-2">Optimistic (P90)</p>
-        <p class="text-2xl font-black italic text-emerald-500">₹{{ result.p90|floatformat:0 }}</p>
-      </div>
+    </template>
+
+    <div x-show="!loading && !out" class="glass rounded-2xl p-8 text-center text-sm text-slate-500">
+      Select scenarios and press <strong>Run stress test</strong>.
     </div>
   </div>
-  {% endfor %}
-
-  {% if stress.response %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
-    <h2 class="font-bold mb-4 flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-      Mitigation Strategies
-    </h2>
-    <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ stress.response|strip_markdown }}</div>
-  </div>
-  {% endif %}
-  {% else %}
-  <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 text-center text-sm text-slate-500">
-    Stress test could not load. Check that the backend is running, then try again.
-  </div>
-  {% endif %}
 </div>
+
+<script>
+function stressPage(cfg) {
+  const ev = cfg.events || [];
+  const sel = { job: ev.includes('job_loss'), med: ev.includes('medical_emergency'), baby: ev.includes('baby'),
+    crash30: ev.includes('market_crash_30'), crash50: ev.includes('market_crash_50'), par: ev.includes('parent_support') };
+  if (!ev.length) { sel.crash30 = true; }
+  return {
+    csrf: cfg.csrf,
+    runUrl: cfg.runUrl,
+    loading: false,
+    err: '',
+    out: null,
+    medLakh: 5,
+    sel,
+    params: { job_loss_months: 6, medical_emergency_cost: 500000, baby_monthly_cost: 25000, parent_support_monthly: 15000 },
+    initFromAssumptions(ass) {
+      const sc = ass && ass.stress_scenarios;
+      if (!sc || typeof sc !== 'object') return;
+      if (sc.job_loss && sc.job_loss.active) { this.sel.job = true; this.params.job_loss_months = sc.job_loss.duration_months || 6; }
+      if (sc.medical_emergency && sc.medical_emergency.active) {
+        this.sel.med = true;
+        const one = sc.medical_emergency.one_time_cost || 500000;
+        this.medLakh = Math.round(one / 100000);
+        this.params.medical_emergency_cost = one;
+      }
+      if (sc.new_baby && sc.new_baby.active) {
+        this.sel.baby = true;
+        this.params.baby_monthly_cost = sc.new_baby.monthly_cost || 25000;
+      }
+      if (sc.parent_support && sc.parent_support.active) {
+        this.sel.par = true;
+        this.params.parent_support_monthly = sc.parent_support.monthly_cost || 15000;
+      }
+    },
+    buildEvents() {
+      const e = [];
+      if (this.sel.crash30) e.push('market_crash_30');
+      if (this.sel.crash50) e.push('market_crash_50');
+      if (this.sel.job) e.push('job_loss');
+      if (this.sel.med) e.push('medical_emergency');
+      if (this.sel.baby) e.push('baby');
+      if (this.sel.par) e.push('parent_support');
+      return e.length ? e : ['market_crash_30'];
+    },
+    buildParams() {
+      const p = {};
+      if (this.sel.job) p.job_loss_months = this.params.job_loss_months;
+      if (this.sel.med) p.medical_emergency_cost = this.params.medical_emergency_cost;
+      if (this.sel.baby) p.baby_monthly_cost = this.params.baby_monthly_cost;
+      if (this.sel.par) p.parent_support_monthly = this.params.parent_support_monthly;
+      return p;
+    },
+    async run() {
+      this.err = '';
+      this.loading = true;
+      try {
+        const body = { events: this.buildEvents(), stress_scenario_params: this.buildParams() };
+        const r = await fetch(this.runUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this.csrf },
+          body: JSON.stringify(body),
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || r.statusText);
+        this.out = j;
+      } catch (e) {
+        this.err = e.message || String(e);
+        this.out = null;
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+</script>
 {% endblock %}

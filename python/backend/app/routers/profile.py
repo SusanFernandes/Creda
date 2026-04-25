@@ -62,7 +62,22 @@ class ProfileUpsertRequest(BaseModel):
     goal_target_amount: Optional[float] = None
     goal_target_years: Optional[int] = None
     partner_monthly_income: Optional[float] = None
+    partner_monthly_expenses: Optional[float] = None
+    partner_name: Optional[str] = None
+    partner_section_80c: Optional[float] = None
+    partner_nps_contribution: Optional[float] = None
+    partner_tax_bracket: Optional[str] = None
+    monthly_sip_contribution: Optional[float] = None
+    whatsapp_phone: Optional[str] = None
     onboarding_complete: Optional[bool] = None
+    watchlist_stocks: Optional[str] = None
+    sector_interests: Optional[str] = None
+    alert_types: Optional[str] = None
+    term_insurance_cover: Optional[float] = None
+    health_insurance_cover: Optional[float] = None
+    emergency_fund_amount: Optional[float] = None
+    annual_bonus: Optional[float] = None
+    notification_prefs: Optional[str] = None
 
 
 @router.post("/upsert")

@@ -4,7 +4,7 @@ Each endpoint calls its agent directly without going through LangGraph.
 """
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,8 @@ class AgentRequest(BaseModel):
 
 class StressTestRequest(AgentRequest):
     events: list[str] = ["market_crash_30"]
+    # Optional: job_loss_months, baby_monthly_cost, medical_emergency_cost, parent_support_monthly
+    stress_scenario_params: dict | None = None
 
 
 class CouplesRequest(AgentRequest):
@@ -38,6 +40,19 @@ class GoalSimulatorRequest(AgentRequest):
 
 class ResearchRequest(AgentRequest):
     message: str = ""
+
+
+class ChartPatternRequest(AgentRequest):
+    """Optional NSE symbol without .NS suffix; timeframe for yfinance history window."""
+    symbol: str | None = None
+    timeframe: str = "3mo"
+
+
+class SipCalculatorRequest(AgentRequest):
+    """Goal-based SIP — merges into profile for sip_calculator agent."""
+    goal_target_amount: float | None = None
+    goal_target_years: int | None = None
+    monthly_sip_available: float | None = None
 
 
 class LifeEventRequest(AgentRequest):
@@ -93,7 +108,9 @@ async def stress_test(
 ):
     profile = await _get_profile(auth.user_id, db)
     from app.agents.stress_test import run_stress_test
-    return await run_stress_test(profile, body.events, body.language, body.voice_mode)
+    return await run_stress_test(
+        profile, body.events, body.language, body.voice_mode, body.stress_scenario_params,
+    )
 
 
 @router.post("/budget-coach")
@@ -162,10 +179,26 @@ async def couples_finance(
                 partner_income = spouse_profile.monthly_income or 0
                 partner_expenses = spouse_profile.monthly_expenses or 0
 
+    portfolio_dict = None
+    from app.models import Portfolio, PortfolioFund
+    port_result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = port_result.scalar_one_or_none()
+    if portfolio:
+        funds_result = await db.execute(select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id))
+        funds = funds_result.scalars().all()
+        portfolio_dict = {
+            "total_invested": portfolio.total_invested,
+            "current_value": portfolio.current_value,
+            "xirr": portfolio.xirr,
+            "funds": [{c.name: getattr(f, c.name) for c in PortfolioFund.__table__.columns} for f in funds],
+        }
+
     from app.agents.couples_finance import run_couples_finance
     return await run_couples_finance(
         profile, partner_income, partner_expenses,
-        body.split_strategy, body.language, body.voice_mode,
+        body.split_strategy, body.language, body.voice_mode, portfolio_dict,
     )
 
 
@@ -255,6 +288,82 @@ async def et_research(
     profile = await _get_profile(auth.user_id, db)
     from app.agents.et_research import run_et_research
     return await run_et_research(body.message, profile, body.language, body.voice_mode)
+
+
+@router.post("/opportunity-radar")
+async def opportunity_radar(
+    body: AgentRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await _get_profile(auth.user_id, db)
+    from app.models import Portfolio, PortfolioFund
+
+    portfolio_dict: dict | None = None
+    port_result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = port_result.scalar_one_or_none()
+    if portfolio:
+        funds_result = await db.execute(select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id))
+        funds = funds_result.scalars().all()
+        portfolio_dict = {
+            "total_invested": portfolio.total_invested,
+            "current_value": portfolio.current_value,
+            "xirr": portfolio.xirr,
+            "funds": [{c.name: getattr(f, c.name) for c in PortfolioFund.__table__.columns} for f in funds],
+        }
+    from app.agents.opportunity_radar import run_opportunity_radar
+
+    return await run_opportunity_radar(profile, portfolio_dict, body.language, body.voice_mode)
+
+
+@router.post("/chart-pattern")
+async def chart_pattern(
+    body: ChartPatternRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await _get_profile(auth.user_id, db)
+    from app.agents.chart_pattern import run_chart_pattern
+
+    return await run_chart_pattern(
+        profile, body.symbol, body.timeframe, body.language, body.voice_mode,
+    )
+
+
+@router.post("/sip-calculator")
+async def sip_calculator(
+    body: SipCalculatorRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await _get_profile(auth.user_id, db)
+    from app.agents.sip_calculator import run as run_sip_calc
+    from app.agents.synthesizer import synthesize
+    from app.agents.state import FinancialState
+
+    profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns}
+    if body.goal_target_amount is not None:
+        profile_dict["goal_target_amount"] = float(body.goal_target_amount)
+    if body.goal_target_years is not None:
+        profile_dict["goal_target_years"] = int(body.goal_target_years)
+
+    state: FinancialState = {
+        "user_id": auth.user_id,
+        "message": "",
+        "intent": "sip_calculator",
+        "language": body.language,
+        "voice_mode": body.voice_mode,
+        "history": [],
+        "user_profile": profile_dict,
+    }
+    if body.monthly_sip_available is not None:
+        state["monthly_sip_available"] = float(body.monthly_sip_available)
+
+    output = await run_sip_calc(state)
+    response = await synthesize(output, "sip_calculator", "SIP calculator", body.language, body.voice_mode)
+    return {"analysis": output, "response": response}
 
 
 @router.post("/human-handoff")
@@ -371,3 +480,17 @@ async def life_event_advisor(
         result["bonus_recorded"] = True
         result["ytd_bonus_income"] = profile.ytd_bonus_income
     return result
+
+
+@router.post("/form16-parse")
+async def form16_parse(
+    file: UploadFile = File(...),
+    auth: AuthContext = Depends(get_auth),
+):
+    """Upload Form 16 PDF; returns suggested tax/profile fields (review before saving)."""
+    raw = await file.read()
+    if not raw or not raw.startswith(b"%PDF"):
+        raise HTTPException(400, "Upload a valid PDF file")
+    from app.services.form16_parser import parse_form16_pdf
+
+    return parse_form16_pdf(raw)

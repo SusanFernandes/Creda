@@ -19,7 +19,10 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     income = float(profile["monthly_income"])
     expenses = float(profile["monthly_expenses"])
-    available = income - expenses
+    if state.get("monthly_sip_available") is not None:
+        available = float(state["monthly_sip_available"])
+    else:
+        available = income - expenses
 
     target = _extract_target(message) or profile.get("goal_target_amount")
     years = _extract_years(message) or profile.get("goal_target_years")

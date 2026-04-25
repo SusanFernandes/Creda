@@ -270,6 +270,8 @@ User Message
 
 ### Voice Pipeline
 
+**Implemented stack (this repo):** STT uses **faster-whisper** (see `STT_ENGINE` in config); TTS uses **Kokoro** (optional service), **Edge TTS**, **Piper**, and **gTTS** — not IndicConformer/Parler unless you add them separately.
+
 ```
 ┌────────┐     ┌──────────────┐     ┌───────────────┐     ┌─────────────┐
 │  User  │────▶│   STT Engine │────▶│  Chat Pipeline │────▶│  TTS Engine │

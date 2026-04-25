@@ -50,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "creda.middleware.backend_client_middleware",
+    "creda.middleware.sidebar_context_middleware",
 ]
 
 ROOT_URLCONF = "creda.urls"
@@ -65,6 +66,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "creda.context_processors.creda_flags",
             ],
         },
     },
@@ -101,6 +103,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # ── FastAPI Backend ────────────────────────────────────────
 BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:8001")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+
+# Voice FAB + chat mic — off unless explicitly enabled (manual testing without voice AI).
+CREDA_VOICE_UI = os.environ.get("CREDA_VOICE_UI", "").lower() in ("1", "true", "yes", "on")
 
 # ── Static ─────────────────────────────────────────────────
 STATIC_URL = "/static/"

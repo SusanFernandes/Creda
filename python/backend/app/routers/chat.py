@@ -9,19 +9,47 @@ import time
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.database import get_db
+from app.models import ConversationMessage
 from app.redis_client import save_message, get_conversation, save_last_intent, get_last_intent
 from app.services.intent_engine import classify_intent
 
 logger = logging.getLogger("creda.chat")
 
 router = APIRouter()
+
+
+@router.get("/history")
+async def chat_history(
+    limit: int = Query(20, ge=1, le=50),
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
+    """Recent messages from Postgres (dashboard snippet)."""
+    stmt = (
+        select(ConversationMessage)
+        .where(ConversationMessage.user_id == auth.user_id)
+        .order_by(desc(ConversationMessage.created_at))
+        .limit(limit)
+    )
+    rows = list((await db.execute(stmt)).scalars().all())
+    rows.reverse()
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        out.append({
+            "role": r.role,
+            "content": (r.content or "")[:2000],
+            "intent": r.intent or "",
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        })
+    return out
 
 
 class ChatRequest(BaseModel):

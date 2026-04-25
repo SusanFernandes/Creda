@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: Optional[str] = None
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None
+    # Public web origin for WhatsApp / email deep links (no trailing slash)
+    PUBLIC_APP_URL: Optional[str] = None
 
     # ── Server ─────────────────────────────────────────────
     FASTAPI_PORT: int = 8001

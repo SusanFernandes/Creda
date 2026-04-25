@@ -150,6 +150,27 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_portfolio_summary_optional(self) -> dict | None:
+        """Return None if user has no portfolio (404), else summary dict."""
+        try:
+            resp = await self._client.get("/portfolio/summary", headers=self._headers())
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response is not None and e.response.status_code == 404:
+                return None
+            raise
+
+    async def get_chat_history(self, limit: int = 20) -> list:
+        resp = await self._client.get(
+            "/chat/history", params={"limit": limit}, headers=self._headers()
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, list) else []
+
     async def run_xray(self) -> dict:
         resp = await self._client.post("/portfolio/xray", headers=self._headers())
         resp.raise_for_status()
@@ -170,10 +191,34 @@ class BackendClient:
     async def money_health(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/money-health", language)
 
-    async def stress_test(self, events: list[str], language: str = "en") -> dict:
-        resp = await self._client.post("/agents/stress-test", json={
-            "events": events, "language": language,
-        }, headers=self._headers())
+    async def sip_calculator(
+        self,
+        goal_target_amount: float | None = None,
+        goal_target_years: int | None = None,
+        monthly_sip_available: float | None = None,
+        language: str = "en",
+    ) -> dict:
+        payload: dict = {"language": language, "voice_mode": False}
+        if goal_target_amount is not None:
+            payload["goal_target_amount"] = goal_target_amount
+        if goal_target_years is not None:
+            payload["goal_target_years"] = goal_target_years
+        if monthly_sip_available is not None:
+            payload["monthly_sip_available"] = monthly_sip_available
+        resp = await self._client.post("/agents/sip-calculator", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
+
+    async def stress_test(
+        self,
+        events: list[str],
+        language: str = "en",
+        stress_scenario_params: dict | None = None,
+    ) -> dict:
+        payload: dict = {"events": events, "language": language}
+        if stress_scenario_params is not None:
+            payload["stress_scenario_params"] = stress_scenario_params
+        resp = await self._client.post("/agents/stress-test", json=payload, headers=self._headers())
         resp.raise_for_status()
         return resp.json()
 
@@ -191,12 +236,22 @@ class BackendClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def sip_calculator(self, language: str = "en") -> dict:
-        return await self._agent_call("/agents/sip-calculator", language)
-
     # ── ET-Inspired Agents ─────────────────────────────────
     async def market_pulse(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/market-pulse", language)
+
+    async def opportunity_radar(self, language: str = "en") -> dict:
+        return await self._agent_call("/agents/opportunity-radar", language)
+
+    async def chart_pattern(
+        self, symbol: str | None = None, timeframe: str = "3mo", language: str = "en",
+    ) -> dict:
+        payload: dict = {"language": language, "voice_mode": False, "timeframe": timeframe}
+        if symbol:
+            payload["symbol"] = symbol
+        resp = await self._client.post("/agents/chart-pattern", json=payload, headers=self._headers())
+        resp.raise_for_status()
+        return resp.json()
 
     async def tax_copilot(self, language: str = "en") -> dict:
         return await self._agent_call("/agents/tax-copilot", language)
@@ -402,3 +457,65 @@ class BackendClient:
         resp = await self._client.post(path, json={"language": language}, headers=self._headers())
         resp.raise_for_status()
         return resp.json()
+
+
+def _sync_backend_headers(request) -> dict[str, str]:
+    """Same auth headers as BackendClient for sync HTTP (sidebar middleware)."""
+    from django.contrib.auth.models import AnonymousUser
+
+    user = getattr(request, "user", None)
+    headers: dict[str, str] = {}
+    if not user or isinstance(user, AnonymousUser) or not user.is_authenticated:
+        return headers
+    backend_uid = _fastapi_user_id_for_request(request)
+    headers["x-user-id"] = backend_uid if backend_uid else str(user.id)
+    headers["x-user-email"] = getattr(user, "email", None) or ""
+    jwt_token = request.session.get("backend_jwt")
+    if jwt_token:
+        headers["Authorization"] = f"Bearer {jwt_token}"
+    return headers
+
+
+def _fetch_sidebar_context(request):
+    """Sync GET profile + pending nudge count for sidebar nav."""
+    from django.conf import settings
+
+    base = settings.BACKEND_API_URL.rstrip("/")
+    h = _sync_backend_headers(request)
+    if not h.get("x-user-id"):
+        return None, 0
+    try:
+        with httpx.Client(timeout=4.0) as client:
+            pr = client.get(f"{base}/profile/{h['x-user-id']}", headers=h)
+            profile = pr.json() if pr.status_code == 200 else None
+            nr = client.get(f"{base}/nudges/pending", headers=h)
+            raw = nr.json() if nr.status_code == 200 else []
+            nudges = raw if isinstance(raw, list) else []
+            return profile, len(nudges)
+    except Exception:
+        return None, 0
+
+
+def sidebar_context_middleware(get_response):
+    """Attach sidebar_profile, nudge count, and global profile completeness for banners."""
+
+    def middleware(request):
+        request.sidebar_profile = None
+        request.sidebar_nudge_count = 0
+        request.profile_completeness_pct = 0.0
+        request.profile_missing_fields = []
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            profile, ncount = _fetch_sidebar_context(request)
+            request.sidebar_profile = profile
+            request.sidebar_nudge_count = ncount
+            if profile:
+                try:
+                    request.profile_completeness_pct = float(profile.get("completeness_pct") or 0)
+                except (TypeError, ValueError):
+                    request.profile_completeness_pct = 0.0
+                raw = profile.get("missing_profile_fields")
+                request.profile_missing_fields = raw if isinstance(raw, list) else []
+        return get_response(request)
+
+    return middleware

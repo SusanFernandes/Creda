@@ -2,7 +2,7 @@
 Tier 3 — Semantic embedding matcher using sentence-transformers/all-MiniLM-L6-v2.
 
 At startup (lazy):  encode curated trigger phrases → compute per-intent centroids
-At runtime:         encode user message → cosine similarity vs 19 centroids (~10ms on CPU)
+At runtime:         encode user message → cosine similarity vs intent centroids (~10ms on CPU)
 
 The 0.78 threshold is deliberately high to avoid false positives — uncertain
 queries fall through to the LLM classifier (Tier 4).
@@ -173,8 +173,54 @@ _INTENT_TRIGGERS: dict[str, list[str]] = {
         "detailed guide on NPS",
         "research on index funds vs active funds",
         "deep dive into debt funds",
-        "explain tax harvesting strategy",
-        "give me a detailed article about ELSS",
+        "how will RBI rate cut affect my portfolio",
+        "compare Nifty IT versus Nifty Bank over three years",
+        "macro outlook for Indian equities this quarter",
+        "FII flows and market implications",
+        "sector rotation strategy for Indian markets",
+    ],
+    "life_event_advisor": [
+        "I received a five lakh rupee bonus how should I invest it",
+        "performance bonus allocation tax saving",
+        "inheritance received what to do with the money",
+        "new baby financial planning India",
+        "got married need joint financial plan",
+        "lost my job emergency fund advice",
+        "bought a house down payment and EMI planning",
+        "parents need financial support planning",
+        "lump sum windfall deployment strategy",
+    ],
+    "expense_analytics": [
+        "show my spending breakdown by category",
+        "where does my salary go each month",
+        "analyze my expenses and find waste",
+        "category wise spending analysis",
+        "expense analytics for my budget",
+        "how much am I spending on dining out",
+        "track my monthly spending patterns",
+    ],
+    "onboarding": [
+        "I am new here help me set up my profile",
+        "complete onboarding for Creda",
+        "walk me through profile setup",
+        "first time user financial questionnaire",
+        "setup my profile step by step",
+    ],
+    "opportunity_radar": [
+        "show insider buying alerts for stocks I follow",
+        "bulk deals and block deals today NSE",
+        "earnings surprise opportunities radar",
+        "corporate filing alerts for my watchlist",
+        "SEBI insider trading disclosures summary",
+        "daily stock opportunity signals",
+    ],
+    "chart_pattern": [
+        "find stocks with RSI divergence today",
+        "chart pattern scanner for NSE stocks",
+        "golden cross detection Indian equities",
+        "breakout above fifty two week high",
+        "technical pattern analysis for my watchlist",
+        "MACD crossover stocks to watch",
     ],
     "human_handoff": [
         "I want to talk to a human advisor",

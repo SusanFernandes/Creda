@@ -1,0 +1,117 @@
+{% load i18n %}
+<div class="creda-card space-y-6">
+  <h2 class="creda-page-heading" style="font-size: 1.25rem;">{% trans "Your money" %}</h2>
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "Monthly take-home (₹, post-tax)" %} *</label>
+    <input name="monthly_income" type="number" min="0" step="1000" required value="{{ profile.monthly_income|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label class="creda-sub-label block mb-1">{% trans "Fixed expenses / mo (rent+EMI+insurance)" %}</label>
+      <input name="monthly_fixed_expenses" type="number" min="0" step="500" value="{{ profile.monthly_fixed_expenses|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+    </div>
+    <div>
+      <label class="creda-sub-label block mb-1">{% trans "Variable expenses / mo" %}</label>
+      <input name="monthly_variable_expenses" type="number" min="0" step="500" value="{{ profile.monthly_variable_expenses|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+    </div>
+  </div>
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "Total monthly expenses (₹)" %} — {% trans "optional if split above" %}</label>
+    <input name="monthly_expenses" type="number" min="0" step="500" value="{{ profile.monthly_expenses|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+  </div>
+
+  {% if profile.employment_type|default:'salaried' == 'salaried' %}
+  <div class="rounded-xl border p-4 space-y-3" style="border-color: var(--border); background: var(--surface);">
+    <p class="text-sm font-semibold">{% trans "Salaried — workplace & tax" %}</p>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium block mb-1">{% trans "EPF balance (₹)" %}</label>
+        <input name="epf_balance" type="number" min="0" step="1000" value="{{ profile.epf_balance|default_if_none:'' }}" class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+      </div>
+      <div>
+        <label class="text-xs font-medium block mb-1">{% trans "Basic salary / mo (₹)" %}</label>
+        <input name="basic_salary" type="number" min="0" step="500" value="{{ profile.basic_salary|default_if_none:'' }}" class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="text-xs font-medium block mb-1">{% trans "HRA received / mo (₹)" %}</label>
+        <input name="hra" type="number" min="0" step="500" value="{{ profile.hra|default_if_none:'' }}" class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div>
+    <label class="creda-sub-label block mb-1">{% trans "Emergency fund (savings + liquid MF) ₹" %}</label>
+    <input name="emergency_fund" type="number" min="0" step="1000" value="{{ profile.emergency_fund|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+    <input type="hidden" name="emergency_fund_amount" value="{{ profile.emergency_fund_amount|default_if_none:'' }}" id="efa-mirror">
+  </div>
+
+  <div class="border-t pt-4" style="border-color: var(--border);">
+    <p class="text-sm font-semibold mb-3">{% trans "Tax deductions (FY 2025-26)" %}</p>
+    <label class="creda-sub-label block mb-1">{% trans "80C invested this year (₹)" %}</label>
+    <input name="section_80c_amount" type="number" min="0" max="150000" step="1000" value="{{ profile.section_80c_amount|default_if_none:'' }}"
+           class="w-full rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
+  </div>
+
+  <div class="space-y-3">
+    <label class="flex items-center gap-2 text-sm cursor-pointer">
+      <input type="checkbox" name="pays_rent" value="true" {% if profile.rent_paid %}checked{% endif %} id="cb-rent">
+      <span>{% trans "Do you pay rent?" %}</span>
+    </label>
+    <div id="blk-rent" class="pl-6 space-y-2 {% if not profile.rent_paid %}hidden{% endif %}">
+      <input name="rent_paid" type="number" min="0" placeholder="{% trans 'Monthly rent ₹' %}" value="{{ profile.rent_paid|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+    </div>
+    <label class="flex items-center gap-2 text-sm cursor-pointer">
+      <input type="checkbox" name="has_health_insurance" value="true" {% if profile.has_health_insurance %}checked{% endif %} id="cb-hi">
+      <span>{% trans "Health insurance (self)?" %}</span>
+    </label>
+    <div id="blk-hi" class="pl-6 {% if not profile.has_health_insurance %}hidden{% endif %}">
+      <input name="self_health_premium" type="number" min="0" placeholder="{% trans 'Annual premium ₹' %}" value="{{ profile.self_health_premium|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+    </div>
+    <label class="flex items-center gap-2 text-sm cursor-pointer">
+      <input type="checkbox" name="health_cover_parents" value="true" {% if profile.parents_health_premium %}checked{% endif %} id="cb-par">
+      <span>{% trans "Parents covered?" %}</span>
+    </label>
+    <div id="blk-par" class="pl-6 space-y-2 {% if not profile.parents_health_premium %}hidden{% endif %}">
+      <input name="parents_health_premium" type="number" min="0" placeholder="{% trans 'Parents premium / year ₹' %}" value="{{ profile.parents_health_premium|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+      <label class="flex items-center gap-2 text-xs"><input type="checkbox" name="parents_age_above_60" value="true" {% if profile.parents_age_above_60 %}checked{% endif %}> {% trans "Parents above 60?" %}</label>
+    </div>
+    <label class="flex items-center gap-2 text-sm cursor-pointer">
+      <input type="checkbox" name="has_nps" value="true" {% if profile.has_nps %}checked{% endif %} id="cb-nps">
+      <span>{% trans "NPS contributor (Tier 1)?" %}</span>
+    </label>
+    <div id="blk-nps" class="pl-6 {% if not profile.has_nps %}hidden{% endif %}">
+      <input name="nps_contribution" type="number" min="0" placeholder="{% trans 'Monthly NPS ₹' %}" value="{{ profile.nps_contribution|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+    </div>
+    <label class="flex items-center gap-2 text-sm cursor-pointer">
+      <input type="checkbox" name="has_home_loan" value="true" {% if profile.has_home_loan %}checked{% endif %} id="cb-hl">
+      <span>{% trans "Home loan?" %}</span>
+    </label>
+    <div id="blk-hl" class="pl-6 {% if not profile.has_home_loan %}hidden{% endif %}">
+      <input name="home_loan_interest" type="number" min="0" placeholder="{% trans 'Annual interest paid ₹' %}" value="{{ profile.home_loan_interest|default_if_none:'' }}"
+             class="w-full rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function bind(cb, blk) {
+    var c = document.getElementById(cb), b = document.getElementById(blk);
+    if (!c || !b) return;
+    c.addEventListener('change', function() { b.classList.toggle('hidden', !c.checked); });
+  }
+  bind('cb-rent','blk-rent'); bind('cb-hi','blk-hi'); bind('cb-par','blk-par'); bind('cb-nps','blk-nps'); bind('cb-hl','blk-hl');
+  var ef = document.querySelector('[name="emergency_fund"]');
+  var efa = document.getElementById('efa-mirror');
+  if (ef && efa) ef.addEventListener('input', function() { efa.value = ef.value || ''; });
+})();
+</script>

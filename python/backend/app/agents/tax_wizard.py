@@ -204,6 +204,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
             "capital_gains": None,
             "advance_tax": None,
             "missed_deductions": [],
+            "hra_notes": [],
+            "what_if_nps": None,
             "ranked_80c": [],
             "tax_loss_harvesting": [],
             "rag_insight": None,
@@ -214,12 +216,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
     age = profile.get("age", 30)
     city = (profile.get("city") or "").strip().lower()
 
-    investments_80c = profile.get("investments_80c", 0)
-    nps_80ccd = profile.get("nps_contribution", 0)
-    health_premium = profile.get("health_insurance_premium", 0)
-    hra = profile.get("hra", 0)
-    home_loan_interest = profile.get("home_loan_interest", 0)
-    rent_paid = profile.get("rent_paid", 0)
+    investments_80c = float(profile.get("investments_80c") or profile.get("section_80c_amount") or 0)
+    nps_80ccd = float(profile.get("nps_contribution") or 0)
+    health_premium = float(
+        profile.get("self_health_premium") or profile.get("health_insurance_premium") or 0
+    )
+    hra_monthly = float(profile.get("hra") or 0)
+    home_loan_interest = float(profile.get("home_loan_interest") or 0)
+    rent_paid = float(profile.get("rent_paid") or 0)
+    basic_monthly = float(profile.get("basic_salary") or 0)
 
     dl = rules.deductions  # DeductionLimits
 
@@ -230,19 +235,39 @@ async def run(state: FinancialState) -> dict[str, Any]:
     # 80D: self + parents
     self_80d_limit = dl.sec_80d_self_senior if age >= 60 else dl.sec_80d_self
     deduction_80d_self = min(health_premium, self_80d_limit)
-    parents_premium = profile.get("parents_health_premium", 0)
-    parents_senior = profile.get("parents_senior", False)
+    parents_premium = float(profile.get("parents_health_premium") or 0)
+    parents_senior = bool(
+        profile.get("parents_senior") or profile.get("parents_age_above_60")
+    )
     parents_80d_limit = dl.sec_80d_parents_senior if parents_senior else dl.sec_80d_parents
     deduction_80d_parents = min(parents_premium, parents_80d_limit)
     deduction_80d = deduction_80d_self + deduction_80d_parents
 
-    # HRA exemption
-    basic_salary = income * 0.4
-    hra_pct = 0.50 if city in _METRO_CITIES else 0.40
-    if hra > 0 and rent_paid > 0:
-        deduction_hra = max(min(hra, rent_paid - 0.10 * basic_salary, hra_pct * basic_salary), 0)
-    else:
-        deduction_hra = 0
+    # HRA exemption (annual figures; basic + HRA + rent from payslip / Form 16)
+    is_metro = bool(profile.get("is_metro")) or city in _METRO_CITIES
+    hra_pct = 0.50 if is_metro else 0.40
+    basic_annual = basic_monthly * 12 if basic_monthly > 0 else 0.0
+    hra_annual = hra_monthly * 12
+    rent_annual = rent_paid * 12
+
+    deduction_hra = 0.0
+    hra_notes: list[str] = []
+    if hra_annual > 0 and rent_annual > 0 and basic_annual > 0:
+        # min( HRA received, Rent paid − 10% of basic, 50%/40% of basic for metro/non-metro )
+        deduction_hra = max(
+            0.0,
+            min(
+                hra_annual,
+                rent_annual - 0.10 * basic_annual,
+                hra_pct * basic_annual,
+            ),
+        )
+    elif (hra_annual > 0 or rent_annual > 0) and basic_annual <= 0:
+        hra_notes.append(
+            "HRA not calculated: add monthly basic salary from your payslip (Settings) for an accurate exemption."
+        )
+    elif rent_annual > 0 and hra_annual <= 0:
+        hra_notes.append("HRA not calculated: add monthly HRA received from your employer.")
 
     deduction_24b = min(home_loan_interest, dl.sec_24b_self_occupied)
     std_deduction_old = rules.old_regime.standard_deduction
@@ -257,7 +282,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     # ── New Regime ──
     std_deduction_new = rules.new_regime.standard_deduction
     # New regime: employer NPS (80CCD2) is allowed even in new regime
-    employer_nps = profile.get("employer_nps", 0)
+    employer_nps = float(profile.get("employer_nps") or 0)
     taxable_new = max(income - std_deduction_new - employer_nps, 0)
     tax_new = compute_tax(taxable_new, rules.new_regime, income)
 
@@ -301,6 +326,33 @@ async def run(state: FinancialState) -> dict[str, Any]:
     if home_loan_interest == 0 and profile.get("has_home_loan"):
         missed.append({"section": "24(b)", "unused": dl.sec_24b_self_occupied,
                         "suggestion": "Home loan interest (up to ₹2L for self-occupied)"})
+    if rent_annual > 0 and basic_annual <= 0:
+        missed.append({
+            "section": "HRA",
+            "unused": None,
+            "suggestion": "Add monthly basic salary (payslip) to calculate rent-based HRA exemption.",
+        })
+    elif rent_annual > 0 and hra_annual <= 0:
+        missed.append({
+            "section": "HRA",
+            "unused": None,
+            "suggestion": "Add monthly HRA received from employer to complete HRA exemption.",
+        })
+
+    # ── What-if: max 80CCD(1B) in old regime (extra NPS up to ₹50k cap) ──
+    what_if_nps = None
+    if nps_80ccd < dl.sec_80ccd_1b:
+        extra_room = int(dl.sec_80ccd_1b - nps_80ccd)
+        tot_whatif = total_deductions_old - deduction_80ccd + float(dl.sec_80ccd_1b)
+        taxable_whatif = max(income - tot_whatif, 0)
+        tax_old_if_max_nps = compute_tax(taxable_whatif, rules.old_regime, income)
+        what_if_nps = {
+            "label": f"If you invest ₹{extra_room:,} more in NPS (80CCD(1B)) this FY",
+            "old_regime_tax_after": tax_old_if_max_nps,
+            "estimated_old_regime_saving": round(tax_old - tax_old_if_max_nps),
+            "additional_contribution": extra_room,
+            "note": "80CCD(1B) applies to the old tax regime; new regime has no 80C/80D basket.",
+        }
 
     # ── Ranked 80C Options ──
     ranked_80c = [
@@ -374,6 +426,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         "capital_gains": capital_gains,
         "advance_tax": advance_tax,
         "missed_deductions": missed,
+        "hra_notes": hra_notes,
+        "what_if_nps": what_if_nps,
         "ranked_80c": ranked_80c,
         "tax_loss_harvesting": tax_loss_harvesting,
         "rag_insight": rag_insight,
