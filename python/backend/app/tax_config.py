@@ -222,3 +222,67 @@ def compute_tax(taxable: float, regime: RegimeRules, gross_income: float = 0) ->
     # Health & Education Cess
     total = round(total_before_cess * (1 + regime.cess_rate))
     return total
+
+
+def explain_tax_compute(taxable: float, regime: RegimeRules, gross_income: float = 0) -> dict:
+    """Human-readable slab + rebate + surcharge + cess breakdown (must match ``compute_tax``)."""
+    taxable = max(float(taxable), 0.0)
+    gross = float(gross_income or taxable)
+
+    slab_rows: list[dict] = []
+    raw_tax = 0.0
+    prev = 0.0
+    for slab in regime.slabs:
+        if taxable <= prev:
+            break
+        bracket = min(taxable, slab.upto) - prev
+        if bracket > 0:
+            part = bracket * slab.rate
+            hi = "∞" if slab.upto == float("inf") else f"{slab.upto:,.0f}"
+            slab_rows.append(
+                {
+                    "from": prev,
+                    "to_label": hi,
+                    "rate_pct": round(slab.rate * 100, 2),
+                    "income_in_slab": round(bracket),
+                    "tax": round(part),
+                }
+            )
+            raw_tax += part
+        prev = slab.upto
+
+    tax_before_rebate = raw_tax
+    rebate = 0.0
+    rebate_applied = False
+    if taxable <= regime.rebate_limit:
+        rebate = min(float(regime.rebate_max), raw_tax)
+        raw_tax = max(raw_tax - rebate, 0.0)
+        rebate_applied = True
+
+    income_for_surcharge = gross
+    surcharge_rate = 0.0
+    for threshold, rate in regime.surcharge_thresholds:
+        if income_for_surcharge > threshold:
+            surcharge_rate = rate
+    surcharge_amt = raw_tax * surcharge_rate
+    total_before_cess = raw_tax + surcharge_amt
+    cess_rate = regime.cess_rate
+    cess_amt = total_before_cess * cess_rate
+    total = round(total_before_cess * (1 + cess_rate))
+
+    return {
+        "taxable_income": round(taxable),
+        "slabs": slab_rows,
+        "tax_before_rebate_87a": round(tax_before_rebate),
+        "rebate_87a_applied": rebate_applied,
+        "rebate_87a_max": regime.rebate_max if rebate_applied else 0,
+        "rebate_87a_used": round(rebate) if rebate_applied else 0,
+        "tax_after_rebate": round(raw_tax, 2),
+        "surcharge_rate_pct": round(surcharge_rate * 100, 2),
+        "surcharge_amount": round(surcharge_amt),
+        "subtotal_before_cess": round(total_before_cess),
+        "cess_rate_pct": round(cess_rate * 100, 2),
+        "cess_amount": round(cess_amt),
+        "total_tax": total,
+        "rebate_income_limit": regime.rebate_limit,
+    }

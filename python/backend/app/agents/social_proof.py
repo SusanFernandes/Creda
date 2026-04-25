@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import select, func as sqlfunc, and_, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.social_proof")
@@ -175,7 +175,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_SOCIAL_PROMPT.format(
+        result = await invoke_llm(fast_llm, _SOCIAL_PROMPT.format(
             user=str(user_metrics),
             age_group=age_group,
             peers=str(peers),

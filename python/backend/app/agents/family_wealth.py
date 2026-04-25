@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.family_wealth")
@@ -168,8 +168,12 @@ async def run(state: FinancialState) -> dict[str, Any]:
     prompt = _FAMILY_PROMPT.format(family_data=family_data, user=profile)
 
     try:
-        llm_response = await primary_llm(prompt)
-        analysis = llm_response
+        llm_response = await invoke_llm(fast_llm, prompt)
+        analysis = (
+            llm_response.content.strip()
+            if hasattr(llm_response, "content")
+            else str(llm_response)
+        )
     except Exception as e:
         logger.error("Family wealth LLM failed: %s", e)
         analysis = "Unable to generate family wealth analysis at this time."

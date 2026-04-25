@@ -4,7 +4,7 @@ Asks questions progressively, stores answers to UserProfile.
 """
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 _ONBOARDING_PROMPT = """You are CREDA, a friendly financial coach starting an onboarding conversation.
@@ -45,7 +45,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
         }
 
     try:
-        result = await primary_llm.ainvoke(_ONBOARDING_PROMPT.format(
+        result = await invoke_llm(fast_llm, _ONBOARDING_PROMPT.format(
             completed=completed,
             missing=missing,
             message=state.get("message", ""),

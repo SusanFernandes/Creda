@@ -5,7 +5,7 @@ Provides Perplexity-style research with cited sources from real financial websit
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.et_research")
@@ -98,7 +98,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     # 4. LLM synthesis
     try:
-        result = await primary_llm.ainvoke(_RESEARCH_PROMPT.format(
+        result = await invoke_llm(primary_llm, _RESEARCH_PROMPT.format(
             message=message,
             profile=str({k: profile.get(k) for k in ["age", "risk_appetite", "monthly_income", "city"]}),
             kb_context=kb_context,

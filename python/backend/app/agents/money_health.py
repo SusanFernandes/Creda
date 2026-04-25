@@ -3,7 +3,7 @@ Money Health Score agent — 6 dimensions, 0-100 weighted score, grade, top 3 ac
 """
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 _HEALTH_PROMPT = """You are a financial health assessor for Indian users.
@@ -164,8 +164,9 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     # LLM top 3 actions
     try:
-        result = await primary_llm.ainvoke(
-            _HEALTH_PROMPT.format(scores=str(scores), grade=grade, overall=overall)
+        result = await invoke_llm(
+            fast_llm,
+            _HEALTH_PROMPT.format(scores=str(scores), grade=grade, overall=overall),
         )
         actions = result.content.strip()
     except Exception:

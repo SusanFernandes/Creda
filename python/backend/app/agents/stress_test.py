@@ -5,7 +5,7 @@ Stress Test agent — Monte Carlo simulations for life events.
 import random
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _EVENTS = {
@@ -80,7 +80,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
             income=income, expenses=expenses, emergency=emergency,
             portfolio=portfolio_value, events=events_to_test, results=str(results),
         )
-        llm_result = await primary_llm.ainvoke(prompt)
+        llm_result = await invoke_llm(primary_llm, prompt)
         mitigation = llm_result.content.strip()
     except Exception:
         mitigation = ""

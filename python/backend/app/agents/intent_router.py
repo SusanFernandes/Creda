@@ -6,8 +6,7 @@ Enhanced with hints from Tiers 2-3 to help the LLM disambiguate faster.
 Uses fast_llm (llama-3.1-8b-instant) for speed (~1-2s).
 """
 from typing import Optional
-from app.core.llm import fast_llm
-
+from app.core.llm import clip_prompt, fast_llm, invoke_llm
 _VALID_INTENTS = {
     "portfolio_xray", "stress_test", "fire_planner", "money_health",
     "tax_wizard", "budget_coach", "goal_planner", "couples_finance",
@@ -62,7 +61,7 @@ def _build_prompt(
     if context_lines:
         parts.append("\nContext (use as hints, not absolute):\n" + "\n".join(f"• {l}" for l in context_lines))
 
-    parts.append(f"\nUser message: {message}")
+    parts.append(f"\nUser message: {clip_prompt(message, 1800)}")
     parts.append("Intent:")
     return "\n".join(parts)
 
@@ -76,7 +75,7 @@ async def llm_classify_intent(
     """Classify intent using LLM (Tier 4). Returns intent string."""
     try:
         prompt = _build_prompt(message, hints, last_intent, keyword_hint)
-        result = await fast_llm.ainvoke(prompt)
+        result = await invoke_llm(fast_llm, prompt)
         intent = result.content.strip().lower().replace(" ", "_").strip(".")
         return intent if intent in _VALID_INTENTS else "general_chat"
     except Exception:

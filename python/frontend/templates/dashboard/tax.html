@@ -91,6 +91,125 @@
       <p class="text-sm text-slate-500 mt-1">with the {{ tax.analysis.better_regime }} regime</p>
     </div>
 
+    {% if tax.analysis.calculation_trace %}
+    <div x-data="{ showCalc: false }" class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+      <button type="button" @click="showCalc = !showCalc" class="w-full flex items-center justify-between p-6 text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+        <div>
+          <h3 class="font-bold text-sm flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            How we calculated this
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">Formulas, inputs, and slab-wise tax (same engine as the cards above).</p>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 shrink-0 transition-transform" :class="showCalc && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div x-show="showCalc" x-collapse class="px-6 pb-6 space-y-6 text-sm text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800/80">
+        <p class="pt-4 text-xs leading-relaxed"><span class="font-semibold text-slate-800 dark:text-slate-200">Rules:</span> {{ tax.analysis.calculation_trace.rules_source }} — <span class="font-mono text-[11px]">{{ tax.analysis.calculation_trace.fy }}</span> / AY <span class="font-mono text-[11px]">{{ tax.analysis.calculation_trace.ay }}</span>.</p>
+
+        <div class="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 p-4 space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Income</p>
+          <p><span class="font-semibold">Annual gross</span> = {{ tax.analysis.calculation_trace.inputs.annual_gross_formula }} → <span class="font-mono">₹{{ tax.analysis.calculation_trace.inputs.annual_gross_income|floatformat:0 }}</span> (monthly in profile: ₹{{ tax.analysis.calculation_trace.inputs.monthly_income_profile|floatformat:0 }})</p>
+        </div>
+
+        <div class="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 p-4 space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">HRA exemption (old regime)</p>
+          <p class="text-xs">{{ tax.analysis.calculation_trace.hra.formula }}</p>
+          <ul class="text-xs space-y-1 list-disc list-inside text-slate-500">
+            <li>Basic proxy: ₹{{ tax.analysis.calculation_trace.hra.basic_proxy|floatformat:0 }}</li>
+            <li>HRA (profile): ₹{{ tax.analysis.calculation_trace.hra.hra_from_profile|floatformat:0 }} · Rent paid (profile): ₹{{ tax.analysis.calculation_trace.hra.rent_paid_from_profile|floatformat:0 }}</li>
+            <li>Cap: {{ tax.analysis.calculation_trace.hra.percent_of_basic_cap }} · Metro: {% if tax.analysis.calculation_trace.inputs.metro_for_hra %}yes{% else %}no{% endif %}</li>
+            <li class="font-semibold text-slate-700 dark:text-slate-200">HRA deduction: ₹{{ tax.analysis.calculation_trace.hra.hra_exemption_deduction|floatformat:0 }}</li>
+          </ul>
+          <p class="text-[10px] text-amber-700/90 dark:text-amber-300/90">{{ tax.analysis.calculation_trace.hra.units_note }}</p>
+        </div>
+
+        <div class="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Old regime — deductions → taxable</p>
+          <p class="text-xs">{{ tax.analysis.calculation_trace.old_regime_deductions.taxable_formula }}</p>
+          <ul class="text-xs space-y-1 font-mono text-[11px]">
+            <li>80C applied: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_80c.applied|floatformat:0 }} ({{ tax.analysis.calculation_trace.old_regime_deductions.sec_80c.formula }})</li>
+            <li>80CCD(1B): ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_80ccd_1b.applied|floatformat:0 }}</li>
+            <li>80D: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_80d.applied|floatformat:0 }} (self ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_80d.self_premium|floatformat:0 }} / parents ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_80d.parents_premium|floatformat:0 }})</li>
+            <li>HRA: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.hra.applied|floatformat:0 }}</li>
+            <li>24(b): ₹{{ tax.analysis.calculation_trace.old_regime_deductions.sec_24b.applied|floatformat:0 }}</li>
+            <li>Standard: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.standard.amount|floatformat:0 }}</li>
+            <li class="font-bold text-slate-800 dark:text-slate-100 pt-1">Total deductions: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.total_deductions|floatformat:0 }} → Taxable: ₹{{ tax.analysis.calculation_trace.old_regime_deductions.taxable_income|floatformat:0 }}</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 p-4 space-y-2">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">New regime — taxable</p>
+          <p class="text-xs">{{ tax.analysis.calculation_trace.new_regime_deductions.taxable_formula }}</p>
+          <p class="text-xs font-mono">Standard ₹{{ tax.analysis.calculation_trace.new_regime_deductions.standard|floatformat:0 }} + employer NPS ₹{{ tax.analysis.calculation_trace.new_regime_deductions.employer_nps_80ccd2|floatformat:0 }} → Taxable ₹{{ tax.analysis.calculation_trace.new_regime_deductions.taxable_income|floatformat:0 }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-600 mb-2">Old regime — tax build-up</p>
+            <p class="text-xs mb-2">Taxable ₹{{ tax.analysis.calculation_trace.income_tax_old.taxable_income|floatformat:0 }} · 87A rebate if taxable ≤ ₹{{ tax.analysis.calculation_trace.income_tax_old.rebate_income_limit|floatformat:0 }}</p>
+            <div class="space-y-1 text-[11px] font-mono">
+              {% for slab in tax.analysis.calculation_trace.income_tax_old.slabs %}
+              <div class="flex justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 py-1 last:border-0">
+                <span>₹{{ slab.from|floatformat:0 }}–{{ slab.to_label }} @ {{ slab.rate_pct|floatformat:1 }}%</span>
+                <span>₹{{ slab.tax|floatformat:0 }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            <ul class="mt-2 text-[11px] space-y-0.5 text-slate-500">
+              <li>After slabs (pre-rebate): ₹{{ tax.analysis.calculation_trace.income_tax_old.tax_before_rebate_87a|floatformat:0 }}</li>
+              {% if tax.analysis.calculation_trace.income_tax_old.rebate_87a_applied %}
+              <li>87A rebate used: ₹{{ tax.analysis.calculation_trace.income_tax_old.rebate_87a_used|floatformat:0 }}</li>
+              {% endif %}
+              <li>Surcharge {{ tax.analysis.calculation_trace.income_tax_old.surcharge_rate_pct|floatformat:1 }}%: ₹{{ tax.analysis.calculation_trace.income_tax_old.surcharge_amount|floatformat:0 }}</li>
+              <li>Cess {{ tax.analysis.calculation_trace.income_tax_old.cess_rate_pct|floatformat:0 }}%: ₹{{ tax.analysis.calculation_trace.income_tax_old.cess_amount|floatformat:0 }}</li>
+              <li class="font-bold text-slate-800 dark:text-slate-100">Total (incl. cess): ₹{{ tax.analysis.calculation_trace.income_tax_old.total_tax|floatformat:0 }}</li>
+            </ul>
+          </div>
+          <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-violet-600 mb-2">New regime — tax build-up</p>
+            <p class="text-xs mb-2">Taxable ₹{{ tax.analysis.calculation_trace.income_tax_new.taxable_income|floatformat:0 }} · 87A if ≤ ₹{{ tax.analysis.calculation_trace.income_tax_new.rebate_income_limit|floatformat:0 }}</p>
+            <div class="space-y-1 text-[11px] font-mono">
+              {% for slab in tax.analysis.calculation_trace.income_tax_new.slabs %}
+              <div class="flex justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 py-1 last:border-0">
+                <span>₹{{ slab.from|floatformat:0 }}–{{ slab.to_label }} @ {{ slab.rate_pct|floatformat:1 }}%</span>
+                <span>₹{{ slab.tax|floatformat:0 }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            <ul class="mt-2 text-[11px] space-y-0.5 text-slate-500">
+              <li>After slabs (pre-rebate): ₹{{ tax.analysis.calculation_trace.income_tax_new.tax_before_rebate_87a|floatformat:0 }}</li>
+              {% if tax.analysis.calculation_trace.income_tax_new.rebate_87a_applied %}
+              <li>87A rebate used: ₹{{ tax.analysis.calculation_trace.income_tax_new.rebate_87a_used|floatformat:0 }}</li>
+              {% endif %}
+              <li>Surcharge {{ tax.analysis.calculation_trace.income_tax_new.surcharge_rate_pct|floatformat:1 }}%: ₹{{ tax.analysis.calculation_trace.income_tax_new.surcharge_amount|floatformat:0 }}</li>
+              <li>Cess {{ tax.analysis.calculation_trace.income_tax_new.cess_rate_pct|floatformat:0 }}%: ₹{{ tax.analysis.calculation_trace.income_tax_new.cess_amount|floatformat:0 }}</li>
+              <li class="font-bold text-slate-800 dark:text-slate-100">Total (incl. cess): ₹{{ tax.analysis.calculation_trace.income_tax_new.total_tax|floatformat:0 }}</li>
+            </ul>
+          </div>
+        </div>
+
+        {% if tax.analysis.calculation_trace.portfolio_80c_estimate.values %}
+        <div class="rounded-xl bg-emerald-50/40 dark:bg-emerald-900/10 border border-emerald-200/40 dark:border-emerald-800/30 p-4 text-xs space-y-2">
+          <p class="font-semibold text-emerald-900 dark:text-emerald-100">80C portfolio bar (estimates)</p>
+          <p>{{ tax.analysis.calculation_trace.portfolio_80c_estimate.elss }}</p>
+          <p>{{ tax.analysis.calculation_trace.portfolio_80c_estimate.epf }}</p>
+          <p>{{ tax.analysis.calculation_trace.portfolio_80c_estimate.ppf }}</p>
+          <p>{{ tax.analysis.calculation_trace.portfolio_80c_estimate.declared }}</p>
+          <p>{{ tax.analysis.calculation_trace.portfolio_80c_estimate.effective }}</p>
+        </div>
+        {% endif %}
+
+        <div class="rounded-xl bg-amber-50/40 dark:bg-amber-900/10 border border-amber-200/40 dark:border-amber-800/30 p-4 text-xs space-y-2">
+          <p class="font-semibold text-amber-900 dark:text-amber-100">Capital gains (separate from salary slabs)</p>
+          <p>{{ tax.analysis.calculation_trace.capital_gains_logic.equity_ltcg }}</p>
+          <p>{{ tax.analysis.calculation_trace.capital_gains_logic.equity_stcg }}</p>
+          <p>{{ tax.analysis.calculation_trace.capital_gains_logic.debt }}</p>
+        </div>
+        <p class="text-[10px] text-slate-400">{{ tax.analysis.calculation_trace.advance_tax_formula }}</p>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- 80C Breakdown (auto-detected from portfolio) -->
     {% if tax.analysis.breakdown_80c %}
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">

@@ -3,7 +3,7 @@ General chat agent — fallback for greetings, casual conversation, unclassified
 """
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 _GENERAL_PROMPT = """You are CREDA, a friendly AI financial coach for Indian users.
@@ -25,8 +25,9 @@ async def run(state: FinancialState) -> dict[str, Any]:
     language = state.get("language", "en")
 
     try:
-        result = await primary_llm.ainvoke(
-            _GENERAL_PROMPT.format(message=message, language=language)
+        result = await invoke_llm(
+            fast_llm,
+            _GENERAL_PROMPT.format(message=message, language=language),
         )
         return {"response_text": result.content.strip()}
     except Exception:

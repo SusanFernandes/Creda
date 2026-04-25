@@ -5,7 +5,7 @@ Determines user's financial personality type and customizes advice accordingly.
 import logging
 from typing import Any
 
-from app.core.llm import fast_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.money_personality")
@@ -146,7 +146,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     # LLM refinement
     try:
         import json
-        result = await fast_llm.ainvoke(_PERSONALITY_PROMPT.format(
+        result = await invoke_llm(fast_llm, _PERSONALITY_PROMPT.format(
             profile=str({k: profile.get(k) for k in [
                 "age", "monthly_income", "monthly_expenses", "risk_appetite",
                 "savings", "emergency_fund", "has_health_insurance",

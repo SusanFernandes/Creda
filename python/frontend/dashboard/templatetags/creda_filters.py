@@ -25,6 +25,8 @@ def strip_markdown(value):
 def indian_number(value):
     """Format number with Indian comma system (12,34,567)."""
     try:
+        if isinstance(value, str):
+            value = value.replace(",", "").strip()
         num = int(float(value))
     except (ValueError, TypeError):
         return value

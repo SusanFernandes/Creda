@@ -110,7 +110,8 @@ async def _transcribe_faster_whisper(audio_bytes: bytes) -> dict:
 
 
 async def _transcribe_groq(audio_bytes: bytes) -> dict:
-    """Fallback: Groq Whisper API."""
+    """Fallback: Groq Whisper API (retries on 429 to align with chat rate limits)."""
+    import asyncio
     import httpx
 
     # Try WAV conversion; if fails, send raw with detected mime type
@@ -122,17 +123,34 @@ async def _transcribe_groq(audio_bytes: bytes) -> dict:
         fname = f"audio.{fmt}"
         mime = f"audio/{fmt}"
 
+    delays = (0.0, 2.0, 6.0)
+    last_exc: BaseException | None = None
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
-            files={"file": (fname, io.BytesIO(wav_bytes), mime)},
-            data={"model": "whisper-large-v3", "response_format": "json"},
-        )
-        response.raise_for_status()
-        data = response.json()
-        return {
-            "text": data.get("text", ""),
-            "language": data.get("language", "en"),
-            "confidence": 0.85,
-        }
+        for attempt, delay in enumerate(delays):
+            if delay:
+                await asyncio.sleep(delay)
+            try:
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+                    files={"file": (fname, io.BytesIO(wav_bytes), mime)},
+                    data={"model": "whisper-large-v3", "response_format": "json"},
+                )
+                if response.status_code == 429 and attempt < len(delays) - 1:
+                    last_exc = RuntimeError("Groq STT 429")
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                return {
+                    "text": data.get("text", ""),
+                    "language": data.get("language", "en"),
+                    "confidence": 0.85,
+                }
+            except httpx.HTTPStatusError as e:
+                last_exc = e
+                if e.response is not None and e.response.status_code == 429 and attempt < len(delays) - 1:
+                    continue
+                raise
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Groq transcription: empty retry path")

@@ -6,7 +6,7 @@ Maps each event to a personalised, tax-bracket-aware action plan.
 import math
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _LIFE_EVENT_PROMPT = """You are an elite Indian financial advisor handling a life event.
@@ -379,7 +379,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_LIFE_EVENT_PROMPT.format(
+        result = await invoke_llm(primary_llm, _LIFE_EVENT_PROMPT.format(
             event_description=f"{strategy['description']} — ₹{amount:,.0f}" if amount else strategy['description'],
             snapshot=str(snapshot),
             plan=str(plan),

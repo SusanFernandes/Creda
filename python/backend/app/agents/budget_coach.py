@@ -3,7 +3,7 @@ Budget Coach agent — spending analysis, 50/30/20 rule, category breakdown, sav
 """
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 _BUDGET_PROMPT = """You are a budget coach for Indian users. Given this spending analysis, provide:
@@ -65,7 +65,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_BUDGET_PROMPT.format(data=str(data)))
+        result = await invoke_llm(fast_llm, _BUDGET_PROMPT.format(data=str(data)))
         data["advice"] = result.content.strip()
     except Exception:
         data["advice"] = ""

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from app.core.llm import primary_llm, fast_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.market_pulse")
@@ -114,7 +114,7 @@ async def _score_sentiment(headlines: list[dict]) -> dict:
         return {"overall": "neutral", "scored": []}
     try:
         titles = "\n".join(f"- {h['title']}" for h in headlines[:8])
-        result = await fast_llm.ainvoke(
+        result = await invoke_llm(fast_llm, 
             f"Score each headline as bullish, bearish, or neutral for Indian equity markets. "
             f"Respond ONLY as a JSON array of objects: [{{\"title\": \"...\", \"sentiment\": \"bullish|bearish|neutral\"}}]\n\n{titles}"
         )
@@ -132,7 +132,7 @@ async def _generate_premarket_briefing(indices: dict, headlines: list, sentiment
     """Generate a concise pre-market/market briefing suitable for voice."""
     try:
         nifty_dir = "up" if indices.get("nifty_change", 0) >= 0 else "down"
-        result = await fast_llm.ainvoke(
+        result = await invoke_llm(fast_llm, 
             f"Generate a 3-sentence Indian market briefing in a professional ET-style tone.\n"
             f"Nifty 50: {indices.get('nifty50', 'N/A')} ({nifty_dir} {abs(indices.get('nifty_change', 0)):.1f}%), "
             f"Sensex: {indices.get('sensex', 'N/A')}\n"
@@ -155,7 +155,7 @@ async def _analyze_portfolio_headline_impact(headlines: list[dict], portfolio: d
     fund_categories = list(set(f.get("category", "") for f in funds if f.get("category")))
     titles = "\n".join(f"- {h['title']}" for h in headlines[:6])
     try:
-        result = await fast_llm.ainvoke(
+        result = await invoke_llm(fast_llm, 
             f"Given these market headlines:\n{titles}\n\n"
             f"And this user's portfolio (fund names: {', '.join(fund_names[:6])}, "
             f"categories: {', '.join(fund_categories)}), "
@@ -188,7 +188,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_MARKET_PROMPT.format(
+        result = await invoke_llm(fast_llm, _MARKET_PROMPT.format(
             date=datetime.now().strftime("%B %d, %Y"),
             headlines="\n".join([f"- {h['title']} ({h['source']})" for h in headlines]),
             portfolio=str(portfolio_summary),

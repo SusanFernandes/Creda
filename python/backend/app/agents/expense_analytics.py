@@ -5,7 +5,7 @@ Uses profile data + LLM to generate smart spending insights.
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.expense_analytics")
@@ -116,7 +116,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
         # Fallback: LLM-generated analysis from profile data
         try:
             import json
-            result = await primary_llm.ainvoke(_EXPENSE_PROMPT.format(
+            result = await invoke_llm(fast_llm, _EXPENSE_PROMPT.format(
                 income=income, expenses=expenses, city=city, age=age,
                 employment=employment, dependents=dependents, emi=emi,
                 surplus=surplus,

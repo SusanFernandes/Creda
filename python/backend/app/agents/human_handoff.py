@@ -5,7 +5,7 @@ Detects when human intervention is needed, prepares context, facilitates handoff
 import logging
 from typing import Any
 
-from app.core.llm import fast_llm
+from app.core.llm import fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.human_handoff")
@@ -75,7 +75,7 @@ If human handoff IS needed, respond empathetically acknowledging their situation
 If no triggers, provide a brief, helpful response and mention that human advisor support is available for complex situations.
 
 Keep it warm and professional. Use ₹ in Indian context."""
-        result = await fast_llm.ainvoke(prompt)
+        result = await invoke_llm(fast_llm, prompt)
         response = result.content.strip()
     except Exception:
         response = ("I understand this is a complex situation. Let me connect you with a "

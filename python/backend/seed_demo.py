@@ -16,9 +16,11 @@ import asyncio
 import hashlib
 import os
 import secrets
+import socket
 import sys
 import uuid
 from datetime import date, datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 # ── Add project paths ─────────────────────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
@@ -37,6 +39,53 @@ def _hash_pw(password: str) -> str:
     salt = secrets.token_hex(16)
     h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 200_000)
     return f"{salt}${h.hex()}"
+
+
+def _preflight_postgres() -> None:
+    """Fail fast with a clear message if Postgres is not accepting connections."""
+    endpoints: set[tuple[str, int]] = set()
+    dj_host = os.environ.get("DJANGO_DB_HOST", "localhost")
+    dj_port = int(os.environ.get("DJANGO_DB_PORT", "8010"))
+    endpoints.add((dj_host, dj_port))
+
+    try:
+        from app.config import settings
+
+        raw = settings.DATABASE_URL
+        for dialect_prefix, plain in (
+            ("postgresql+asyncpg://", "postgresql://"),
+            ("postgres+asyncpg://", "postgresql://"),
+        ):
+            if raw.startswith(dialect_prefix):
+                raw = plain + raw[len(dialect_prefix) :]
+                break
+        u = urlparse(raw)
+        if u.hostname:
+            endpoints.add((u.hostname, int(u.port or 5432)))
+    except Exception:
+        pass
+
+    unreachable: list[tuple[str, int]] = []
+    for host, port in endpoints:
+        try:
+            with socket.create_connection((host, port), timeout=2.0):
+                pass
+        except OSError:
+            unreachable.append((host, port))
+
+    if not unreachable:
+        return
+
+    lines = "\n".join(f"    {h}:{p}" for h, p in sorted(unreachable))
+    print("  PostgreSQL is not accepting connections at:")
+    print(lines)
+    print()
+    print("  Start the database first, for example:")
+    print("    cd python && make docker")
+    print("    (or from repo root: docker compose up -d postgres)")
+    print()
+    print("  Then retry: make seed")
+    sys.exit(1)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -657,6 +706,8 @@ def main():
     print(f"    User 1: arjun@demo.creda.in / {DEMO_PASSWORD}")
     print(f"    User 2: priya@demo.creda.in / {DEMO_PASSWORD}")
     print()
+
+    _preflight_postgres()
 
     # 1. Seed Django database (synchronous)
     print("  [1/2] Seeding Django database (creda_django)...")

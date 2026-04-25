@@ -19,8 +19,17 @@ class Settings(BaseSettings):
     # ── Auth ───────────────────────────────────────────────
     JWT_SECRET: str = "change-me-in-production"
 
-    # ── LLM ────────────────────────────────────────────────
+    # ── LLM (Groq) ───────────────────────────────────────────
     GROQ_API_KEY: Optional[str] = None
+    # Smaller max_tokens + input caps reduce TPD rate limits (on_demand tier is tight).
+    GROQ_PRIMARY_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_FAST_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_MAX_OUTPUT_TOKENS_PRIMARY: int = 768
+    GROQ_MAX_OUTPUT_TOKENS_FAST: int = 512
+    # Hard cap on prompt string length sent to Groq (characters, not tokens).
+    GROQ_LLM_INPUT_MAX_CHARS: int = 10_000
+    # If false: synthesizer uses fast model first (much lower token usage on 70B).
+    GROQ_SYNTH_PRIMARY_FIRST: bool = False
 
     # ── TTS ────────────────────────────────────────────────
     KOKORO_TTS_URL: str = "http://localhost:8880"

@@ -17,9 +17,9 @@ Rules source: app.tax_config (version-controlled per FY, updated post-budget).
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
-from app.tax_config import get_tax_rules, compute_tax, TaxYear
+from app.tax_config import compute_tax, explain_tax_compute, get_tax_rules, TaxYear
 
 logger = logging.getLogger("creda.agents.tax_wizard")
 
@@ -231,7 +231,9 @@ async def run(state: FinancialState) -> dict[str, Any]:
     self_80d_limit = dl.sec_80d_self_senior if age >= 60 else dl.sec_80d_self
     deduction_80d_self = min(health_premium, self_80d_limit)
     parents_premium = profile.get("parents_health_premium", 0)
-    parents_senior = profile.get("parents_senior", False)
+    parents_senior = bool(
+        profile.get("parents_senior") or profile.get("parents_age_above_60")
+    )
     parents_80d_limit = dl.sec_80d_parents_senior if parents_senior else dl.sec_80d_parents
     deduction_80d_parents = min(parents_premium, parents_80d_limit)
     deduction_80d = deduction_80d_self + deduction_80d_parents
@@ -347,11 +349,78 @@ async def run(state: FinancialState) -> dict[str, Any]:
     except Exception:
         pass
 
+    old_tax_trace = explain_tax_compute(taxable_old, rules.old_regime, income)
+    new_tax_trace = explain_tax_compute(taxable_new, rules.new_regime, income)
+
+    calculation_trace = {
+        "rules_source": "CREDA app/tax_config.py (versioned slabs, rebates, cess for the FY below)",
+        "fy": rules.fy,
+        "ay": rules.ay,
+        "inputs": {
+            "monthly_income_profile": monthly_income,
+            "annual_gross_formula": "monthly_income × 12",
+            "annual_gross_income": round(income),
+            "city_for_hra": city or "(not set)",
+            "metro_for_hra": city in _METRO_CITIES,
+        },
+        "hra": {
+            "formula": "max(0, min(HRA_component, rent_paid − 10%×basic_proxy, metro_or_non%×basic_proxy)); basic_proxy = 40%×annual_gross (simplified).",
+            "basic_proxy": round(basic_salary),
+            "hra_from_profile": round(hra),
+            "rent_paid_from_profile": round(rent_paid),
+            "percent_of_basic_cap": f"{int(hra_pct * 100)}% of basic (50% metro / 40% non-metro)",
+            "hra_exemption_deduction": round(deduction_hra),
+            "units_note": "Annual gross = monthly_income×12. Use annual-equivalent rent and HRA in Settings for best accuracy.",
+        },
+        "old_regime_deductions": {
+            "sec_80c": {"formula": "min(investments_80c, ₹1,50,000)", "capped_at": dl.sec_80c, "applied": round(deduction_80c)},
+            "sec_80ccd_1b": {"formula": "min(nps_contribution, ₹50,000)", "capped_at": dl.sec_80ccd_1b, "applied": round(deduction_80ccd)},
+            "sec_80d": {
+                "formula": "min(self_premium, self_limit) + min(parents_premium, parents_limit)",
+                "self_premium": round(health_premium),
+                "self_limit": self_80d_limit,
+                "parents_premium": round(parents_premium),
+                "parents_limit": parents_80d_limit,
+                "parents_senior_flag": parents_senior,
+                "applied": round(deduction_80d),
+            },
+            "hra": {"applied": round(deduction_hra)},
+            "sec_24b": {"formula": "min(home_loan_interest, ₹2,00,000 self-occupied)", "applied": round(deduction_24b)},
+            "standard": {"amount": std_deduction_old, "note": "Old regime standard deduction (salaried)"},
+            "total_deductions": round(total_deductions_old),
+            "taxable_formula": "max(gross − total_deductions, 0)",
+            "taxable_income": round(taxable_old),
+        },
+        "new_regime_deductions": {
+            "standard": std_deduction_new,
+            "employer_nps_80ccd2": round(employer_nps),
+            "taxable_formula": "max(gross − standard − employer_nps, 0)",
+            "taxable_income": round(taxable_new),
+        },
+        "income_tax_old": old_tax_trace,
+        "income_tax_new": new_tax_trace,
+        "capital_gains_logic": {
+            "equity_ltcg": "Gains on equity/ELSS funds; tax = 12.5% on (LTCG − ₹1,25,000 exemption) per tax_config capital_gains rules.",
+            "equity_stcg": "20% on short-term equity gains (heuristic; holding period from CAMS not yet wired).",
+            "debt": "Debt/hybrid gains taxed at slab (simplified note in engine).",
+        },
+        "advance_tax_formula": "If max(old, new) tax > ₹10,000, show 15%/45%/75%/100% cumulative instalments (simplified schedule).",
+        "portfolio_80c_estimate": {
+            "elss": "Sum of ELSS `invested` from portfolio funds.",
+            "epf": "Proxy: 12% × EPF balance (annual contribution estimate — illustrative).",
+            "ppf": "Proxy: min(10% × PPF balance, ₹1,50,000) — illustrative.",
+            "declared": "Profile field `investments_80c`.",
+            "effective": "max(auto_total, declared) capped at ₹1,50,000 for display bar.",
+            "values": breakdown_80c,
+        },
+    }
+
     data = {
         "fy": rules.fy,
         "ay": rules.ay,
         "fy_label": rules.label,
         "gross_income": income,
+        "calculation_trace": calculation_trace,
         "old_regime": {
             "deductions": {
                 "80C": deduction_80c, "80CCD(1B)": deduction_80ccd,
@@ -380,7 +449,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_TAX_PROMPT.format(
+        result = await invoke_llm(primary_llm, _TAX_PROMPT.format(
             fy_label=rules.label, data=str(data)))
         data["advice"] = result.content.strip()
     except Exception:

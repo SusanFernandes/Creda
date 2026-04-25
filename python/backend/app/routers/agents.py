@@ -59,8 +59,34 @@ async def fire_planner(
     db: AsyncSession = Depends(get_db),
 ):
     profile = await _get_profile(auth.user_id, db)
+    from app.models import Portfolio, PortfolioFund
     from app.agents.fire_planner import run_fire_planner
-    return await run_fire_planner(profile, body.language, body.voice_mode)
+
+    port_result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = port_result.scalar_one_or_none()
+    portfolio_data: dict = {}
+    if portfolio:
+        funds_result = await db.execute(
+            select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+        )
+        funds = funds_result.scalars().all()
+        portfolio_data = {
+            "total_invested": float(portfolio.total_invested or 0),
+            "current_value": float(portfolio.current_value or 0),
+            "xirr": float(portfolio.xirr or 0),
+            "funds": [
+                {
+                    "fund_name": f.fund_name,
+                    "invested": float(f.invested or 0),
+                    "current_value": float(f.current_value or 0),
+                    "scheme_type": f.scheme_type or "",
+                }
+                for f in funds
+            ],
+        }
+    return await run_fire_planner(profile, body.language, body.voice_mode, portfolio_data=portfolio_data)
 
 
 @router.post("/tax-wizard")

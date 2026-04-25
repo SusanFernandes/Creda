@@ -4,7 +4,7 @@ Goal Planner agent — target-based savings plans (house, car, education, weddin
 from datetime import date
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _GOAL_PROMPT = """You are a financial goal planner for Indian users. Given these goal calculations, provide:
@@ -142,7 +142,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_GOAL_PROMPT.format(data=str(data)))
+        result = await invoke_llm(primary_llm, _GOAL_PROMPT.format(data=str(data)))
         data["advice"] = result.content.strip()
     except Exception:
         data["advice"] = ""

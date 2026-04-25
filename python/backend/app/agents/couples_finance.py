@@ -3,7 +3,7 @@ Couples Finance agent — joint budgeting, expense splitting, combined planning.
 """
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _COUPLES_PROMPT = """You are a couples finance advisor for Indian partners. Given this analysis:
@@ -131,7 +131,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_COUPLES_PROMPT.format(data=str(data)))
+        result = await invoke_llm(primary_llm, _COUPLES_PROMPT.format(data=str(data)))
         data["advice"] = result.content.strip()
     except Exception:
         data["advice"] = ""

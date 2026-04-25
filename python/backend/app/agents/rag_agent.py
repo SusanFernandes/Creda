@@ -4,8 +4,8 @@ RAG agent — knowledge base retrieval from ChromaDB (60+ curated financial docu
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
 from app.config import settings
+from app.core.llm import clip_prompt, fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.rag")
@@ -34,8 +34,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         collection = client.get_collection("creda_knowledge")
 
         results = collection.query(
-            query_texts=[message],
-            n_results=5,
+            query_texts=[clip_prompt(message, 2000)],
+            n_results=4,
         )
 
         documents = results.get("documents", [[]])[0]
@@ -46,8 +46,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
         relevant = []
         sources = []
         for doc, meta, dist in zip(documents, metadatas, distances):
-            if dist < 0.5:
-                relevant.append(doc)
+            if dist < 0.5 and doc:
+                relevant.append(doc[:1600])
                 sources.append(meta.get("source", "unknown"))
 
         if not relevant:
@@ -57,9 +57,12 @@ async def run(state: FinancialState) -> dict[str, Any]:
                 "confidence": "low",
             }
 
-        context = "\n\n---\n\n".join(relevant)
+        context = clip_prompt("\n\n---\n\n".join(relevant), 6500)
 
-        result = await primary_llm.ainvoke(_RAG_PROMPT.format(context=context, question=message))
+        result = await invoke_llm(
+            fast_llm,
+            _RAG_PROMPT.format(context=context, question=clip_prompt(message, 1200)),
+        )
 
         return {
             "answer": result.content.strip(),

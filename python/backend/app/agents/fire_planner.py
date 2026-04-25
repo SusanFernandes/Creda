@@ -5,7 +5,7 @@ Computes FIRE number, required SIP, 30-year roadmap, tax optimisation, insurance
 import math
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _FIRE_PROMPT = """You are a FIRE (Financial Independence Retire Early) expert for Indian investors.
@@ -53,13 +53,15 @@ async def run(state: FinancialState) -> dict[str, Any]:
     # FIRE number (4% rule, inflation-adjusted)
     years_to_fire = max(fire_target_age - age, 1)
     future_annual_expenses = annual_expenses * ((1 + inflation_rate) ** years_to_fire)
-    fire_number = future_annual_expenses / 0.04
+    computed_fire_number = future_annual_expenses / 0.04
+    user_corpus_floor = float(profile.get("fire_corpus_target") or 0)
+    # If user set a minimum FIRE corpus in Settings, goal is the higher of expense-based or that floor.
+    fire_number = max(computed_fire_number, user_corpus_floor) if user_corpus_floor > 0 else computed_fire_number
 
-    # Current corpus
+    # Current corpus: latest portfolio + liquid / retirement balances (all from profile + DB portfolio)
     portfolio = state.get("portfolio_data") or {}
-    current_corpus = (
-        (portfolio.get("current_value") or 0) + savings + epf + nps + ppf
-    )
+    portfolio_value = float(portfolio.get("current_value") or 0)
+    current_corpus = portfolio_value + float(savings or 0) + float(epf or 0) + float(nps or 0) + float(ppf or 0)
 
     # Required SIP (Future Value of Annuity formula)
     monthly_return = real_return / 12
@@ -150,18 +152,32 @@ async def run(state: FinancialState) -> dict[str, Any]:
     if life_cover < recommended_cover:
         insurance_gaps.append(f"Term life: ₹{(recommended_cover - life_cover):,.0f} additional cover needed (target: 15x annual income)")
 
+    if fire_number > 0:
+        progress_pct = min(100.0, max(0.0, (current_corpus / fire_number) * 100.0))
+    else:
+        progress_pct = 0.0
+
+    chart_series = [{"year": 0, "corpus": round(current_corpus)}]
+    for row in roadmap:
+        chart_series.append({"year": row["year"], "corpus": row["corpus"]})
+
     data = {
         "fire_number": round(fire_number),
+        "computed_fire_number": round(computed_fire_number),
+        "fire_corpus_target_profile": round(user_corpus_floor) if user_corpus_floor > 0 else None,
         "current_corpus": round(current_corpus),
+        "portfolio_value_included": round(portfolio_value),
         "gap": round(max(fire_number - fv_current, 0)),
         "years_to_fire": years_to_fire,
         "target_age": fire_target_age,
         "required_sip": round(required_sip),
-        "current_sip": current_sip,
+        "current_sip": round(current_sip, 2),
         "sip_gap": round(sip_gap),
         "on_track": required_sip <= current_sip,
+        "progress_pct": round(progress_pct, 1),
         "roadmap_summary": roadmap[:5],  # first 5 years
         "roadmap": roadmap,
+        "chart_series": chart_series,
         "monthly_roadmap": monthly_roadmap,
         "glide_path": glide_path,
         "tax_gaps": tax_gaps,
@@ -170,7 +186,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     # LLM enrichment
     try:
-        result = await primary_llm.ainvoke(_FIRE_PROMPT.format(data=str(data)))
+        result = await invoke_llm(primary_llm, _FIRE_PROMPT.format(data=str(data)))
         data["advice"] = result.content.strip()
     except Exception:
         data["advice"] = ""
@@ -178,13 +194,19 @@ async def run(state: FinancialState) -> dict[str, Any]:
     return data
 
 
-async def run_fire_planner(profile, language: str, voice_mode: bool) -> dict:
+async def run_fire_planner(
+    profile,
+    language: str,
+    voice_mode: bool,
+    portfolio_data: dict | None = None,
+) -> dict:
     from app.agents.synthesizer import synthesize
     profile_dict = {c.name: getattr(profile, c.name) for c in type(profile).__table__.columns}
     state: FinancialState = {
         "user_id": profile.user_id, "message": "FIRE plan", "intent": "fire_planner",
         "language": language, "voice_mode": voice_mode, "history": [],
         "user_profile": profile_dict,
+        "portfolio_data": portfolio_data or {},
     }
     output = await run(state)
     response = await synthesize(output, "fire_planner", "FIRE plan", language, voice_mode)

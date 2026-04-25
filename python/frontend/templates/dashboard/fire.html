@@ -53,12 +53,12 @@
       <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-6 -mt-6"></div>
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">FIRE Number</p>
       <p class="text-3xl font-black italic tracking-tight text-blue-600">₹{{ fire.analysis.fire_number|floatformat:0|indian_number }}</p>
-      <p class="text-xs text-slate-400 mt-2">25× annual expenses — your freedom corpus</p>
+      <p class="text-xs text-slate-400 mt-2">25× inflation-adjusted expenses at FIRE age (4% rule).{% if fire.analysis.fire_corpus_target_profile %} Your Settings floor ₹{{ fire.analysis.fire_corpus_target_profile|floatformat:0|indian_number }} is folded into the goal if higher.{% endif %}</p>
     </div>
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Current Corpus</p>
       <p class="text-3xl font-black italic tracking-tight">₹{{ fire.analysis.current_corpus|floatformat:0|indian_number }}</p>
-      <p class="text-xs text-slate-400 mt-2">Your investments + savings so far</p>
+      <p class="text-xs text-slate-400 mt-2">Portfolio ₹{{ fire.analysis.portfolio_value_included|default:0|floatformat:0|indian_number }} + savings/EPF/NPS/PPF from your profile</p>
     </div>
     <div class="glass rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700/50">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Required SIP</p>
@@ -76,24 +76,22 @@
     </div>
   </div>
 
-  <!-- Progress Bar — How far along -->
+  <!-- Progress Bar — corpus vs FIRE goal (float % from API; avoids Django widthratio integer truncation) -->
   {% if fire.analysis.fire_number > 0 %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
     <div class="flex justify-between items-center mb-3">
       <h3 class="text-sm font-bold">Progress to FIRE</h3>
-      <span class="text-sm font-black italic text-blue-600">
-        {% widthratio fire.analysis.current_corpus fire.analysis.fire_number 100 %}%
-      </span>
+      <span class="text-sm font-black italic text-blue-600">{{ fire.analysis.progress_pct|default:0 }}%</span>
     </div>
-    <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-4 mb-2">
-      <div class="h-4 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-700 relative"
-           style="width: {% widthratio fire.analysis.current_corpus fire.analysis.fire_number 100 %}%">
-        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-blue-600"></div>
+    <div class="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-4 mb-2 overflow-hidden">
+      <div class="h-4 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-700 relative max-w-full"
+           style="width: {{ fire.analysis.progress_pct|default:0 }}%;">
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-blue-600 shadow"></div>
       </div>
     </div>
     <div class="flex justify-between text-xs text-slate-400">
       <span>₹0</span>
-      <span>₹{{ fire.analysis.fire_number|floatformat:0|indian_number }}</span>
+      <span>Goal ₹{{ fire.analysis.fire_number|floatformat:0|indian_number }}</span>
     </div>
   </div>
   {% endif %}
@@ -108,24 +106,13 @@
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof Chart === 'undefined') return;
-    const fireNumber = {{ fire.analysis.fire_number|default:0 }};
-    const currentCorpus = {{ fire.analysis.current_corpus|default:0 }};
-    const requiredSip = {{ fire.analysis.required_sip|default:0 }};
-    const yearsToFire = {{ fire.analysis.years_to_fire|default:15 }};
-    const returnRate = 0.12;
+    const fireNumber = Number({{ fire.analysis.fire_number|default:0 }});
+    const chartSeries = {% if fire.analysis.chart_series %}{{ fire.analysis.chart_series|to_json }}{% else %}[]{% endif %};
+    if (!chartSeries || !chartSeries.length) return;
 
-    // Generate projected trajectory
-    const years = [];
-    const projectedValues = [];
-    const targetLine = [];
-    let running = currentCorpus;
-
-    for (let y = 0; y <= yearsToFire; y++) {
-      years.push('Year ' + y);
-      projectedValues.push(Math.round(running));
-      targetLine.push(fireNumber);
-      running = running * (1 + returnRate) + requiredSip * 12;
-    }
+    const labels = chartSeries.map(function (r) { return r.year === 0 ? 'Now' : 'Y' + r.year; });
+    const projectedValues = chartSeries.map(function (r) { return r.corpus; });
+    const targetLine = chartSeries.map(function () { return fireNumber; });
 
     const ctx = document.getElementById('fireChart')?.getContext('2d');
     if (ctx) {

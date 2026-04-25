@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 from app.tax_config import get_tax_rules, compute_tax
 
@@ -183,7 +183,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_TAX_COPILOT_PROMPT.format(
+        result = await invoke_llm(primary_llm, _TAX_COPILOT_PROMPT.format(
             month=datetime.now().strftime("%B"),
             fy=fy,
             profile=str({k: profile.get(k) for k in ["monthly_income", "age", "investments_80c", "nps_contribution",

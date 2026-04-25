@@ -5,7 +5,7 @@ Drag-slider scenarios: "What if I increase SIP by ₹2,000?" / "What if returns 
 import math
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import invoke_llm, primary_llm
 from app.agents.state import FinancialState
 
 _SIMULATOR_PROMPT = """You are a goal simulation expert. Given the user's goal scenarios below, provide:
@@ -110,7 +110,7 @@ async def run(state: FinancialState) -> dict[str, Any]:
     }
 
     try:
-        result = await primary_llm.ainvoke(_SIMULATOR_PROMPT.format(data=str({
+        result = await invoke_llm(primary_llm, _SIMULATOR_PROMPT.format(data=str({
             "scenarios": [{"label": s["label"], "projected": s["projected_value"],
                           "target": s["target"], "on_track": s["on_track"]} for s in scenarios],
             "required_sip": round(required),

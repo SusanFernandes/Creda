@@ -4,10 +4,28 @@ Portfolio X-Ray agent — CAMS/KFintech PDF parsing, XIRR, overlap, expense drag
 import logging
 from typing import Any
 
-from app.core.llm import primary_llm
+from app.core.llm import clip_prompt, fast_llm, invoke_llm
 from app.agents.state import FinancialState
 
 logger = logging.getLogger("creda.agents.portfolio_xray")
+
+
+def _to_json_serializable(obj: Any) -> Any:
+    """Convert numpy / pandas scalars so FastAPI jsonable_encoder accepts the payload."""
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return {k: _to_json_serializable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_json_serializable(v) for v in obj]
+    mod = type(obj).__module__
+    if mod == "numpy":
+        if hasattr(obj, "tolist") and getattr(obj, "ndim", 0) > 0:
+            return obj.tolist()
+        if hasattr(obj, "item"):
+            return obj.item()
+    return obj
+
 
 _REBALANCE_PROMPT = """You are a mutual fund advisor. Given this portfolio analysis, provide 3 specific rebalancing recommendations.
 Focus on: fund consolidation (reduce overlap), expense ratio optimization (switch to direct plans), and asset allocation.
@@ -67,8 +85,8 @@ async def run(state: FinancialState) -> dict[str, Any]:
     try:
         benchmark = await _fetch_nifty_benchmark()
         analysis["benchmark"] = benchmark
-        portfolio_xirr = portfolio.get("xirr", 0) or 0
-        bench_return = benchmark.get("cagr_3y", 0)
+        portfolio_xirr = float(portfolio.get("xirr", 0) or 0)
+        bench_return = float(benchmark.get("cagr_3y", 0) or 0)
         analysis["alpha_vs_nifty"] = round(portfolio_xirr - bench_return, 2)
         analysis["beating_benchmark"] = portfolio_xirr > bench_return
     except Exception as e:
@@ -78,13 +96,16 @@ async def run(state: FinancialState) -> dict[str, Any]:
 
     # LLM rebalancing recommendations
     try:
-        result = await primary_llm.ainvoke(_REBALANCE_PROMPT.format(data=str(analysis)))
+        result = await invoke_llm(
+            fast_llm,
+            _REBALANCE_PROMPT.format(data=clip_prompt(str(_to_json_serializable(analysis)), 4500)),
+        )
         analysis["recommendations"] = result.content.strip()
     except Exception as e:
         logger.warning("LLM rebalancing failed: %s", e)
         analysis["recommendations"] = "Unable to generate recommendations at this time."
 
-    return analysis
+    return _to_json_serializable(analysis)
 
 
 async def parse_cams_statement(pdf_bytes: bytes, password: str | None = None) -> dict:
