@@ -27,6 +27,22 @@ _MODEL_DIR = Path(__file__).resolve().parents[3] / "models" / "all-MiniLM-L6-v2"
 # Mix formal + informal + short + long so the centroid captures the concept.
 
 _INTENT_TRIGGERS: dict[str, list[str]] = {
+    "dashboard": [
+        "take me to the dashboard",
+        "open dashboard",
+        "go to main page",
+        "show home screen",
+        "CREDA home overview",
+        "open my summary dashboard",
+    ],
+    "portfolio": [
+        "take me to my portfolio page",
+        "open my portfolio",
+        "mutual funds page",
+        "show my holdings list",
+        "go to portfolio holdings",
+        "my funds portfolio page",
+    ],
     "portfolio_xray": [
         "analyze my mutual fund portfolio",
         "upload CAMS statement",

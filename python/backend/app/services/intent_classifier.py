@@ -18,10 +18,26 @@ from collections import defaultdict
 # and how strongly those terms indicate that specific intent.
 
 _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
-    # ── Portfolio X-Ray ──
+    # ── Main dashboard (summary) — before generic "portfolio" tokens ──
+    (re.compile(
+        r"\b(dashboard|main\s+screen|home\s+page|home\s+screen|main\s+page|summary\s+page|"
+        r"overview\s+page|open\s+dashboard|go\s+to\s+dashboard|take\s+me\s+to\s+(the\s+)?dashboard)\b",
+        re.I,
+    ), "dashboard", 3.0),
+    # ── Portfolio holdings page (list / funds) — not X-Ray, not dashboard ──
+    (re.compile(
+        r"\b(my\s+portfolio|portfolio\s+page|the\s+portfolio\s+page|mutual\s+funds?\s+page|"
+        r"holdings\s+page|funds?\s+page|open\s+my\s+portfolio|go\s+to\s+(my\s+)?portfolio|"
+        r"take\s+me\s+to\s+(my\s+)?portfolio)\b",
+        re.I,
+    ), "portfolio", 3.0),
+    # ── Portfolio X-Ray (deep fund analysis) ──
     (re.compile(r"\b(cams|kfintech|xirr|x-?ray|fund.?overlap|expense.?ratio)\b", re.I), "portfolio_xray", 3.0),
-    (re.compile(r"\b(mutual.?fund|portfolio|holdings|nav|sip.?return)\b", re.I), "portfolio_xray", 1.5),
-    (re.compile(r"\b(पोर्टफोलियो|म्यूचुअल.?फंड|म्युचुअल|निवेश|ம்யூசுவல்|போர்ட்ஃபோலியோ|পোর্টফোলিও|মিউচুয়াল|పోర్ట్‌ఫోలియో|మ్యూచువల్|ಮ್ಯೂಚುಯಲ್|पोर्टफोलिओ)\b", re.I), "portfolio_xray", 1.5),
+    (re.compile(r"\b(nav|sip.?return|compare\s+funds)\b", re.I), "portfolio_xray", 1.5),
+    (re.compile(
+        r"\b(पोर्टफोलियो|म्यूचुअल.?फंड|ம்யூசுவல்|போர்ட்ஃபோலியோ|পোর্টফোলিও|మ్యూచువల్|ಮ್ಯೂಚುಯಲ್)\b",
+        re.I,
+    ), "portfolio", 1.5),
 
     # ── Stress Test ──
     (re.compile(r"\b(stress.?test|monte.?carlo)\b", re.I), "stress_test", 3.0),
@@ -46,6 +62,14 @@ _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
     (re.compile(r"\b(health.?score|money.?health|financial.?health|financial.?score)\b", re.I), "money_health", 3.0),
     (re.compile(r"\b(credit.?score|emergency.?fund.?check|insurance.?check)\b", re.I), "money_health", 2.5),
     (re.compile(r"\b(वित्तीय.?स्वास्थ्य|आपातकालीन.?फंड|பணம்.?ஆரோக்கியம்|আর্থিক.?স্বাস্থ্য)\b", re.I), "money_health", 2.0),
+
+    # ── Expense logging / My expenses page ──
+    (re.compile(
+        r"\b(log.?expense|add.?expense|record.?expense|my.?expenses|expense.?analytics|"
+        r"spent\s+\d|purchase\s+of|bought\s+(a|the)?\s*\w+|worth\s+₹?|worth\s+\d)\b",
+        re.I,
+    ), "expense_analytics", 3.0),
+    (re.compile(r"\b(add|log|record)\b.+\b(expense|purchase|spent)\b", re.I), "expense_analytics", 2.5),
 
     # ── Budget Coach ──
     (re.compile(r"\b(50.?30.?20|monthly.?budget|savings.?rate|expense.?track)\b", re.I), "budget_coach", 3.0),

@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     # ── STT ────────────────────────────────────────────────
     STT_ENGINE: str = "faster-whisper"
     WHISPER_MODEL_SIZE: str = "small"
+    # Voice navigate / voice pipeline: try Groq Whisper API first (usually faster than local CPU).
+    # Set false for fully offline voice (local faster-whisper only).
+    STT_VOICE_GROQ_FIRST: bool = True
+    # Groq transcription model (optional: try whisper-large-v3-turbo in .env for lower latency).
+    GROQ_WHISPER_MODEL: str = "whisper-large-v3"
 
     # ── ChromaDB ───────────────────────────────────────────
     CHROMA_HOST: str = "localhost"

@@ -8,22 +8,26 @@ Uses fast_llm (llama-3.1-8b-instant) for speed (~1-2s).
 from typing import Optional
 from app.core.llm import clip_prompt, fast_llm, invoke_llm
 _VALID_INTENTS = {
-    "portfolio_xray", "stress_test", "fire_planner", "money_health",
+    "dashboard", "portfolio", "portfolio_xray", "stress_test", "fire_planner", "money_health",
     "tax_wizard", "budget_coach", "goal_planner", "couples_finance",
     "sip_calculator", "rag_query", "general_chat",
     "market_pulse", "tax_copilot", "money_personality", "goal_simulator",
     "social_proof", "et_research", "human_handoff", "family_wealth",
+    "expense_analytics",
 }
 
 _BASE_PROMPT = """Classify the user message into EXACTLY ONE intent. Respond with ONLY the intent name, nothing else.
 
 Intents:
-• portfolio_xray → CAMS PDF, mutual funds, XIRR, holdings, NAV, fund overlap, expense ratio
+• dashboard → main app home / summary dashboard page (not portfolio holdings)
+• portfolio → my portfolio page, mutual funds list, holdings page (not X-Ray, not tax)
+• portfolio_xray → CAMS PDF, XIRR, fund overlap, expense ratio of funds, deep portfolio analysis
 • stress_test → "what if" scenarios, life events impact, market crash simulation, Monte Carlo
 • fire_planner → FIRE, early retirement, financial independence, corpus target, 4% rule
 • money_health → health score, financial checkup, emergency fund, insurance coverage
 • tax_wizard → tax regime, 80C/80D deductions, HRA, ITR, tax saving, ELSS, Form 16
-• budget_coach → budget, spending, expenses, savings rate, 50/30/20
+• budget_coach → budget, spending, savings rate, 50/30/20 (not one-off purchase logging)
+• expense_analytics → log/add/record a purchase or expense, spending breakdown, my expenses page, category totals
 • goal_planner → goals, save for house/car/education, target amount, down payment
 • couples_finance → couple, partner, spouse, joint finances, split expenses
 • sip_calculator → SIP amount, step-up SIP, SIP returns calculator

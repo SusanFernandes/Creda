@@ -70,7 +70,7 @@ async def transcribe_audio(audio_bytes: bytes) -> dict:
     """
     # Try faster-whisper first
     try:
-        return await _transcribe_faster_whisper(audio_bytes)
+        return await _transcribe_faster_whisper(audio_bytes, beam_size=5)
     except Exception as e:
         logger.warning("faster-whisper failed, falling back to Groq: %s", e)
 
@@ -82,7 +82,27 @@ async def transcribe_audio(audio_bytes: bytes) -> dict:
         return {"text": "", "language": "en", "confidence": 0}
 
 
-async def _transcribe_faster_whisper(audio_bytes: bytes) -> dict:
+async def transcribe_audio_voice(audio_bytes: bytes) -> dict:
+    """
+    Voice UI (floating mic + voice page): prefer Groq Whisper when configured — avoids
+    slow local CPU decode and faster-whisper model cold-load on first use.
+    No embedding / centroid work here.
+    """
+    if settings.STT_VOICE_GROQ_FIRST and settings.GROQ_API_KEY:
+        try:
+            return await _transcribe_groq(audio_bytes)
+        except Exception as e:
+            logger.warning("Groq voice STT failed, using local whisper: %s", e)
+    try:
+        return await _transcribe_faster_whisper(audio_bytes, beam_size=1)
+    except Exception as e:
+        logger.warning("Local whisper failed: %s", e)
+    if settings.GROQ_API_KEY:
+        return await _transcribe_groq(audio_bytes)
+    return {"text": "", "language": "en", "confidence": 0}
+
+
+async def _transcribe_faster_whisper(audio_bytes: bytes, *, beam_size: int = 5) -> dict:
     """Transcribe using faster-whisper (local CPU)."""
     import asyncio
 
@@ -95,7 +115,12 @@ async def _transcribe_faster_whisper(audio_bytes: bytes) -> dict:
             f.write(wav_bytes)
             tmp_path = f.name
         try:
-            segments, info = model.transcribe(tmp_path, beam_size=5)
+            segments, info = model.transcribe(
+                tmp_path,
+                beam_size=beam_size,
+                vad_filter=True,
+                without_timestamps=True,
+            )
             text = " ".join(seg.text for seg in segments).strip()
             return {
                 "text": text,
@@ -134,7 +159,10 @@ async def _transcribe_groq(audio_bytes: bytes) -> dict:
                     "https://api.groq.com/openai/v1/audio/transcriptions",
                     headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
                     files={"file": (fname, io.BytesIO(wav_bytes), mime)},
-                    data={"model": "whisper-large-v3", "response_format": "json"},
+                    data={
+                        "model": settings.GROQ_WHISPER_MODEL,
+                        "response_format": "json",
+                    },
                 )
                 if response.status_code == 429 and attempt < len(delays) - 1:
                     last_exc = RuntimeError("Groq STT 429")

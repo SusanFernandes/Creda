@@ -8,7 +8,7 @@ import logging
 from typing import Any, AsyncIterator, Optional
 
 from langgraph.graph import StateGraph, END
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.state import FinancialState
@@ -55,18 +55,45 @@ async def load_profile_node(state: FinancialState) -> dict:
                 ],
             }
 
-    return {"user_profile": profile_dict, "portfolio_data": portfolio_dict}
+        out: dict = {"user_profile": profile_dict, "portfolio_data": portfolio_dict}
+        if state.get("intent") == "expense_analytics":
+            from datetime import date as date_cls
+
+            from app.models import Budget, Expense
+
+            month = date_cls.today().strftime("%Y-%m")
+            er = await db.execute(
+                select(Expense.category, func.sum(Expense.amount)).where(
+                    Expense.user_id == state["user_id"],
+                    func.to_char(Expense.expense_date, "YYYY-MM") == month,
+                ).group_by(Expense.category)
+            )
+            out["real_expenses"] = {c: float(a) for c, a in er.all()}
+            br = await db.execute(
+                select(Budget).where(
+                    Budget.user_id == state["user_id"],
+                    Budget.month == month,
+                )
+            )
+            out["budget_data"] = {
+                b.category: {"planned": float(b.planned_amount), "actual": float(b.actual_amount or 0)}
+                for b in br.scalars().all()
+            }
+        return out
 
 
 # ── Node: run the selected agent ──────────────────────────────────────
 
 _AGENT_MAP = {
+    "dashboard": "app.agents.general_chat",
+    "portfolio": "app.agents.portfolio_xray",
     "portfolio_xray": "app.agents.portfolio_xray",
     "stress_test": "app.agents.stress_test",
     "fire_planner": "app.agents.fire_planner",
     "tax_wizard": "app.agents.tax_wizard",
     "money_health": "app.agents.money_health",
     "budget_coach": "app.agents.budget_coach",
+    "expense_analytics": "app.agents.expense_analytics",
     "goal_planner": "app.agents.goal_planner",
     "couples_finance": "app.agents.couples_finance",
     "sip_calculator": "app.agents.sip_calculator",

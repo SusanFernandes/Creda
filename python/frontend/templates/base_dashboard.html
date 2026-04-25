@@ -483,6 +483,11 @@
           this.pageLabel = data.page_label || 'AI Chat';
           this.state = 'navigating';
 
+          if (typeof showToast === 'function' && (data.expenses_logged || 0) > 0) {
+            const n = data.expenses_logged;
+            showToast(n === 1 ? 'Expense saved.' : n + ' expenses saved.', 'success');
+          }
+
           // Play the short acknowledgement audio while navigating
           if (data.audio_b64) {
             const audio = new Audio('data:audio/wav;base64,' + data.audio_b64);

@@ -147,14 +147,13 @@ all: docker wait backend-bg frontend-bg
 
 .PHONY: docker
 docker:
-	docker compose up -d --remove-orphans postgres redis chroma piper-tts
+	docker compose up -d --wait --wait-timeout 180 --remove-orphans postgres redis chroma piper-tts
 	@echo Docker infrastructure services started.
 
 .PHONY: wait
 wait:
-	@echo Waiting for Postgres to be ready...
-	:retry
-	docker compose exec postgres pg_isready -U creda_admin -d creda_api >nul 2>&1 || (timeout /t 3 /nobreak >nul && goto retry)
+	@echo Verifying Postgres accepts connections...
+	docker compose exec postgres pg_isready -U creda_admin -d creda_api
 	@echo Postgres is ready.
 
 .PHONY: db-init

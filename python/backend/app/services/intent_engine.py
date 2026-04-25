@@ -73,6 +73,7 @@ def _detect_followup(message: str, last_intent: Optional[str]) -> Optional[str]:
 async def classify_intent(
     message: str,
     last_intent: Optional[str] = None,
+    fast: bool = False,
 ) -> IntentResult:
     """
     4-tier intent classification cascade.
@@ -80,6 +81,7 @@ async def classify_intent(
     Args:
         message: raw user text (any language)
         last_intent: intent from the user's last turn (for follow-up detection)
+        fast: if True, skip embedding tier (Tier 3) — faster for voice and latency-sensitive paths
 
     Returns:
         IntentResult with intent name, confidence, tier info, and debug scores.
@@ -116,23 +118,25 @@ async def classify_intent(
                 scores={"keyword_top3": [(i, round(s, 2)) for i, s in matches[:3]]},
             )
 
-    # ── Tier 3: Embedding similarity (~10ms) ──
-    try:
-        from app.services.intent_embeddings import embedding_match
-        emb_intent, emb_sim, top3 = embedding_match(message)
-        if emb_intent and emb_sim >= 0.78:
-            logger.debug(
-                "Tier 3 embedding → %s (sim=%.3f, %.1fms)",
-                emb_intent, emb_sim, _ms(t0),
-            )
-            return IntentResult(
-                intent=emb_intent, confidence=emb_sim,
-                tier=3, tier_name="embedding", latency_ms=_ms(t0),
-                scores={"embedding_top3": top3},
-            )
-    except Exception as e:
-        logger.warning("Tier 3 embedding skipped: %s", e)
-        top3 = []
+    # ── Tier 3: Embedding similarity (~10ms, skipped in fast mode) ──
+    top3: list[tuple[str, float]] = []
+    if not fast:
+        try:
+            from app.services.intent_embeddings import embedding_match
+            emb_intent, emb_sim, top3 = embedding_match(message)
+            if emb_intent and emb_sim >= 0.78:
+                logger.debug(
+                    "Tier 3 embedding → %s (sim=%.3f, %.1fms)",
+                    emb_intent, emb_sim, _ms(t0),
+                )
+                return IntentResult(
+                    intent=emb_intent, confidence=emb_sim,
+                    tier=3, tier_name="embedding", latency_ms=_ms(t0),
+                    scores={"embedding_top3": top3},
+                )
+        except Exception as e:
+            logger.warning("Tier 3 embedding skipped: %s", e)
+            top3 = []
 
     # ── Tier 4: LLM classifier (1-2s, safety net) ──
     hints = top3[:2] if top3 else []
