@@ -517,6 +517,229 @@
   <div id="toast-container" class="fixed top-20 right-6 z-[9999] space-y-3" style="max-width:360px;"></div>
 
   <script>
+  // FIRE + Portfolio + Money Health radar — run after hx-boost / HTMX swaps (DOMContentLoaded does not fire again).
+  (function () {
+    function formatINRChart(v) {
+      v = Number(v) || 0;
+      if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+      if (v >= 1e5) return '₹' + (v / 1e5).toFixed(1) + ' L';
+      if (v >= 1e3) return '₹' + (v / 1e3).toFixed(0) + 'k';
+      return '₹' + Math.round(v);
+    }
+    function credaInitFireTrajectoryChart() {
+      var dataEl = document.getElementById('fire-chart-data');
+      var targetEl = document.getElementById('fire-chart-fire-number');
+      var canvas = document.getElementById('fireChart');
+      if (!dataEl || !targetEl || !canvas || typeof Chart === 'undefined') return;
+      var chartSeries;
+      try { chartSeries = JSON.parse(dataEl.textContent); } catch (e) { return; }
+      if (!chartSeries || !chartSeries.length) return;
+      var fireNumber = Number(JSON.parse(targetEl.textContent));
+      if (!Number.isFinite(fireNumber)) fireNumber = 0;
+
+      var labels = chartSeries.map(function (r) { return r.year === 0 ? 'Now' : 'Y' + r.year; });
+      var projectedValues = chartSeries.map(function (r) { return Number(r.corpus) || 0; });
+      var targetLine = chartSeries.map(function () { return fireNumber; });
+
+      var existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Projected corpus', data: projectedValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+            { label: 'FIRE target', data: targetLine, borderColor: '#dc2626', borderDash: [8, 4], pointRadius: 0, borderWidth: 2, fill: false },
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } },
+            tooltip: {
+              callbacks: {
+                label: function (c) {
+                  var l = c.dataset.label || '';
+                  return l + ': ' + formatINRChart(c.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: function (v) { return formatINRChart(v); },
+                font: { size: 10 },
+                maxTicksLimit: 8
+              },
+              grid: { color: 'rgba(148,163,184,0.12)' }
+            },
+            x: {
+              ticks: { font: { size: 9 }, maxTicksLimit: 12 },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+    function credaInitPortfolioAllocationCharts() {
+      var dataEl = document.getElementById('portfolio-fund-chart-data');
+      var allocCanvas = document.getElementById('allocationChart');
+      var catCanvas = document.getElementById('categoryChart');
+      if (!dataEl || !allocCanvas || !catCanvas || typeof Chart === 'undefined') return;
+      var fundData;
+      try { fundData = JSON.parse(dataEl.textContent); } catch (e) { return; }
+      if (!fundData || !fundData.length) return;
+
+      var colors = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2','#4f46e5','#be185d','#65a30d','#ea580c','#6366f1','#14b8a6'];
+      var totalVal = fundData.reduce(function (a, b) { return a + (Number(b.value) || 0); }, 0);
+
+      var aEl = Chart.getChart(allocCanvas);
+      if (aEl) aEl.destroy();
+      var cEl = Chart.getChart(catCanvas);
+      if (cEl) cEl.destroy();
+
+      var allocationCtx = allocCanvas.getContext('2d');
+      if (allocationCtx) {
+        new Chart(allocationCtx, {
+          type: 'doughnut',
+          data: {
+            labels: fundData.map(function (f) { return f.name; }),
+            datasets: [{
+              data: fundData.map(function (f) { return f.value; }),
+              backgroundColor: colors.slice(0, fundData.length),
+              borderWidth: 0,
+              hoverOffset: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 }, color: getComputedStyle(document.body).color } },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    var v = ctx.raw != null ? ctx.raw : ctx.parsed;
+                    if (typeof v === 'object' && v !== null) v = v.y != null ? v.y : v.r;
+                    v = Number(v) || 0;
+                    var pct = totalVal > 0 ? ((v / totalVal) * 100).toFixed(1) : '0';
+                    return '₹' + v.toLocaleString('en-IN') + ' (' + pct + '%)';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      var catCtx = catCanvas.getContext('2d');
+      if (catCtx) {
+        var groups = {};
+        fundData.forEach(function (f) {
+          var t = f.type || 'other';
+          groups[t] = (groups[t] || 0) + (Number(f.value) || 0);
+        });
+        var cats = Object.keys(groups);
+        var catColors = { equity: '#2563eb', debt: '#059669', hybrid: '#d97706', elss: '#7c3aed', other: '#6b7280' };
+        new Chart(catCtx, {
+          type: 'bar',
+          data: {
+            labels: cats.map(function (c) { return c.charAt(0).toUpperCase() + c.slice(1); }),
+            datasets: [{
+              data: cats.map(function (c) { return groups[c]; }),
+              backgroundColor: cats.map(function (c) { return catColors[c] || '#6b7280'; }),
+              borderRadius: 8,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { callback: function (v) { return '₹' + (v / 1000).toFixed(0) + 'K'; }, font: { size: 10 } },
+                grid: { display: false },
+              },
+              x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } }
+            }
+          }
+        });
+      }
+    }
+    function credaInitHealthRadarChart() {
+      var dataEl = document.getElementById('health-radar-data');
+      var canvas = document.getElementById('healthRadar');
+      if (!dataEl || !canvas || typeof Chart === 'undefined') return;
+      var dims;
+      try { dims = JSON.parse(dataEl.textContent); } catch (e) { return; }
+      if (!dims || typeof dims !== 'object') return;
+      var keys = Object.keys(dims);
+      if (!keys.length) return;
+      var labels = keys.map(function (k) {
+        return k.replace(/_/g, ' ').replace(/\b\w/g, function (ch) { return ch.toUpperCase(); });
+      });
+      var scores = keys.map(function (k) {
+        var d = dims[k];
+        return typeof d === 'object' && d !== null ? (Number(d.score) || 0) : (Number(d) || 0);
+      });
+      var existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Your Score',
+            data: scores,
+            backgroundColor: 'rgba(59,130,246,0.15)',
+            borderColor: 'rgb(59,130,246)',
+            borderWidth: 2.5,
+            pointBackgroundColor: scores.map(function (s) { return s >= 70 ? '#10b981' : (s >= 40 ? '#f59e0b' : '#ef4444'); }),
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { stepSize: 20, display: false },
+              grid: { color: 'rgba(148,163,184,0.15)' },
+              angleLines: { color: 'rgba(148,163,184,0.15)' },
+              pointLabels: { font: { size: 11, weight: 'bold' } }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+    function credaRunDashboardCharts() {
+      credaInitFireTrajectoryChart();
+      credaInitPortfolioAllocationCharts();
+      credaInitHealthRadarChart();
+    }
+    document.addEventListener('htmx:afterSettle', credaRunDashboardCharts);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', credaRunDashboardCharts);
+    } else {
+      credaRunDashboardCharts();
+    }
+  })();
+
   // Global loading bar for HTMX requests
   document.addEventListener('htmx:beforeRequest', () => {
     document.getElementById('global-loading-bar').style.display = 'block';

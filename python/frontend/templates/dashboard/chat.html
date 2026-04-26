@@ -96,12 +96,21 @@ function chatApp() {
         this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
       });
 
-      // Add placeholder for streaming response
-      const assistantMsg = { id: ++this.msgId, role: 'assistant', content: '', agent: '' };
-      this.messages.push(assistantMsg);
+      // Placeholder assistant row — mutate via this.messages[idx] so Alpine tracks updates.
+      this.messages.push({ id: ++this.msgId, role: 'assistant', content: '', agent: '' });
+      const assistantIdx = this.messages.length - 1;
+
+      const setAssistant = (content, agent) => {
+        const cur = this.messages[assistantIdx];
+        if (!cur) return;
+        this.messages.splice(assistantIdx, 1, {
+          ...cur,
+          content: content != null ? content : cur.content,
+          agent: agent != null ? agent : cur.agent,
+        });
+      };
 
       try {
-        // Try SSE streaming first
         const resp = await fetch('/api/chat/stream/', {
           method: 'POST',
           headers: {
@@ -111,35 +120,69 @@ function chatApp() {
           body: JSON.stringify({ message: text, session_id: this.sessionId }),
         });
 
-        if (resp.ok && resp.headers.get('content-type')?.includes('event-stream')) {
+        const ct = (resp.headers.get('content-type') || '').toLowerCase();
+        const looksLikeSse = resp.ok && resp.body && (ct.includes('event-stream') || ct.includes('text/event-stream'));
+
+        if (looksLikeSse) {
           const reader = resp.body.getReader();
           const decoder = new TextDecoder();
+          let sseLineBuf = '';
+          let assembled = '';
 
-          while (true) {
+          const appendSsePayload = (raw) => {
+            const payload = (raw || '').replace(/\r$/, '').trimEnd();
+            if (payload === '[DONE]') return 'done';
+            let piece = '';
+            try {
+              const parsed = JSON.parse(payload);
+              if (typeof parsed === 'string') piece = parsed;
+              else if (parsed && typeof parsed === 'object' && typeof parsed.text === 'string') piece = parsed.text;
+            } catch {
+              piece = payload;
+            }
+            assembled += piece;
+            setAssistant(assembled, null);
+            this.$nextTick(() => {
+              if (this.$refs.messages) this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+            });
+            return 'continue';
+          };
+
+          outer: while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            // Parse SSE: lines starting with "data: "
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') break;
-                assistantMsg.content += data;
-                this.$nextTick(() => {
-                  this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
-                });
-              }
+            sseLineBuf += decoder.decode(value, { stream: true });
+            sseLineBuf = sseLineBuf.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const parts = sseLineBuf.split('\n');
+            sseLineBuf = parts.pop() || '';
+            for (let i = 0; i < parts.length; i++) {
+              const line = parts[i];
+              if (!line.startsWith('data: ')) continue;
+              const data = line.slice(6);
+              if (appendSsePayload(data) === 'done') break outer;
             }
           }
+          if (sseLineBuf.startsWith('data: ')) {
+            appendSsePayload(sseLineBuf.slice(6));
+          }
+          const final = this.messages[assistantIdx]?.content || '';
+          if (!final.trim()) {
+            const resp2 = await fetch('/api/chat/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+              },
+              body: JSON.stringify({ message: text, session_id: this.sessionId }),
+            });
+            const data = await resp2.json();
+            setAssistant(data.response || data.error || 'No response', data.agent_used || '');
+          }
         } else {
-          // Fallback to regular chat endpoint
-          const data = await resp.json();
-          assistantMsg.content = data.response || data.error || 'No response';
-          assistantMsg.agent = data.agent_used || '';
+          const data = await resp.json().catch(() => ({}));
+          setAssistant(data.response || data.error || 'No response', data.agent_used || '');
         }
       } catch (e) {
-        // Fallback to non-streaming endpoint
         try {
           const resp2 = await fetch('/api/chat/', {
             method: 'POST',
@@ -150,10 +193,9 @@ function chatApp() {
             body: JSON.stringify({ message: text, session_id: this.sessionId }),
           });
           const data = await resp2.json();
-          assistantMsg.content = data.response || data.error || 'Connection interrupted.';
-          assistantMsg.agent = data.agent_used || '';
+          setAssistant(data.response || data.error || 'Connection interrupted.', data.agent_used || '');
         } catch (e2) {
-          assistantMsg.content = 'Connection interrupted. Please try again.';
+          setAssistant('Connection interrupted. Please try again.', '');
         }
       }
 

@@ -17,6 +17,61 @@ from app.agents.synthesizer import synthesize
 logger = logging.getLogger("creda.graph")
 
 
+def _format_user_facts(profile: Optional[dict], portfolio: Optional[dict]) -> str:
+    """DB-backed numbers only — injected into the synthesizer so replies cannot drift from truth."""
+    lines: list[str] = []
+    if portfolio:
+        try:
+            ti = float(portfolio.get("total_invested") or 0)
+            cv = float(portfolio.get("current_value") or 0)
+            xi = float(portfolio.get("xirr") or 0)
+            nf = len(portfolio.get("funds") or [])
+            lines.append(
+                f"PORTFOLIO_DB: total_invested={ti:.0f}, current_value={cv:.0f}, "
+                f"xirr_pct={xi:.2f}, funds_count={nf}"
+            )
+        except (TypeError, ValueError):
+            lines.append("PORTFOLIO_DB: present but numeric fields were not readable")
+    else:
+        lines.append("PORTFOLIO_DB: none (no portfolio row in DB yet)")
+
+    if profile:
+        for key in (
+            "monthly_income",
+            "monthly_expenses",
+            "age",
+            "fire_target_age",
+            "monthly_sip",
+            "savings",
+            "epf_balance",
+            "nps_balance",
+            "ppf_balance",
+        ):
+            v = profile.get(key)
+            if v is None or v == "":
+                continue
+            lines.append(f"PROFILE_DB.{key}={v}")
+    else:
+        lines.append("PROFILE_DB: none")
+
+    return "\n".join(lines)
+
+
+def _format_conversation_tail(history: list[dict], max_msgs: int = 6, max_chars: int = 1200) -> str:
+    """Recent turns for clarification questions (what did you mean, why that SIP, etc.)."""
+    if not history:
+        return ""
+    parts: list[str] = []
+    for m in history[-max_msgs:]:
+        role = (m.get("role") or "?")[:12]
+        c = (m.get("content") or "").strip().replace("\r", " ")
+        if len(c) > 650:
+            c = c[:650] + "…"
+        parts.append(f"- {role}: {c}")
+    text = "\n".join(parts)
+    return text if len(text) <= max_chars else text[-max_chars:]
+
+
 # ── Node: load user profile from DB ──────────────────────────────────
 
 async def load_profile_node(state: FinancialState) -> dict:
@@ -79,6 +134,7 @@ async def load_profile_node(state: FinancialState) -> dict:
                 b.category: {"planned": float(b.planned_amount), "actual": float(b.actual_amount or 0)}
                 for b in br.scalars().all()
             }
+        out["user_facts"] = _format_user_facts(profile_dict, portfolio_dict)
         return out
 
 
@@ -143,6 +199,8 @@ async def synthesizer_node(state: FinancialState) -> dict:
         message=state.get("message", ""),
         language=state.get("language", "en"),
         voice_mode=state.get("voice_mode", False),
+        user_facts=state.get("user_facts") or "",
+        conversation_tail=_format_conversation_tail(state.get("history") or []),
     )
     return {"response": response}
 

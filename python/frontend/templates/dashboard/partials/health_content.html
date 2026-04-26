@@ -83,13 +83,15 @@
 </div>
 {% endif %}
 
-<!-- Dimensions — Radar Chart -->
+<!-- Dimensions — Radar Chart (init in base_dashboard: runs after HTMX loads this fragment) -->
 {% if health.analysis.dimensions %}
+{{ health.analysis.dimensions|json_script:"health-radar-data" }}
 <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8 mb-8">
-  <h3 class="font-bold mb-6 flex items-center gap-2">
+  <h3 class="font-bold mb-2 flex items-center gap-2">
     <div class="w-2 h-2 rounded-full bg-blue-600"></div>
     Financial Dimensions
   </h3>
+  <p class="text-xs text-slate-500 mb-6 leading-relaxed">Radar view of the same six scores as the cards below — so you can see balance across emergency, insurance, investments, debt, tax, and retirement at a glance.</p>
   <div class="max-w-md mx-auto">
     <canvas id="healthRadar" height="280"></canvas>
   </div>
@@ -135,48 +137,6 @@
   </h2>
   <div class="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ health.response|strip_markdown }}</div>
 </div>
-{% endif %}
-
-{% if health.analysis.dimensions %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const dims = {{ health.analysis.dimensions|to_json }};
-  const labels = Object.keys(dims).map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
-  const scores = Object.values(dims).map(d => typeof d === 'object' ? (d.score || 0) : d);
-
-  new Chart(document.getElementById('healthRadar'), {
-    type: 'radar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Your Score',
-        data: scores,
-        backgroundColor: 'rgba(59,130,246,0.15)',
-        borderColor: 'rgb(59,130,246)',
-        borderWidth: 2.5,
-        pointBackgroundColor: scores.map(s => s >= 70 ? '#10b981' : s >= 40 ? '#f59e0b' : '#ef4444'),
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        r: {
-          beginAtZero: true,
-          max: 100,
-          ticks: { stepSize: 20, display: false },
-          grid: { color: 'rgba(148,163,184,0.15)' },
-          angleLines: { color: 'rgba(148,163,184,0.15)' },
-          pointLabels: { font: { size: 11, weight: 'bold' } }
-        }
-      },
-      plugins: { legend: { display: false } }
-    }
-  });
-});
-</script>
 {% endif %}
 
 {% else %}

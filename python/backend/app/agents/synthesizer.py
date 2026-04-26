@@ -15,12 +15,21 @@ logger = logging.getLogger("creda.synthesizer")
 _SYNTH_PROMPT = """You are CREDA, a friendly AI financial coach for Indian users.
 Merge the agent output below into ONE helpful, conversational response.
 
+AUTHORITATIVE USER FACTS (loaded from the database for this user — never contradict with invented figures):
+{user_facts}
+
+RECENT CHAT (use only when the user is clarifying a prior reply — stay consistent with earlier numbers you gave):
+{conversation_tail}
+
 Rules:
 - Respond ONLY in {language} (the user's language). If {language} is "en", respond in English.
 - Lead with the most important insight or number.
 - Use simple language — no jargon. Explain terms if needed.
+- Portfolio totals (total invested, current value, XIRR, number of funds) MUST match PORTFOLIO_DB in USER FACTS if you mention them; if the Agent JSON matches PORTFOLIO_DB, use those values.
+- Do not blend unrelated topics (e.g. do not mix FIRE corpus or goal-SIP numbers into a portfolio-holdings answer unless this turn's agent output is explicitly about FIRE/goals).
+- If the user is asking what you meant, why, or to clarify the last answer, explain using USER FACTS + this turn's Agent output only — do not invent a new scenario.
 - Include specific ₹ numbers from the data (don't round excessively).
-- End with ONE clear, actionable step the user should take.
+- End with ONE clear, actionable step the user should take (or one clarification sentence if they only asked for meaning).
 - Use ₹ for currency, not "Rs" or "INR".
 {voice_instruction}
 
@@ -33,7 +42,13 @@ User's original question: {message}
 Your response (in {language}):"""
 
 _SYNTH_SHORT = """You are CREDA. Summarize this financial agent output for the user in {language}.
-Keep under {word_limit} words. Use ₹ for money. One clear next step at the end.
+Keep under {word_limit} words. Use ₹ for money. One clear next step at the end (or a direct clarification if they asked what something meant).
+
+USER FACTS (database — do not contradict):
+{user_facts}
+
+RECENT CHAT:
+{conversation_tail}
 
 Agent: {agent_used}
 Data (JSON):
@@ -63,10 +78,15 @@ async def synthesize(
     message: str,
     language: str = "en",
     voice_mode: bool = False,
+    *,
+    user_facts: str = "",
+    conversation_tail: str = "",
 ) -> str:
     """Convert raw agent output dict into user-facing natural language response."""
     compact_out = _compact_json(agent_output, 2800)
     word_limit = 120 if voice_mode else 200
+    uf = (user_facts or "").strip() or "(none — treat agent JSON as sole source of numbers)"
+    ct = (conversation_tail or "").strip() or "(none)"
 
     def _primary_prompt() -> str:
         return _SYNTH_PROMPT.format(
@@ -75,6 +95,8 @@ async def synthesize(
             agent_used=agent_used,
             agent_output=compact_out,
             message=message or "",
+            user_facts=uf,
+            conversation_tail=ct,
         )
 
     def _fast_prompt() -> str:
@@ -84,6 +106,8 @@ async def synthesize(
             agent_used=agent_used,
             data=compact_out,
             message=message or "",
+            user_facts=uf,
+            conversation_tail=ct,
         )
 
     if settings.GROQ_SYNTH_PRIMARY_FIRST:

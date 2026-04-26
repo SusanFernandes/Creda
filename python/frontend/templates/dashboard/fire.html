@@ -90,87 +90,23 @@
       </div>
     </div>
     <div class="flex justify-between text-xs text-slate-400">
-      <span>₹0</span>
+      <span>₹{{ fire.analysis.current_corpus|floatformat:0|indian_number }}</span>
       <span>Goal ₹{{ fire.analysis.fire_number|floatformat:0|indian_number }}</span>
     </div>
   </div>
   {% endif %}
 
-  <!-- FIRE Trajectory Chart -->
+  <!-- FIRE Trajectory Chart (Chart init lives in base_dashboard — runs after hx-boost swaps) -->
+  {% if fire.analysis.chart_series %}
+  {{ fire.analysis.chart_series|json_script:"fire-chart-data" }}
+  {{ fire.analysis.fire_number|default:0|json_script:"fire-chart-fire-number" }}
+  {% endif %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
     <h3 class="text-sm font-bold mb-4">FIRE Trajectory</h3>
     <div class="relative" style="height:280px;">
       <canvas id="fireChart"></canvas>
     </div>
   </div>
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Chart === 'undefined') return;
-    const fireNumber = Number({{ fire.analysis.fire_number|default:0 }});
-    const chartSeries = {% if fire.analysis.chart_series %}{{ fire.analysis.chart_series|to_json }}{% else %}[]{% endif %};
-    if (!chartSeries || !chartSeries.length) return;
-
-    const labels = chartSeries.map(function (r) { return r.year === 0 ? 'Now' : 'Y' + r.year; });
-    const projectedValues = chartSeries.map(function (r) { return Number(r.corpus) || 0; });
-    const targetLine = chartSeries.map(function () { return fireNumber; });
-
-    function formatINR(v) {
-      v = Number(v) || 0;
-      if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
-      if (v >= 1e5) return '₹' + (v / 1e5).toFixed(1) + ' L';
-      if (v >= 1e3) return '₹' + (v / 1e3).toFixed(0) + 'k';
-      return '₹' + Math.round(v);
-    }
-
-    const canvas = document.getElementById('fireChart');
-    if (!canvas) return;
-    const existing = Chart.getChart(canvas);
-    if (existing) existing.destroy();
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Projected corpus', data: projectedValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
-          { label: 'FIRE target', data: targetLine, borderColor: '#dc2626', borderDash: [8, 4], pointRadius: 0, borderWidth: 2, fill: false },
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                var l = ctx.dataset.label || '';
-                return l + ': ' + formatINR(ctx.parsed.y);
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            ticks: {
-              callback: function(v) { return formatINR(v); },
-              font: { size: 10 },
-              maxTicksLimit: 8
-            },
-            grid: { color: 'rgba(148,163,184,0.12)' }
-          },
-          x: {
-            ticks: { font: { size: 9 }, maxTicksLimit: 12 },
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  });
-  </script>
 
   <!-- Year-by-Year Roadmap Table -->
   {% if fire.analysis.roadmap %}
@@ -267,6 +203,14 @@
   </div>
   {% endif %}
 
+  {% elif fire_load_error %}
+  <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-16 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <p class="text-slate-700 dark:text-slate-200 text-sm font-semibold mb-2">Could not load your FIRE plan</p>
+    <p class="text-slate-500 text-sm max-w-md mx-auto">The planner API did not respond (timeout, network, or FastAPI not running). Your profile may be fine — try refreshing, or open Settings to confirm income, expenses, age, and FIRE target age are saved.</p>
+  </div>
   {% else %}
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-16 text-center">
     <div class="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-4">

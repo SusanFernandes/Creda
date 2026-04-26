@@ -55,13 +55,31 @@ _PRONOUN_CONTINUATION = re.compile(
     re.I,
 )
 
+# Clarification / pushback on the last answer — keep same intent (portfolio, FIRE, etc.)
+_CLARIFICATION_FOLLOWUP = re.compile(
+    r"(what do you mean|what does that mean|what did you mean|\bwdym\b"
+    r"|can you explain|please explain|explain that|explain this|explain more"
+    r"|clarif(y|ication)|i don'?t understand|i do not understand|not sure i understand"
+    r"|confused about (that|this|it)|why (did|do) you say|how (does that work|so\??)"
+    r"|does that mean|elaborate|unpack (that|this)|more details? on (that|this)"
+    r"|what'?s that about|you (just )?said|those numbers|that number"
+    r"|that recommendation|that (answer|reply)|the last (answer|reply)"
+    r"|next steps? mean|mean by (the )?next"
+    r"|doesn'?t add up|not add up|investing more|way more than|too much for|seems wrong"
+    r"|isn'?t that|wasn'?t that|\bright\?)",
+    re.I,
+)
+
 
 def _detect_followup(message: str, last_intent: Optional[str]) -> Optional[str]:
     """Tier 1: detect conversational follow-ups → route to same agent."""
     if not last_intent or last_intent == "general_chat":
         return None
     msg = message.strip()
-    if len(msg) > 80:  # real follow-ups are usually short
+    # Longer clarification questions (still about the last reply) — up to 400 chars
+    if len(msg) <= 400 and _CLARIFICATION_FOLLOWUP.search(msg):
+        return last_intent
+    if len(msg) > 80:
         return None
     if _FOLLOWUP_EXACT.match(msg) or _PRONOUN_CONTINUATION.match(msg):
         return last_intent

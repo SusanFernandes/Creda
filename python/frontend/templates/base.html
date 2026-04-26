@@ -90,6 +90,7 @@
 </head>
 <body class="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 antialiased min-h-screen"
       hx-boost="true"
+      hx-push-url="true"
       x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
       :class="{ 'dark': darkMode }">
   {% block body %}{% endblock %}

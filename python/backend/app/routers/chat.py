@@ -4,6 +4,7 @@ Chat router — main entry point for all text conversations.
 Flow: 4-tier intent cascade → LangGraph agent → response
 Tier 1: follow-up (0ms) → Tier 2: keyword scoring (0ms) → Tier 3: embedding (~10ms) → Tier 4: LLM (1-2s)
 """
+import json
 import uuid
 import time
 import logging
@@ -129,6 +130,8 @@ async def chat_stream(
 
     async def event_generator():
         from app.agents.graph import run_agent_stream
+        # JSON-encode each chunk so the payload is always a single line. Raw text with
+        # newlines breaks proxies/clients that split on \n (Django sse_generator uses aiter_lines).
         async for chunk in run_agent_stream(
             user_id=auth.user_id,
             message=body.message,
@@ -137,7 +140,8 @@ async def chat_stream(
             voice_mode=body.voice_mode,
             history=history,
         ):
-            yield f"data: {chunk}\n\n"
+            if chunk:
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

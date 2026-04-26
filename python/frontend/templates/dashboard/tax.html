@@ -35,6 +35,9 @@
 
   <!-- TAB 1: Regime Comparison -->
   <div x-show="tab === 'regime'" x-transition class="space-y-8">
+    <p class="text-xs text-slate-500 leading-relaxed border-l-2 border-violet-300 dark:border-violet-700 pl-3 py-1 mb-2">
+      <span class="font-semibold text-slate-600 dark:text-slate-300">Why this tab:</span> You pay tax under either the <strong>old</strong> (deduction-heavy) or <strong>new</strong> (lower slabs, limited deductions) regime. We show both side by side using your saved income and deductions so you can see which one is cheaper for <em>you</em>, not a generic rule.
+    </p>
     {% if tax %}
     {% if tax.analysis.needs_input %}
     <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-8">
@@ -50,6 +53,9 @@
     {% else %}
 
     <!-- FY Badge -->
+    <p class="text-xs text-slate-500 leading-relaxed border-l-2 border-blue-200 dark:border-blue-800 pl-3 py-1 mb-4">
+      <span class="font-semibold text-slate-600 dark:text-slate-300">What you are seeing:</span> Numbers below use your profile (salary, rent, 80C/NPS/80D, metro flag, etc.) and FY rules stated on the badge. If something looks off, check amounts and units in Settings first.
+    </p>
     {% if tax.analysis.fy_label %}
     <div class="text-center">
       <span class="inline-block px-4 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full">
@@ -59,6 +65,7 @@
     {% endif %}
 
     <!-- Regime Cards -->
+    <p class="text-xs text-slate-500 mb-3">These two cards are the headline outcome: estimated tax if you filed entirely in the old regime vs the new regime. The ribbon marks the lower-tax option for your inputs.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div class="glass rounded-[2rem] p-7 border-2 transition-all {% if tax.analysis.better_regime == 'old' %}border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10{% else %}border-slate-200/50 dark:border-slate-700/50{% endif %}">
         <div class="flex justify-between items-center mb-5">
@@ -92,6 +99,9 @@
     </div>
 
     {% if tax.analysis.calculation_trace %}
+    <p class="text-xs text-slate-500 leading-relaxed border-l-2 border-indigo-200 dark:border-indigo-800 pl-3 py-1 mb-2">
+      <span class="font-semibold text-slate-600 dark:text-slate-300">Why open this:</span> Tax software often hides intermediate steps. This trace ties each deduction and slab back to the same totals as the regime cards so you can audit the logic (and your CA can too).
+    </p>
     <div x-data="{ showCalc: false }" class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
       <button type="button" @click="showCalc = !showCalc" class="w-full flex items-center justify-between p-6 text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
         <div>
@@ -213,10 +223,11 @@
     <!-- 80C Breakdown (auto-detected from portfolio) -->
     {% if tax.analysis.breakdown_80c %}
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
-      <h3 class="font-bold mb-4 flex items-center gap-2">
+      <h3 class="font-bold mb-2 flex items-center gap-2">
         <div class="w-2 h-2 rounded-full bg-blue-600"></div>
         Section 80C Breakdown
       </h3>
+      <p class="text-xs text-slate-500 mb-4 leading-relaxed">Shown because the <strong>old regime</strong> tax depends heavily on 80C. We estimate ELSS/EPF/PPF from your portfolio and declared amounts so you see how close you are to the ₹1.5L cap without retyping everything.</p>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         {% if tax.analysis.breakdown_80c.elss_from_portfolio %}
         <div class="text-center p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30">
@@ -252,10 +263,11 @@
     <!-- Capital Gains (LTCG / STCG auto-calculated from portfolio) -->
     {% if tax.analysis.capital_gains and tax.analysis.capital_gains.total_cg_tax > 0 %}
     <div class="glass rounded-[2rem] border border-amber-200/50 bg-amber-50/30 dark:bg-amber-900/10 p-7">
-      <h3 class="font-bold mb-4 flex items-center gap-2">
+      <h3 class="font-bold mb-2 flex items-center gap-2">
         <div class="w-2 h-2 rounded-full bg-amber-500"></div>
         Capital Gains Tax (Auto-Calculated from Portfolio)
       </h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">This block appears when estimated <strong>capital gains tax</strong> from your funds is above zero. It is separate from salary slab tax but still affects your total tax and advance-tax planning.</p>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         <div class="text-center p-4 rounded-xl bg-white/50 dark:bg-slate-800/30">
           <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">Equity LTCG</p>
@@ -303,6 +315,7 @@
         <div class="w-2 h-2 rounded-full bg-red-500"></div>
         Advance Tax Required
       </h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mb-2 leading-relaxed">We surface this when projected tax crosses thresholds where Income Tax rules expect you to pay in instalments during the year — ignoring it can mean interest under Section 234B/C later.</p>
       <p class="text-xs text-slate-500 mb-4">{{ tax.analysis.advance_tax.note }}</p>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         {% for q in tax.analysis.advance_tax.schedule %}
@@ -319,10 +332,11 @@
     <!-- Missed Deductions -->
     {% if tax.analysis.missed_deductions %}
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-7">
-      <h3 class="font-bold mb-4 flex items-center gap-2">
+      <h3 class="font-bold mb-2 flex items-center gap-2">
         <div class="w-2 h-2 rounded-full bg-amber-500"></div>
         Missed Deductions
       </h3>
+      <p class="text-xs text-slate-500 mb-4 leading-relaxed">Each row is a deduction you are <strong>not</strong> fully using compared to the statutory limit, based on your profile. Fixing these usually lowers old-regime taxable income before year-end.</p>
       <div class="space-y-3">
         {% for md in tax.analysis.missed_deductions %}
         <div class="flex justify-between items-center p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
@@ -340,10 +354,11 @@
     <!-- Tax-Loss Harvesting -->
     {% if tax.analysis.tax_loss_harvesting %}
     <div class="glass rounded-2xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-6">
-      <div class="flex items-center gap-2 mb-4">
+      <div class="flex items-center gap-2 mb-2">
         <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
         <h3 class="font-bold text-sm">Tax-Loss Harvesting Opportunities</h3>
       </div>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">Shown only when we detect funds with unrealised losses that could offset gains elsewhere — a planning hint, not a buy/sell instruction.</p>
       <div class="space-y-3">
         {% for opp in tax.analysis.tax_loss_harvesting %}
         <div class="flex justify-between items-center p-4 rounded-xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
@@ -383,11 +398,15 @@
 
   <!-- TAB 2: Year-Round Tax Copilot -->
   <div x-show="tab === 'copilot'" x-transition class="space-y-8">
+    <p class="text-xs text-slate-500 leading-relaxed border-l-2 border-emerald-300 dark:border-emerald-700 pl-3 py-1 mb-2">
+      <span class="font-semibold text-slate-600 dark:text-slate-300">Why this tab:</span> Regime comparison is “file once” math; the Copilot is <strong>through-the-year</strong> tracking — how much of each deduction bucket you have used and what is still on the table before March 31.
+    </p>
     {% if tax_copilot %}
     {% if tax_copilot.analysis %}
     {% if tax_copilot.analysis.deduction_tracker %}
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-8">
       <h3 class="font-bold mb-1">Deduction Tracker</h3>
+      <p class="text-xs text-slate-500 mb-3 leading-relaxed">You see this so you can pace investments and premiums across the year instead of discovering in March that 80C or 80D headroom was left unused.</p>
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">Section-wise utilization for FY {{ tax_copilot.analysis.financial_year|default:"2025-26" }}</p>
       <div class="space-y-5">
         {% for section_key, section in tax_copilot.analysis.deduction_tracker.items %}
@@ -425,6 +444,7 @@
         <div class="w-2 h-2 rounded-full bg-red-500"></div>
         Advance Tax Schedule
       </h3>
+      <p class="text-xs text-slate-500 mb-3 leading-relaxed">Quarterly schedule helps you align instalments with salary bonuses and capital gains so you avoid underpayment interest.</p>
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Estimated annual: ₹{{ tax_copilot.analysis.advance_tax.estimated_annual_tax|floatformat:0 }}</p>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         {% for q in tax_copilot.analysis.advance_tax.schedule %}
@@ -441,10 +461,11 @@
     <!-- Salary Restructuring -->
     {% if tax_copilot.analysis.salary_restructuring %}
     <div class="glass rounded-[2rem] border border-violet-200/50 bg-violet-50/30 dark:bg-violet-900/10 p-7">
-      <h3 class="font-bold mb-4 flex items-center gap-2">
+      <h3 class="font-bold mb-2 flex items-center gap-2">
         <div class="w-2 h-2 rounded-full bg-violet-500"></div>
         Salary Restructuring Suggestions
       </h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">These ideas appear when shifting part of cash salary into exempt or deductible components (within employer and PF rules) could reduce taxable income.</p>
       <div class="space-y-3">
         {% for s in tax_copilot.analysis.salary_restructuring %}
         <div class="p-4 rounded-xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">
@@ -461,10 +482,11 @@
 
     {% if tax_copilot.analysis.harvest_opportunities %}
     <div class="glass rounded-2xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-900/10 p-6">
-      <div class="flex items-center gap-2 mb-4">
+      <div class="flex items-center gap-2 mb-2">
         <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
         <h3 class="font-bold text-sm">Tax-Loss Harvesting Opportunities</h3>
       </div>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">Same idea as the Wizard tab: funds where booked losses could offset gains — use with your advisor and exit-load rules in mind.</p>
       <div class="space-y-3">
         {% for opp in tax_copilot.analysis.harvest_opportunities %}
         <div class="flex justify-between items-center p-4 rounded-xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50">

@@ -95,7 +95,21 @@ async def portfolio_view(request):
         summary = await request.backend.get_portfolio_summary()
     except Exception:
         summary = None
-    return render(request, "dashboard/portfolio.html", {"portfolio": summary})
+    chart_funds: list[dict] = []
+    if summary and isinstance(summary, dict):
+        for f in summary.get("funds") or []:
+            chart_funds.append(
+                {
+                    "name": (str(f.get("fund_name") or ""))[:25],
+                    "value": float(f.get("current_value") or 0),
+                    "type": str(f.get("scheme_type") or "equity"),
+                }
+            )
+    return render(
+        request,
+        "dashboard/portfolio.html",
+        {"portfolio": summary, "portfolio_chart_funds": chart_funds},
+    )
 
 
 @login_required
@@ -155,11 +169,17 @@ async def health_htmx(request):
 @login_required
 async def fire_view(request):
     """FIRE Planner page."""
+    fire_result = None
+    fire_load_error = False
     try:
-        result = await request.backend.fire_planner()
+        fire_result = await request.backend.fire_planner()
     except Exception:
-        result = None
-    return render(request, "dashboard/fire.html", {"fire": result})
+        fire_load_error = True
+    return render(
+        request,
+        "dashboard/fire.html",
+        {"fire": fire_result, "fire_load_error": fire_load_error},
+    )
 
 
 @login_required
@@ -686,9 +706,17 @@ async def api_chat_stream(request):
                     },
                     headers=headers,
                 ) as resp:
-                    async for line in resp.aiter_lines():
-                        if line.startswith("data: "):
-                            yield f"{line}\n\n"
+                    # Relay raw bytes — aiter_lines() breaks SSE if any line reconstruction differs
+                    # from FastAPI's framing (e.g. long single-line JSON payloads).
+                    if resp.status_code != 200:
+                        err = (await resp.aread())[:800].decode("utf-8", errors="replace")
+                        err_line = f"data: {json.dumps('[error] ' + err, ensure_ascii=False)}\n\n"
+                        yield err_line.encode("utf-8")
+                        yield b"data: [DONE]\n\n"
+                        return
+                    async for chunk in resp.aiter_bytes():
+                        if chunk:
+                            yield chunk
 
         response = StreamingHttpResponse(
             sse_generator(),

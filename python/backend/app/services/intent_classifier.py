@@ -109,9 +109,13 @@ _WEIGHTED_RULES: list[tuple[re.Pattern, str, float]] = [
     (re.compile(r"\b(personality|risk.?profile|behavioural|behavioral)\b", re.I), "money_personality", 2.0),
     (re.compile(r"\b(व्यक्तित्व|निवेशक.?प्रकार|ஆளுமை|ব্যক্তিত্ব|వ్యక్తిత్వం)\b", re.I), "money_personality", 2.0),
 
-    # ── Goal Simulator ──
+    # ── Goal Simulator (avoid loose "simulat" prefix — matched unrelated words) ──
     (re.compile(r"\b(goal.?simulator|scenario.?model|drag.?slider|adjust.?sip)\b", re.I), "goal_simulator", 3.0),
-    (re.compile(r"\b(simulat|what.?if.+sip|what.?if.+return)\b", re.I), "goal_simulator", 2.0),
+    (re.compile(
+        r"\b(simulator|simulation)\b|what.?if.+sip|what.?if.+return|scenario.+sip|"
+        r"tweak.+sip|change.+sip|increase.+sip|reduce.+sip",
+        re.I,
+    ), "goal_simulator", 2.0),
     (re.compile(r"\b(सिमुलेशन|அனுகரிப்பு|সিমুলেশন)\b", re.I), "goal_simulator", 2.0),
 
     # ── Social Proof ──

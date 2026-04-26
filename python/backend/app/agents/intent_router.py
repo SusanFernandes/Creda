@@ -61,6 +61,12 @@ def _build_prompt(
         context_lines.append(f"Semantic similarity suggests: {', '.join(hint_strs)}")
     if last_intent and last_intent != "general_chat":
         context_lines.append(f"Previous turn used: {last_intent}")
+        context_lines.append(
+            f"If the user is clarifying, questioning, or pushing back on the LAST answer "
+            f"(e.g. what something means, why a number, \"doesn't add up\", \"investing more\"), "
+            f"classify as EXACTLY this intent: {last_intent}. "
+            f"Only choose a different intent if they clearly start a new topic (tax filing, market news, new goal, etc.)."
+        )
 
     if context_lines:
         parts.append("\nContext (use as hints, not absolute):\n" + "\n".join(f"• {l}" for l in context_lines))

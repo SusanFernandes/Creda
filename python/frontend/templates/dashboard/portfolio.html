@@ -128,7 +128,9 @@
   }
   </script>
 
-  <!-- Charts Row: Allocation Donut + Type Distribution -->
+  {{ portfolio_chart_funds|json_script:"portfolio-fund-chart-data" }}
+
+  <!-- Charts Row: Allocation Donut + Type Distribution (Chart init in base_dashboard for hx-boost) -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
     <!-- Allocation by Fund -->
     <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6">
@@ -145,86 +147,6 @@
       </div>
     </div>
   </div>
-
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Chart === 'undefined') return;
-
-    const fundData = [
-      {% for fund in portfolio.funds %}
-      { name: "{{ fund.fund_name|truncatechars:25 }}", value: {{ fund.current_value|default:0 }}, type: "{{ fund.scheme_type|default:'equity' }}" },
-      {% endfor %}
-    ];
-
-    // Color palette
-    const colors = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2','#4f46e5','#be185d','#65a30d','#ea580c','#6366f1','#14b8a6'];
-
-    // Fund allocation donut
-    const allocationCtx = document.getElementById('allocationChart')?.getContext('2d');
-    if (allocationCtx && fundData.length > 0) {
-      new Chart(allocationCtx, {
-        type: 'doughnut',
-        data: {
-          labels: fundData.map(f => f.name),
-          datasets: [{
-            data: fundData.map(f => f.value),
-            backgroundColor: colors.slice(0, fundData.length),
-            borderWidth: 0,
-            hoverOffset: 6,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '65%',
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 }, color: getComputedStyle(document.body).color } },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `₹${ctx.parsed.toLocaleString('en-IN')} (${((ctx.parsed / fundData.reduce((a,b)=>a+b.value,0))*100).toFixed(1)}%)`
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Category breakdown bar chart
-    const catCtx = document.getElementById('categoryChart')?.getContext('2d');
-    if (catCtx && fundData.length > 0) {
-      const groups = {};
-      fundData.forEach(f => { groups[f.type] = (groups[f.type] || 0) + f.value; });
-      const cats = Object.keys(groups);
-      const catColors = { equity: '#2563eb', debt: '#059669', hybrid: '#d97706', elss: '#7c3aed', other: '#6b7280' };
-
-      new Chart(catCtx, {
-        type: 'bar',
-        data: {
-          labels: cats.map(c => c.charAt(0).toUpperCase() + c.slice(1)),
-          datasets: [{
-            data: cats.map(c => groups[c]),
-            backgroundColor: cats.map(c => catColors[c] || '#6b7280'),
-            borderRadius: 8,
-            borderSkipped: false,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: (v) => '₹' + (v/1000).toFixed(0) + 'K', font: { size: 10 } },
-              grid: { display: false },
-            },
-            x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } }
-          }
-        }
-      });
-    }
-  });
-  </script>
 
   <!-- Fund Compare Mode -->
   <div class="glass rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-6" x-data="fundCompare()">

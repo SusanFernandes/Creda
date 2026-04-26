@@ -17,6 +17,8 @@ class FinancialState(TypedDict, total=False):
     # ── Profile (loaded by graph) ──
     user_profile: Optional[dict]
     portfolio_data: Optional[dict]
+    # One-line-per-field snapshot from DB for the synthesizer (must not contradict agent JSON)
+    user_facts: Optional[str]
     real_expenses: Optional[dict]      # category → total amount (from DB)
     budget_data: Optional[dict]        # category → {planned, actual}
 
