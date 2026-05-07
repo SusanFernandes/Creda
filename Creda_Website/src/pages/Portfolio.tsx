@@ -19,9 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ApiService, UserProfile } from '@/services/api';
+import { ApiService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { AdvancedPieChart } from '@/components/charts/AdvancedPieChart';
 
 const Portfolio: React.FC = () => {
   const { t } = useLanguage();
@@ -32,64 +31,37 @@ const Portfolio: React.FC = () => {
   const [rebalanceData, setRebalanceData] = useState<any>(null);
   const [showOptimization, setShowOptimization] = useState(false);
 
-  // Mock user profile
-  const userProfile: UserProfile = {
-    age: 32,
-    income: 800000,
-    savings: 250000,
-    dependents: 1,
-    risk_tolerance: 3,
-    goal_type: "retirement",
-    time_horizon: 25
-  };
+  const currentHoldingsMap: Record<string, number> = {};
+  const currentHoldingsData = (portfolioData?.funds || []).map((f: any) => ({
+    name: f.fund_name || f.category || 'Unknown',
+    value: f.current_value || 0,
+  }));
 
-  const currentHoldingsMap = {
-    large_cap_equity: 0.35,
-    mid_cap_equity: 0.20,
-    government_bonds: 0.25,
-    corporate_bonds: 0.15,
-    gold: 0.05
-  };
-
-  const currentHoldingsData = [
-    { name: 'Large Cap Equity', value: 87500 },
-    { name: 'Mid Cap Equity', value: 50000 },
-    { name: 'Government Bonds', value: 62500 },
-    { name: 'Corporate Bonds', value: 37500 },
-    { name: 'Gold', value: 12500 }
-  ];
+  // Build allocation map from funds for rebalancing
+  if (portfolioData?.funds) {
+    const total = portfolioData.current_value || 1;
+    for (const f of portfolioData.funds) {
+      const cat = f.category || 'other';
+      currentHoldingsMap[cat] = (currentHoldingsMap[cat] || 0) + (f.current_value || 0) / total;
+    }
+  }
 
   useEffect(() => {
     fetchPortfolioData();
-    checkRebalancing();
   }, []);
 
   const fetchPortfolioData = async () => {
     setIsLoading(true);
     try {
-      const portfolio = await ApiService.getPortfolioAllocation(userProfile);
+      const portfolio = await ApiService.portfolioSummary();
       setPortfolioData(portfolio);
-    } catch (error) {
-      toast({
-        title: "Portfolio Error",
-        description: "Using offline data",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const checkRebalancing = async () => {
-    try {
-      const rebalance = await ApiService.checkRebalancing({
-        profile: userProfile,
-        current_allocation: currentHoldingsMap,
-        threshold: 0.05
-      });
+      // Check rebalancing after loading
+      const rebalance = await ApiService.checkRebalance({ threshold: 0.05 });
       setRebalanceData(rebalance);
     } catch (error) {
-      console.warn('Rebalancing check failed');
+      toast({ title: 'Portfolio Error', description: 'Using offline data', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,24 +70,11 @@ const Portfolio: React.FC = () => {
     setShowOptimization(true);
     
     try {
-      const optimizedPortfolio = await ApiService.portfolioOptimization({
-        profile: userProfile,
-        goals: ["retirement", "wealth_creation"],
-        time_horizon_years: userProfile.time_horizon || 25
-      });
-      
-      setPortfolioData(optimizedPortfolio);
-      
-      toast({
-        title: "Portfolio Optimized! 🎯",
-        description: "Your portfolio has been optimized using advanced AI algorithms."
-      });
+      const result = await ApiService.optimizePortfolio({ goals: ['retirement', 'wealth_creation'] });
+      setPortfolioData((prev: any) => ({ ...prev, optimization: result?.optimization }));
+      toast({ title: 'Portfolio Optimised!', description: 'AI analysis complete.' });
     } catch (error) {
-      toast({
-        title: "Optimization Error",
-        description: "Please try again later",
-        variant: "destructive"
-      });
+      toast({ title: 'Optimisation Error', description: 'Please try again later', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }

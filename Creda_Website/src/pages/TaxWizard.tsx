@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Receipt, IndianRupee, TrendingDown, CheckCircle, RefreshCw, Zap, AlertCircle } from 'lucide-react';
+import { Receipt, IndianRupee, TrendingDown, CheckCircle, RefreshCw, Zap, AlertCircle, MessageSquare, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ApiService, TaxWizardRequest } from '@/services/api';
+import { Textarea } from '@/components/ui/textarea';
+import { ApiService } from '@/services/api';
 import { useUser } from '@clerk/clerk-react';
 
 interface TaxResult {
@@ -25,6 +26,19 @@ export default function TaxWizard() {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TaxResult | null>(null);
+  const [copilotQuery, setCopilotQuery] = useState('');
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [copilotAnswer, setCopilotAnswer] = useState<string | null>(null);
+
+  const handleCopilotAsk = async () => {
+    if (!copilotQuery.trim()) return;
+    setCopilotLoading(true);
+    try {
+      const data = await ApiService.taxCopilot({ query: copilotQuery } as any);
+      setCopilotAnswer(data?.response || data?.answer || JSON.stringify(data));
+    } catch { setCopilotAnswer('Unable to reach Tax Copilot. Please try again.'); }
+    finally { setCopilotLoading(false); }
+  };
 
   const [form, setForm] = useState({
     annual_income: 1200000,
@@ -41,8 +55,8 @@ export default function TaxWizard() {
 
   const handleCalculate = async () => {
     setLoading(true);
-    const req: TaxWizardRequest = { user_id: user?.id || 'guest', ...form };
-    const data = await ApiService.taxWizard(req);
+    const req = { user_id: user?.id || 'guest', ...form };
+    const data = await ApiService.taxWizard(req as any);
     setResult(data);
     setLoading(false);
   };
@@ -65,6 +79,13 @@ export default function TaxWizard() {
         </div>
       </motion.div>
 
+      <Tabs defaultValue="compare" className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="compare" className="flex-1">Compare Regimes</TabsTrigger>
+          <TabsTrigger value="copilot" className="flex-1"><MessageSquare className="w-4 h-4 mr-1" /> Tax Copilot</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="compare">
       <div className="grid md:grid-cols-2 gap-6">
         {/* Input */}
         <Card>
@@ -196,6 +217,41 @@ export default function TaxWizard() {
           )}
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="copilot">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Tax Copilot
+              </CardTitle>
+              <CardDescription>Ask any tax-related question and get AI-powered advice</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                placeholder="e.g. Should I invest more in ELSS or PPF? What about NPS for additional 50k deduction?"
+                value={copilotQuery}
+                onChange={e => setCopilotQuery(e.target.value)}
+                rows={3}
+              />
+              <Button onClick={handleCopilotAsk} disabled={copilotLoading || !copilotQuery.trim()} className="w-full">
+                {copilotLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Thinking...</> : <><Send className="w-4 h-4 mr-2" /> Ask Copilot</>}
+              </Button>
+              {copilotAnswer && (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 whitespace-pre-wrap text-sm">{copilotAnswer}</CardContent>
+                </Card>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {['How to save tax on capital gains?', 'Old vs new regime for 15L salary?', 'Best 80C investments for 2024?'].map(q => (
+                  <Badge key={q} variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setCopilotQuery(q)}>{q}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

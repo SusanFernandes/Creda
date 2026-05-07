@@ -47,10 +47,10 @@ const EnhancedDashboard: React.FC = () => {
   // Mock user profile - in real app this would come from auth
   const userProfile: UserProfile = {
     age: 32,
-    income: 800000,
+    monthly_income: 800000,
     savings: 250000,
     dependents: 1,
-    risk_tolerance: 3,
+    risk_tolerance: "moderate",
     goal_type: "retirement",
     time_horizon: 25
   };
@@ -90,12 +90,11 @@ const EnhancedDashboard: React.FC = () => {
     setIsLoading(true);
     try {
       const [portfolio, health] = await Promise.all([
-        ApiService.getPortfolioAllocation(userProfile),
-        ApiService.getHealthScore(userProfile)
+        ApiService.portfolioSummary(),
+        ApiService.moneyHealth()
       ]);
       
       setPortfolioData(portfolio);
-      // setBudgetData(budget); // ApiService.optimizeBudget missing
       setHealthScore(health);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

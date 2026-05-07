@@ -1,0 +1,383 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter, usePathname } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { useGroqNLP } from './useGroqNLP';
+import { VoiceUtils } from '@/utils/voiceUtils';
+import { LocalVoiceService } from '@/services/localVoiceService';
+import { ApiService } from '@/services/api';
+
+interface VoiceOptions {
+  onWakeWordDetected?: () => void;
+  onCommandProcessed?: (command: string, result: string) => void;
+  enableAudioResponse?: boolean;
+}
+
+export const useReliableVoice = (options: VoiceOptions = {}) => {
+  const { user } = useUser();
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState('');
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  const [isActive, setIsActive] = useState(false);
+
+  const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { processCommand } = useGroqNLP();
+
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const wakeWordTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const commandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Optimized wake words
+  const wakeWords = [
+    'hey creda', 'creda', 'ok creda', 'hello creda',
+    'wake up creda', 'activate creda', 'start creda',
+    'listen creda', 'attention creda', 'creda listen'
+  ];
+
+  // Initialize speech recognition with modern approach
+  useEffect(() => {
+    if (VoiceUtils.isSpeechRecognitionSupported()) {
+      const SpeechRecognition = VoiceUtils.getSpeechRecognition();
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+
+        // Modern configuration for better performance
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+        recognitionRef.current.maxAlternatives = 1;
+
+        // Set up event handlers
+        recognitionRef.current.onstart = () => {
+          setIsListening(true);
+          console.log('Speech recognition started');
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+          console.log('Speech recognition ended');
+
+          // Auto-restart if not processing and permission granted
+          if (!isProcessing && permissionGranted && !isActive) {
+            restartTimeoutRef.current = setTimeout(() => {
+              startWakeWordListening();
+            }, 200);
+          }
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+
+          if (event.error === 'not-allowed') {
+            setPermissionGranted(false);
+            toast({
+              title: "Microphone Access Denied",
+              description: "Please allow microphone access for voice commands",
+              variant: "destructive"
+            });
+          } else if (!isProcessing && permissionGranted) {
+            // Restart on other errors
+            restartTimeoutRef.current = setTimeout(() => {
+              startWakeWordListening();
+            }, 1000);
+          }
+        };
+
+        recognitionRef.current.onresult = (event) => {
+          const results = event.results;
+          const lastResult = results[results.length - 1];
+
+          if (lastResult && lastResult[0]) {
+            const transcript = lastResult[0].transcript;
+            const confidence = lastResult[0].confidence || 0;
+
+            setCurrentTranscript(transcript);
+
+            if (lastResult.isFinal) {
+              handleSpeechResult(transcript, confidence);
+            }
+          }
+        };
+      }
+    }
+
+    checkMicrophonePermission();
+
+    return () => {
+      cleanup();
+    };
+  }, []);
+
+  const checkMicrophonePermission = async () => {
+    const granted = await VoiceUtils.requestMicrophonePermission();
+    setPermissionGranted(granted);
+
+    if (!granted) {
+      toast({
+        title: "Microphone Required",
+        description: "Please allow microphone access for voice commands",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startWakeWordListening = useCallback(() => {
+    if (!recognitionRef.current || !permissionGranted || isProcessing || isActive) return;
+
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Failed to start wake word listening:', error);
+      // Try again after a short delay
+      restartTimeoutRef.current = setTimeout(() => {
+        startWakeWordListening();
+      }, 500);
+    }
+  }, [permissionGranted, isProcessing, isActive]);
+
+  const handleSpeechResult = useCallback((transcript: string, confidence: number) => {
+    if (isProcessing) return;
+
+    const cleanTranscript = VoiceUtils.cleanTranscript(transcript);
+
+    if (!isActive) {
+      // Wake word detection mode
+      if (VoiceUtils.detectWakeWord(cleanTranscript, wakeWords)) {
+        handleWakeWordDetected(cleanTranscript);
+      }
+    } else {
+      // Command processing mode
+      if (cleanTranscript.trim()) {
+        processVoiceCommand(cleanTranscript.trim());
+      }
+    }
+  }, [isProcessing, isActive]);
+
+  const handleWakeWordDetected = useCallback((transcript: string) => {
+    if (isProcessing) return;
+
+    console.log('Wake word detected:', transcript);
+    setIsProcessing(true);
+    setIsActive(true);
+    setCurrentTranscript('');
+
+    // Stop wake word listening
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    options.onWakeWordDetected?.();
+
+    toast({
+      title: "🎤 Voice Assistant Active",
+      description: "Say your command now...",
+    });
+
+    // Start command listening after a brief pause
+    commandTimeoutRef.current = setTimeout(() => {
+      startCommandListening();
+    }, 300);
+  }, [isProcessing, options]);
+
+  const processVoiceCommand = useCallback(async (command: string) => {
+    if (commandTimeoutRef.current) {
+      clearTimeout(commandTimeoutRef.current);
+    }
+
+    try {
+      // Use backend-powered NLP (keyword match first, then /chat)
+      const nlpResult = await processCommand(command, 'english', user?.id ?? 'anonymous');
+
+      const responseText =
+        nlpResult.response_text ||
+        (nlpResult.intent === 'navigation'
+          ? `Navigating to ${nlpResult.action}`
+          : 'I can help you with that.');
+
+      // Navigate if this is a navigation intent
+      if (nlpResult.intent === 'navigation' && nlpResult.parameters?.path) {
+        executeCommand(nlpResult.action, command, responseText, nlpResult.parameters?.language);
+      } else {
+        // Financial answer — speak it
+        executeCommand('answer', command, responseText, nlpResult.parameters?.language);
+      }
+
+      options.onCommandProcessed?.(command, responseText);
+      finishProcessing();
+    } catch (error) {
+      console.error('Voice command processing error:', error);
+      executeCommand('answer', command, 'Sorry, I had trouble processing that. Please try again.');
+      finishProcessing();
+    }
+  }, [options, processCommand]);
+
+   const startCommandListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+
+    const recognition = recognitionRef.current;
+
+    /* 1.  stay continuous so the user can finish the sentence */
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    /* 2.  collect until we see a FINAL result */
+    const onResult = (event: SpeechRecognitionEvent) => {
+      const last = event.results[event.results.length - 1];
+      const transcript = last[0].transcript;
+
+      setCurrentTranscript(transcript);          // let UI show it live
+
+      if (last.isFinal && transcript.trim()) {   // <-- user finished
+        recognition.stop();                      // we are done
+      }
+    };
+
+    recognition.onresult = onResult;
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsProcessing(true);                     // now process
+      processVoiceCommand(currentTranscript);    // <-- your navigation
+    };
+
+    recognition.start();
+  }, [currentTranscript, processVoiceCommand]);
+
+  const executeCommand = useCallback(async (
+    action: string,
+    command: string,
+    responseText?: string,
+    detectedLang?: string,
+  ): Promise<void> => {
+    // Navigate based on action - ensure navigation works
+    const navigateToPage = (path: string) => {
+      if (pathname !== path) {
+        router.push(path, { replace: false });
+      }
+    };
+
+    switch (action) {
+      case 'dashboard':           navigateToPage('/dashboard');          break;
+      case 'portfolio':           navigateToPage('/portfolio');           break;
+      case 'budget':              navigateToPage('/budget');              break;
+      case 'voice':               navigateToPage('/voice');               break;
+      case 'settings':            navigateToPage('/settings');            break;
+      case 'goals':               navigateToPage('/goals');               break;
+      case 'expense_analysis':    navigateToPage('/expense-analytics');   break;
+      case 'health':              navigateToPage('/health');              break;
+      case 'advisory':            navigateToPage('/advisory');            break;
+      case 'knowledge':           navigateToPage('/knowledge');           break;
+      // ── New planning tools ─────────────────────────────────────────────
+      case 'fire':                navigateToPage('/fire-planner');        break;
+      case 'sip':                 navigateToPage('/sip-calculator');      break;
+      case 'tax':                 navigateToPage('/tax-wizard');          break;
+      case 'couples':             navigateToPage('/couples-planner');     break;
+      case 'security':            navigateToPage('/security');            break;
+      case 'help':                navigateToPage('/help');                break;
+      // ── Non-navigation intents ─────────────────────────────────────────
+      case 'answer':
+      case 'check_balance':
+      case 'get_advice':
+      case 'unknown':
+        break;
+    }
+
+    const finalResponseText = responseText || `Executed command: ${action}`;
+
+    toast({
+      title: '✅ Command Executed',
+      description: finalResponseText,
+    });
+
+    if (options.enableAudioResponse) {
+      const langCode = detectedLang || 'en';
+      // Use multilingual TTS for non-English responses
+      if (langCode !== 'en' && langCode !== 'en-US') {
+        setTimeout(async () => {
+          try {
+            const audioBlob = await ApiService.speak(finalResponseText, langCode);
+            if (audioBlob) {
+              const url = URL.createObjectURL(audioBlob);
+              const audio = new Audio(url);
+              audio.play().catch(() => {});
+              audio.onended = () => URL.revokeObjectURL(url);
+              return;
+            }
+          } catch {}
+          // Fallback to browser TTS
+          if (VoiceUtils.isSpeechSynthesisSupported() && navigator.userActivation?.hasBeenActive) {
+            await VoiceUtils.speakText(finalResponseText, { rate: 1.1, volume: 0.6, lang: langCode }).catch(() => {});
+          }
+        }, 800);
+      } else if (VoiceUtils.isSpeechSynthesisSupported() && navigator.userActivation?.hasBeenActive) {
+        setTimeout(async () => {
+          await VoiceUtils.speakText(finalResponseText, { rate: 1.1, volume: 0.6, lang: 'en-US' }).catch(() => {});
+        }, 800);
+      }
+    }
+  }, [navigate, pathname, options.enableAudioResponse, toast]);
+
+  const finishProcessing = useCallback(() => {
+    if (commandTimeoutRef.current) {
+      clearTimeout(commandTimeoutRef.current);
+      commandTimeoutRef.current = null;
+    }
+
+    setCurrentTranscript('');
+    setIsProcessing(false);
+    setIsActive(false);
+
+    // Restart wake word listening after processing
+    wakeWordTimeoutRef.current = setTimeout(() => {
+      startWakeWordListening();
+    }, 500);
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    } else {
+      startWakeWordListening();
+    }
+  }, [isListening]);
+
+  const cleanup = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    if (wakeWordTimeoutRef.current) {
+      clearTimeout(wakeWordTimeoutRef.current);
+    }
+    if (commandTimeoutRef.current) {
+      clearTimeout(commandTimeoutRef.current);
+    }
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+    }
+  }, []);
+
+  // Auto-start listening when permission is granted
+  useEffect(() => {
+    if (permissionGranted && !isListening && !isProcessing) {
+      startWakeWordListening();
+    }
+  }, [permissionGranted, startWakeWordListening]);
+
+  return {
+    isListening,
+    isProcessing,
+    isActive,
+    currentTranscript,
+    permissionGranted,
+    toggleListening
+  };
+};

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { ApiService } from '@/services/api';
+import { Loader2 } from 'lucide-react';
 import { 
   Target, 
   TrendingUp, 
@@ -43,8 +45,21 @@ const healthComponents: HealthComponent[] = [
 
 const FinancialHealth: React.FC = () => {
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
+  const [apiData, setApiData] = useState<any>(null);
+  const [scanning, setScanning] = useState(false);
 
-  const totalScore = healthComponents.reduce((sum, comp) => sum + comp.score, 0);
+  const runDeepScan = async () => {
+    setScanning(true);
+    try {
+      const res = await ApiService.moneyHealth();
+      setApiData(res);
+    } catch { /* fallback to mock */ }
+    finally { setScanning(false); }
+  };
+
+  useEffect(() => { runDeepScan(); }, []);
+
+  const totalScore = apiData?.score ?? healthComponents.reduce((sum, comp) => sum + comp.score, 0);
   const maxTotalScore = healthComponents.reduce((sum, comp) => sum + comp.maxScore, 0);
   const healthPercentage = (totalScore / maxTotalScore) * 100;
 
@@ -72,8 +87,8 @@ const FinancialHealth: React.FC = () => {
             <p className="text-slate-500 text-sm font-medium italic">Deep scan analysis of your financial performance nodes.</p>
           </div>
           <div className="flex items-center gap-3">
-             <Button className="rounded-xl h-11 px-6 bg-blue-600 text-white hover:bg-blue-700 font-medium">
-               <Zap className="mr-2 h-4 w-4" /> Run Deep Scan
+             <Button className="rounded-xl h-11 px-6 bg-blue-600 text-white hover:bg-blue-700 font-medium" onClick={runDeepScan} disabled={scanning}>
+               {scanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />} {scanning ? 'Scanning...' : 'Run Deep Scan'}
              </Button>
           </div>
         </div>

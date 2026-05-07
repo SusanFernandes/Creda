@@ -18,6 +18,16 @@ import {
   Calculator,
   Receipt,
   Heart,
+  MessageSquare,
+  AlertTriangle,
+  Globe,
+  Fingerprint,
+  Users,
+  Search,
+  CalendarHeart,
+  ShieldCheck,
+  Award,
+  UserCog,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,83 +46,43 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const mainNavItems = [
-  { 
-    title: 'Dashboard', 
-    url: '/dashboard', 
-    icon: LayoutDashboard,
-    badge: '4'
-  },
-  { 
-    title: 'Portfolio', 
-    url: '/portfolio', 
-    icon: PieChart,
-    badge: 'New'
-  },
-  { 
-    title: 'Budget', 
-    url: '/budget', 
-    icon: Wallet
-  },
-  { 
-    title: 'Expenses', 
-    url: '/expense-analytics', 
-    icon: CreditCard
-  },
-  { 
-    title: 'Goals', 
-    url: '/goals', 
-    icon: Target
-  },
-  { 
-    title: 'Health Score', 
-    url: '/health', 
-    icon: Shield,
-    badge: 'B+'
-  },
+  { title: 'Dashboard',  url: '/dashboard',         icon: LayoutDashboard },
+  { title: 'Chat',       url: '/chat',              icon: MessageSquare, badge: 'AI' },
+  { title: 'Portfolio',  url: '/portfolio',          icon: PieChart },
+  { title: 'Budget',     url: '/budget',             icon: Wallet },
+  { title: 'Expenses',   url: '/expense-analytics',  icon: CreditCard },
+  { title: 'Goals',      url: '/goals',              icon: Target },
+  { title: 'Health Score', url: '/health',            icon: Shield },
 ];
 
 const planningNavItems = [
-  { title: 'FIRE Planner',     url: '/fire-planner',    icon: Flame,      badge: 'New' },
-  { title: 'SIP Calculator',  url: '/sip-calculator',  icon: Calculator                },
-  { title: 'Tax Wizard',      url: '/tax-wizard',      icon: Receipt,    badge: 'New' },
-  { title: 'Couples Planner', url: '/couples-planner', icon: Heart                     },
+  { title: 'FIRE Planner',      url: '/fire-planner',     icon: Flame },
+  { title: 'SIP Calculator',    url: '/sip-calculator',   icon: Calculator },
+  { title: 'Tax Wizard',        url: '/tax-wizard',       icon: Receipt },
+  { title: 'Couples Planner',   url: '/couples-planner',  icon: Heart },
+  { title: 'Stress Test',       url: '/stress-test',      icon: AlertTriangle },
+  { title: 'Market Pulse',      url: '/market-pulse',     icon: Globe, badge: 'New' },
+  { title: 'Personality',       url: '/personality',      icon: Fingerprint },
+  { title: 'Social Proof',      url: '/social-proof',     icon: Users },
+  { title: 'Life Events',       url: '/life-events',      icon: CalendarHeart },
 ];
 
 const toolsNavItems = [
-  { 
-    title: 'Voice Assistant', 
-    url: '/voice', 
-    icon: Mic,
-    badge: 'AI'
-  },
-  { 
-    title: 'Knowledge Hub', 
-    url: '/knowledge', 
-    icon: Brain
-  },
-  { 
-    title: 'Advisory', 
-    url: '/advisory', 
-    icon: HelpCircle
-  },
+  { title: 'Voice Assistant',   url: '/voice',            icon: Mic, badge: 'AI' },
+  { title: 'Research Hub',      url: '/research',         icon: Search },
+  { title: 'Advisory',          url: '/advisory',         icon: HelpCircle },
+  { title: 'Knowledge Hub',     url: '/knowledge',        icon: Brain },
+  { title: 'Report Card',       url: '/report-card',      icon: Award },
+  { title: 'Family',            url: '/family',           icon: Users },
+  { title: 'Compliance',        url: '/compliance',       icon: ShieldCheck },
+  { title: 'Notifications',     url: '/notifications',    icon: Bell },
 ];
 
 const settingsNavItems = [
-  { 
-    title: 'Settings', 
-    url: '/settings', 
-    icon: Settings
-  },
-  { 
-    title: 'Security', 
-    url: '/security', 
-    icon: Shield
-  },
-  { 
-    title: 'Help', 
-    url: '/help', 
-    icon: HelpCircle
-  },
+  { title: 'Settings',          url: '/settings',         icon: Settings },
+  { title: 'Security',          url: '/security',         icon: Shield },
+  { title: 'Admin',             url: '/admin',            icon: UserCog },
+  { title: 'Help',              url: '/help',             icon: HelpCircle },
 ];
 
 export function AppSidebar() {

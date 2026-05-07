@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Target, 
@@ -9,9 +9,12 @@ import {
   Calendar,
   DollarSign,
   ArrowUpRight,
-  LayoutGrid
+  LayoutGrid,
+  Loader2,
+  Send,
+  PlayCircle
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +22,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import AdvancedLineChart from '@/components/charts/AdvancedLineChart';
+import { ApiService } from '@/services/api';
 
 interface Goal {
   id: string;
@@ -31,15 +36,72 @@ interface Goal {
   status: 'on_track' | 'ahead' | 'behind';
 }
 
-const mockGoals: Goal[] = [
+const fallbackGoals: Goal[] = [
   { id: '1', name: 'Apartment Purchase', target: 2500000, current: 850000, deadline: new Date('2026-12-31'), status: 'on_track' },
   { id: '2', name: 'Emergency Safety Net', target: 600000, current: 450000, deadline: new Date('2024-06-30'), status: 'ahead' },
   { id: '3', name: 'SUV Upgrade', target: 800000, current: 120000, deadline: new Date('2025-12-31'), status: 'behind' }
 ];
 
 const Goals: React.FC = () => {
-  const [goals] = useState<Goal[]>(mockGoals);
+  const [goals, setGoals] = useState<Goal[]>(fallbackGoals);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalTarget, setNewGoalTarget] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [simQuery, setSimQuery] = useState('');
+  const [simResult, setSimResult] = useState<any>(null);
+  const [simLoading, setSimLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await ApiService.listGoals();
+        if (Array.isArray(data) && data.length > 0) {
+          setGoals(data.map((g: any) => ({
+            id: g.id || g.goal_id || String(Math.random()),
+            name: g.name || g.goal_name || 'Goal',
+            target: g.target || g.target_amount || 0,
+            current: g.current || g.current_amount || 0,
+            deadline: new Date(g.deadline || g.target_date || '2025-12-31'),
+            status: g.status || 'on_track'
+          })));
+        }
+      } catch { /* use fallback */ }
+    })();
+  }, []);
+
+  const handleCreateGoal = async () => {
+    if (!newGoalName.trim() || !newGoalTarget) return;
+    setCreating(true);
+    try {
+      await ApiService.createGoal({ goal_name: newGoalName, target_amount: parseFloat(newGoalTarget), target_date: '2026-12-31' });
+      const data = await ApiService.listGoals();
+      if (Array.isArray(data) && data.length > 0) {
+        setGoals(data.map((g: any) => ({
+          id: g.id || g.goal_id || String(Math.random()),
+          name: g.name || g.goal_name || 'Goal',
+          target: g.target || g.target_amount || 0,
+          current: g.current || g.current_amount || 0,
+          deadline: new Date(g.deadline || g.target_date || '2025-12-31'),
+          status: g.status || 'on_track'
+        })));
+      }
+      setShowAddDialog(false);
+      setNewGoalName('');
+      setNewGoalTarget('');
+    } catch { /* keep existing */ }
+    finally { setCreating(false); }
+  };
+
+  const handleSimulate = async () => {
+    if (!simQuery.trim()) return;
+    setSimLoading(true);
+    try {
+      const data = await ApiService.goalSimulator({ target_amount: 1000000, years: 10 });
+      setSimResult(data);
+    } catch { setSimResult({ error: 'Simulation failed. Please try again.' }); }
+    finally { setSimLoading(false); }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -82,13 +144,15 @@ const Goals: React.FC = () => {
                 <div className="space-y-4 pt-4">
                   <div className="space-y-1.5 font-medium">
                     <Label className="text-xs text-slate-500 uppercase tracking-wider">Goal Name</Label>
-                    <Input placeholder="e.g. Retirement Fund" className="h-11 rounded-xl" />
+                    <Input placeholder="e.g. Retirement Fund" className="h-11 rounded-xl" value={newGoalName} onChange={e => setNewGoalName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5 font-medium">
                     <Label className="text-xs text-slate-500 uppercase tracking-wider">Target Amount (₹)</Label>
-                    <Input type="number" placeholder="500,000" className="h-11 rounded-xl" />
+                    <Input type="number" placeholder="500,000" className="h-11 rounded-xl" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} />
                   </div>
-                  <Button className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium">Create Goal</Button>
+                  <Button className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium" onClick={handleCreateGoal} disabled={creating}>
+                    {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : 'Create Goal'}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -97,6 +161,14 @@ const Goals: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        <Tabs defaultValue="tracker" className="w-full">
+          <TabsList className="w-full max-w-md">
+            <TabsTrigger value="tracker" className="flex-1">Goal Tracker</TabsTrigger>
+            <TabsTrigger value="simulator" className="flex-1"><PlayCircle className="w-4 h-4 mr-1" /> Simulator</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tracker" className="space-y-12 mt-6">
 
         {/* Minimal Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -207,6 +279,38 @@ const Goals: React.FC = () => {
             </Card>
           </div>
         </div>
+          </TabsContent>
+
+          <TabsContent value="simulator" className="mt-6">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PlayCircle className="w-5 h-5 text-blue-600" />
+                    Goal Simulator
+                  </CardTitle>
+                  <CardDescription>Model different scenarios and see how changes affect your goals</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-500 uppercase tracking-wider">Goal Name</Label>
+                    <Input placeholder="e.g. Retirement, House Purchase" value={simQuery} onChange={e => setSimQuery(e.target.value)} className="h-11 rounded-xl" />
+                  </div>
+                  <Button className="w-full h-11 rounded-xl" onClick={handleSimulate} disabled={simLoading || !simQuery.trim()}>
+                    {simLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Simulating...</> : <><BrainCircuit className="w-4 h-4 mr-2" /> Run Simulation</>}
+                  </Button>
+                  {simResult && (
+                    <Card className="bg-muted/50">
+                      <CardContent className="pt-4 whitespace-pre-wrap text-sm">
+                        {simResult.error || simResult.response || simResult.analysis || JSON.stringify(simResult, null, 2)}
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

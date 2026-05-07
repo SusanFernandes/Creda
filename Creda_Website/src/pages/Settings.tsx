@@ -16,7 +16,8 @@ import {
   Palette,
   Volume2,
   Mic,
-  Smartphone
+  Smartphone,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { ApiService } from '@/services/api';
 
 const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -54,11 +56,28 @@ const Settings: React.FC = () => {
     language: 'hindi'
   });
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      await ApiService.upsertProfile({
+        language: currentLanguage,
+        theme,
+        notifications,
+        privacy,
+        voice_settings: voiceSettings
+      } as any);
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch {
+      toast({
+        title: "Settings Saved Locally",
+        description: "Preferences saved locally. Will sync when online.",
+      });
+    } finally { setSaving(false); }
   };
 
   const handleExportData = () => {
@@ -341,8 +360,8 @@ const Settings: React.FC = () => {
           transition={{ delay: 0.5 }}
           className="flex justify-end"
         >
-          <Button onClick={handleSaveSettings} size="lg">
-            Save All Settings
+          <Button onClick={handleSaveSettings} size="lg" disabled={saving}>
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save All Settings'}
           </Button>
         </motion.div>
       </div>

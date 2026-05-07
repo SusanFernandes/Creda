@@ -21,7 +21,7 @@ const Advisory: React.FC = () => {
     
     setIsLoading(true);
     try {
-      const result = await ApiService.ragQuery(query);
+      const result = await ApiService.chat({ message: query, user_id: 'web_user' });
       setResponse(result);
       toast({ title: "Query Processed", description: "AI analysis complete" });
     } catch (error) {

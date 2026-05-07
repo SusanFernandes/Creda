@@ -17,18 +17,42 @@ services:
       - creda-network
     restart: unless-stopped
 
-  # ── Django Frontend ──────────────────────────────────────
-  frontend:
+  # ── Django Frontend (DEPRECATED — replaced by creda_next) ──────────────
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: creda_frontend
+  #   ports:
+  #     - "8000:8000"
+  #   env_file: .env
+  #   environment:
+  #     DJANGO_DEBUG: "false"
+  #     BACKEND_API_URL: "http://backend:8001"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - creda-network
+  #   restart: unless-stopped
+
+  # ── Next.js Frontend ─────────────────────────────────────
+  nextjs:
     build:
-      context: ./frontend
+      context: ../creda_next
       dockerfile: Dockerfile
-    container_name: creda_frontend
+      args:
+        # Public vars baked into the browser bundle at build time
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        # API_URL exposed to browser — use backend's EXTERNAL port for WS
+        NEXT_PUBLIC_API_URL: http://localhost:8001
+    container_name: creda_nextjs
     ports:
-      - "8000:8000"
-    env_file: .env
+      - "3000:3000"
     environment:
-      DJANGO_DEBUG: "false"
+      # Server-side only — not exposed to browser
       BACKEND_API_URL: "http://backend:8001"
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      NODE_ENV: production
     depends_on:
       - backend
     networks:
