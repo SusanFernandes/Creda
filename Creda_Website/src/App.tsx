@@ -27,6 +27,19 @@ import FIREPlanner from "./pages/FIREPlanner";
 import SIPCalculator from "./pages/SIPCalculator";
 import TaxWizard from "./pages/TaxWizard";
 import CouplesPlanner from "./pages/CouplesPlanner";
+import Chat from "./pages/Chat";
+import StressTest from "./pages/StressTest";
+import MarketPulse from "./pages/MarketPulse";
+import MoneyPersonality from "./pages/MoneyPersonality";
+import SocialProof from "./pages/SocialProof";
+import Research from "./pages/Research";
+import LifeEvents from "./pages/LifeEvents";
+import Compliance from "./pages/Compliance";
+import Family from "./pages/Family";
+import Admin from "./pages/Admin";
+import ReportCard from "./pages/ReportCard";
+import Onboarding from "./pages/Onboarding";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import { PoiseAssistant } from "./components/PoiseAssistant";
 
@@ -48,6 +61,7 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth/sign-in" element={<Auth mode="sign-in" />} />
                 <Route path="/auth/sign-up" element={<Auth mode="sign-up" />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/*" element={
                   <SidebarProvider>
                     <div className="min-h-screen flex w-full bg-gradient-dashboard">
@@ -57,11 +71,13 @@ const App = () => (
                         <main className="flex-1 overflow-auto">
                           <Routes>
                             <Route path="/dashboard" element={<EnhancedDashboard />} />
+                            <Route path="/chat" element={<Chat />} />
                             <Route path="/portfolio" element={<Portfolio />} />
                             <Route path="/budget" element={<Budget />} />
                             <Route path="/expense-analytics" element={<ExpenseAnalytics />} />
                             <Route path="/goals" element={<Goals />} />
                             <Route path="/health" element={<FinancialHealth />} />
+                            <Route path="/stress-test" element={<StressTest />} />
                             <Route path="/knowledge" element={<Knowledge />} />
                             <Route path="/advisory" element={<Advisory />} />
                             <Route path="/voice" element={<Voice />} />
@@ -69,6 +85,16 @@ const App = () => (
                             <Route path="/sip-calculator" element={<SIPCalculator />} />
                             <Route path="/tax-wizard" element={<TaxWizard />} />
                             <Route path="/couples-planner" element={<CouplesPlanner />} />
+                            <Route path="/market-pulse" element={<MarketPulse />} />
+                            <Route path="/personality" element={<MoneyPersonality />} />
+                            <Route path="/social-proof" element={<SocialProof />} />
+                            <Route path="/research" element={<Research />} />
+                            <Route path="/life-events" element={<LifeEvents />} />
+                            <Route path="/compliance" element={<Compliance />} />
+                            <Route path="/family" element={<Family />} />
+                            <Route path="/notifications" element={<Notifications />} />
+                            <Route path="/report-card" element={<ReportCard />} />
+                            <Route path="/admin" element={<Admin />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/security" element={<Security />} />
                             <Route path="/help" element={<Help />} />

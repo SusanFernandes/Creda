@@ -298,7 +298,7 @@ export const useReliableVoice = (options: VoiceOptions = {}) => {
       if (langCode !== 'en' && langCode !== 'en-US') {
         setTimeout(async () => {
           try {
-            const audioBlob = await ApiService.ttsOnly(finalResponseText, langCode);
+            const audioBlob = await ApiService.speak(finalResponseText, langCode);
             if (audioBlob) {
               const url = URL.createObjectURL(audioBlob);
               const audio = new Audio(url);

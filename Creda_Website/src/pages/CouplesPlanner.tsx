@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ApiService, CouplePlannerRequest } from '@/services/api';
+import { ApiService, CouplesRequest } from '@/services/api';
 import { useUser } from '@clerk/clerk-react';
 
 interface CouplesResult {
@@ -34,8 +34,8 @@ export default function CouplesPlanner() {
       return;
     }
     setLoading(true);
-    const req: CouplePlannerRequest = { ...form };
-    const data = await ApiService.couplesPlanner(req);
+    const req: CouplesRequest = { ...form } as any;
+    const data = await ApiService.couplesFinance(req);
     setResult(data);
     setLoading(false);
   };

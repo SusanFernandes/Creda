@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ApiService, UserProfile } from '@/services/api';
+import { ApiService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { AdvancedPieChart } from '@/components/charts/AdvancedPieChart';
 
@@ -28,33 +28,48 @@ const Budget: React.FC = () => {
   const { toast } = useToast();
   const [budgetData, setBudgetData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [expenses, setExpenses] = useState<any[]>([]);
 
-  const userProfile: UserProfile = {
-    age: 32, 
-    income: 800000, 
-    savings: 250000, 
-    dependents: 1, 
-    risk_tolerance: 3
-  };
-
-  const mockExpenses = [
+  const fallbackExpenses = [
     { category: "Living Essentials", amount: 15000, description: "Monthly groceries & utilities", icon: ShieldCheck, color: "text-blue-500", bg: "bg-blue-500/10" },
     { category: "Transport Matrix", amount: 8000, description: "Fuel and maintenance delta", icon: Zap, color: "text-primary", bg: "bg-primary/10" },
     { category: "Lifestyle & Social", amount: 5000, description: "Discretionary entertainment", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10" }
   ];
 
+  const iconMap: Record<string, any> = { 'Living Essentials': ShieldCheck, 'Transport': Zap, 'Lifestyle': Target, 'Food': ShieldCheck, 'Housing': Wallet };
+
   useEffect(() => {
     fetchBudgetData();
+    fetchExpenses();
   }, []);
+
+  const fetchExpenses = async () => {
+    try {
+      const data = await ApiService.listExpenses();
+      if (Array.isArray(data) && data.length > 0) {
+        setExpenses(data.map((e: any) => ({
+          category: e.category || 'Other',
+          amount: e.amount || 0,
+          description: e.description || e.category || '',
+          icon: iconMap[e.category] || Target,
+          color: 'text-primary',
+          bg: 'bg-primary/10'
+        })));
+      }
+    } catch { /* use fallback */ }
+  };
+
+  const displayExpenses = expenses.length > 0 ? expenses : fallbackExpenses;
 
   const fetchBudgetData = async () => {
     setIsLoading(true);
     try {
-      // Note: ApiService.optimizeBudget might be a placeholder in some environments
-      // but we use the existing pattern and provide beautiful fallbacks
-      const budget = await ApiService.optimizeBudget(userProfile, mockExpenses);
-      setBudgetData(budget);
-    } catch (error) {
+      const [summary, coach] = await Promise.all([
+        ApiService.budgetSummary(),
+        ApiService.budgetCoach()
+      ]);
+      setBudgetData(summary || coach);
+    } catch {
       toast({ 
         title: "System Synchronization", 
         description: "Executing offline budget model", 
@@ -154,7 +169,7 @@ const Budget: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-8">
                     <div className="space-y-6">
-                    {mockExpenses.map((expense, index) => (
+                    {displayExpenses.map((expense, index) => (
                         <motion.div 
                             key={index} 
                             initial={{ opacity: 0, x: 20 }}

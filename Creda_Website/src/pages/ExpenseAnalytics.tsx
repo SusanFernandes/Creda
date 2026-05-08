@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { AdvancedLineChart } from '@/components/charts/AdvancedLineChart';
 import { AdvancedPieChart } from '@/components/charts/AdvancedPieChart';
+import { ApiService } from '@/services/api';
 
 interface ExpenseData {
   category: string;
@@ -75,9 +76,24 @@ const monthlyTrendData = [
 const ExpenseAnalytics: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [expenseData, setExpenseData] = useState<ExpenseData[]>(mockExpenseData);
+  const [anomalies, setAnomalies] = useState<AnomalyAlert[]>(mockAnomalies);
 
-  const totalBudget = mockExpenseData.reduce((sum, item) => sum + item.budget, 0);
-  const totalSpent = mockExpenseData.reduce((sum, item) => sum + item.spent, 0);
+  useEffect(() => {
+    (async () => {
+      try {
+        const [analyticsRes, expensesRes] = await Promise.all([
+          ApiService.expenseAnalytics(),
+          ApiService.listExpenses()
+        ]);
+        if (analyticsRes?.categories) setExpenseData(analyticsRes.categories);
+        if (analyticsRes?.anomalies) setAnomalies(analyticsRes.anomalies);
+      } catch { /* use mock fallbacks */ }
+    })();
+  }, []);
+
+  const totalBudget = expenseData.reduce((sum, item) => sum + item.budget, 0);
+  const totalSpent = expenseData.reduce((sum, item) => sum + item.spent, 0);
   const totalSavings = totalBudget - totalSpent;
   const budgetUtilization = (totalSpent / totalBudget) * 100;
 
@@ -97,7 +113,7 @@ const ExpenseAnalytics: React.FC = () => {
     }
   };
 
-  const pieChartData = mockExpenseData.map(item => ({
+  const pieChartData = expenseData.map(item => ({
     name: item.category,
     value: item.spent
   }));
@@ -139,7 +155,7 @@ const ExpenseAnalytics: React.FC = () => {
           { label: 'Calculated Budget', val: totalBudget, status: 'Total', color: 'text-primary' },
           { label: 'Current Expenditure', val: totalSpent, status: `${budgetUtilization.toFixed(0)}% Utilized`, color: 'text-rose-500' },
           { label: 'Delta Variance', val: Math.abs(totalSavings), status: totalSavings >= 0 ? 'Surplus' : 'Deficit', color: totalSavings >= 0 ? 'text-emerald-500' : 'text-rose-500' },
-          { label: 'Anomaly Count', val: mockAnomalies.length, status: 'Critical Fixes', color: 'text-amber-500' },
+          { label: 'Anomaly Count', val: anomalies.length, status: 'Critical Fixes', color: 'text-amber-500' },
         ].map((item, idx) => (
           <Card key={idx} className="border-none bg-card shadow-xl p-6 hover:shadow-2xl transition-all group">
             <div className="flex flex-col space-y-1">
@@ -174,7 +190,7 @@ const ExpenseAnalytics: React.FC = () => {
             <Card className="border-none bg-card shadow-xl p-8">
               <CardTitle className="text-lg font-black tracking-tight mb-8 px-1">Budget Optimization Status</CardTitle>
               <div className="space-y-6">
-                {mockExpenseData.map((item, index) => (
+                {expenseData.map((item, index) => (
                   <div key={index} className="space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold">
                         <span className="text-muted-foreground">{item.category}</span>
@@ -199,7 +215,7 @@ const ExpenseAnalytics: React.FC = () => {
 
         <TabsContent value="categories" className="animate-in fade-in duration-500 outline-none">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockExpenseData.map((cat, idx) => (
+                {expenseData.map((cat, idx) => (
                     <Card key={idx} className="border-none bg-card shadow-xl p-6 hover:shadow-2xl transition-all cursor-default">
                         <div className="flex justify-between items-start mb-6">
                             <div className="space-y-0.5">
@@ -286,7 +302,7 @@ const ExpenseAnalytics: React.FC = () => {
 
         <TabsContent value="anomalies" className="animate-in fade-in duration-500 outline-none space-y-8">
             <div className="grid grid-cols-1 gap-6">
-                {mockAnomalies.map((anom, idx) => (
+                {anomalies.map((anom, idx) => (
                     <Card key={idx} className="border-none bg-card shadow-xl p-8 flex flex-col md:flex-row items-center gap-8 group">
                         <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-white shadow-lg ${anom.severity === 'high' ? 'bg-rose-500 shadow-rose-500/20' : 'bg-amber-500 shadow-amber-500/20'}`}>
                             {anom.type === 'unusual_spend' ? <TrendingUp className="w-8 h-8" /> : <Zap className="w-8 h-8" />}

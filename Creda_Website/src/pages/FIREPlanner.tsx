@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ApiService, FIRERequest } from '@/services/api';
+import { ApiService } from '@/services/api';
 import { useUser } from '@clerk/clerk-react';
 
 interface FIREResult {
@@ -39,11 +39,11 @@ export default function FIREPlanner() {
 
   const handleCalculate = async () => {
     setLoading(true);
-    const req: FIRERequest = {
+    const req = {
       user_id: user?.id || 'guest',
       ...form,
     };
-    const data = await ApiService.firePlanner(req);
+    const data = await ApiService.firePlanner(req as any);
     setResult(data);
     setLoading(false);
   };

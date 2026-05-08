@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { ApiService, SIPCalcRequest } from '@/services/api';
+import { ApiService, SIPRequest } from '@/services/api';
 
 interface SIPResult {
   monthly_amount?: number;
@@ -37,7 +37,7 @@ export default function SIPCalculator() {
 
   const handleCalculate = async () => {
     setLoading(true);
-    const req: SIPCalcRequest = { ...form };
+    const req: SIPRequest = { ...form };
     const data = await ApiService.calculateSIP(req);
     setResult(data);
     setLoading(false);

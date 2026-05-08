@@ -364,3 +364,268 @@ async def link_funds_to_goal(
         "current_saved": goal.current_saved,
         "progress_pct": goal.progress_pct,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  PORTFOLIO OPTIMIZATION & REBALANCING  (ported from Creda_Fastapi)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class OptimizeRequest(BaseModel):
+    goals: list[str] = []
+    time_horizon_years: int = 25
+    language: str = "en"
+
+
+class RebalanceRequest(BaseModel):
+    target_allocation: dict[str, float] = {}
+    threshold: float = 0.05
+    language: str = "en"
+
+
+class SIPRequest(BaseModel):
+    monthly_amount: float = 10000
+    years: int = 15
+    expected_return: float = 12.0
+    step_up_percent: float = 10.0
+
+
+@router.post("/optimize")
+async def optimize_portfolio(
+    body: OptimizeRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """AI-powered portfolio optimization with specific fund recommendations."""
+    from app.models import UserProfile
+
+    result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = result.scalar_one_or_none()
+
+    funds_data: list[dict] = []
+    total_value = 0.0
+    if portfolio:
+        funds_result = await db.execute(
+            select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+        )
+        funds = funds_result.scalars().all()
+        total_value = sum(f.current_value or 0 for f in funds)
+        funds_data = [
+            {
+                "fund_name": f.fund_name, "category": f.category,
+                "invested": f.invested, "current_value": f.current_value,
+                "xirr": f.xirr, "expense_ratio": f.expense_ratio,
+            }
+            for f in funds
+        ]
+
+    profile_result = await db.execute(select(UserProfile).where(UserProfile.user_id == auth.user_id))
+    profile = profile_result.scalar_one_or_none()
+
+    goals_text = ", ".join(body.goals) if body.goals else "wealth creation, retirement"
+    age = profile.age if profile else 30
+    risk = profile.risk_tolerance if profile else "moderate"
+    income = float(profile.monthly_income or 0) if profile else 0
+
+    from app.core.llm import invoke_llm, fast_llm, clip_prompt
+    prompt = (
+        f"You are a SEBI-registered mutual fund advisor. Optimise this investor's portfolio.\n"
+        f"Investor: Age {age}, Monthly income ₹{income:,.0f}, Risk tolerance: {risk}\n"
+        f"Goals: {goals_text}\n"
+        f"Time horizon: {body.time_horizon_years} years\n"
+        f"Current portfolio value: ₹{total_value:,.0f}\n"
+        f"Holdings:\n"
+        + "\n".join(
+            f"  - {f['fund_name']} ({f['category']}): ₹{f['current_value']:,.0f} | XIRR {f['xirr']}% | TER {f['expense_ratio']}%"
+            for f in funds_data[:15]
+        )
+        + "\n\nProvide:\n1. Recommended target allocation percentages by category\n"
+        "2. 3 specific actionable recommendations\n3. Expected return range\n"
+        "Format as a clear, structured analysis."
+    )
+    try:
+        llm_result = await invoke_llm(fast_llm, clip_prompt(prompt, 6000))
+        optimization = llm_result.content.strip()
+    except Exception:
+        optimization = "Optimisation service temporarily unavailable. Ensure diversified allocation per age and risk tolerance."
+
+    return {
+        "goals": body.goals or ["wealth creation", "retirement"],
+        "time_horizon": body.time_horizon_years,
+        "current_value": total_value,
+        "funds_count": len(funds_data),
+        "optimization": optimization,
+    }
+
+
+@router.post("/check-rebalance")
+async def check_rebalance(
+    body: RebalanceRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check portfolio drift against target allocation and provide rebalancing plan."""
+    result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == auth.user_id).order_by(Portfolio.created_at.desc())
+    )
+    portfolio = result.scalar_one_or_none()
+    if not portfolio:
+        raise HTTPException(404, "No portfolio found")
+
+    funds_result = await db.execute(
+        select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+    )
+    funds = funds_result.scalars().all()
+
+    total_value = sum(f.current_value or 0 for f in funds)
+    if total_value <= 0:
+        return {"needs_rebalancing": False, "message": "No fund values to analyse"}
+
+    # Current allocation by category
+    current_alloc: dict[str, float] = {}
+    for f in funds:
+        cat = f.category or "other"
+        current_alloc[cat] = current_alloc.get(cat, 0) + (f.current_value or 0)
+    current_pcts = {cat: val / total_value for cat, val in current_alloc.items()}
+
+    target = body.target_allocation or current_pcts
+    all_cats = set(list(current_pcts.keys()) + list(target.keys()))
+    drift: dict[str, dict] = {}
+    max_drift = 0.0
+    for cat in all_cats:
+        curr = current_pcts.get(cat, 0)
+        tgt = target.get(cat, 0)
+        d = abs(curr - tgt)
+        drift[cat] = {"current": round(curr * 100, 1), "target": round(tgt * 100, 1), "drift": round(d * 100, 1)}
+        max_drift = max(max_drift, d)
+
+    needs_rebalancing = max_drift > body.threshold
+
+    result_data: dict = {
+        "needs_rebalancing": needs_rebalancing,
+        "max_drift_pct": round(max_drift * 100, 1),
+        "threshold_pct": round(body.threshold * 100, 1),
+        "total_value": total_value,
+        "allocation_drift": drift,
+    }
+
+    if needs_rebalancing:
+        from app.core.llm import invoke_llm, fast_llm, clip_prompt
+        drift_text = "\n".join(
+            f"  {cat}: Current {d['current']}% | Target {d['target']}% | Drift {d['drift']}%"
+            for cat, d in drift.items()
+        )
+        prompt = (
+            f"You are a SEBI-registered mutual fund advisor. Portfolio rebalancing analysis:\n"
+            f"Portfolio value: ₹{total_value:,.0f}\nDrift threshold: {body.threshold * 100:.0f}%\n"
+            f"Allocation drift:\n{drift_text}\n\n"
+            "Provide exactly 3 numbered rebalancing recommendations. Be specific with fund categories and amounts."
+        )
+        try:
+            llm_result = await invoke_llm(fast_llm, clip_prompt(prompt, 4000))
+            result_data["recommendations"] = llm_result.content.strip()
+        except Exception:
+            result_data["recommendations"] = "Review drift percentages above and rebalance overweight categories."
+
+    return result_data
+
+
+@router.post("/sip-calculator")
+async def sip_calculator(body: SIPRequest):
+    """Pure-math SIP calculator — no auth required, no LLM."""
+    monthly = body.monthly_amount
+    years = body.years
+    annual_return = body.expected_return / 100
+    step_up = body.step_up_percent / 100
+    r = annual_return / 12
+    n = years * 12
+
+    # Basic SIP future value
+    if r > 0 and n > 0:
+        basic_fv = monthly * (((1 + r) ** n) - 1) / r * (1 + r)
+    else:
+        basic_fv = monthly * n
+    total_invested = monthly * n
+
+    # Step-up SIP future value
+    step_up_fv = 0.0
+    m = monthly
+    for year in range(years):
+        remaining = years - year
+        year_fv = m * (((1 + r) ** 12) - 1) / r * (1 + r) if r > 0 else m * 12
+        step_up_fv += year_fv * ((1 + annual_return) ** (remaining - 1))
+        m *= (1 + step_up)
+
+    return {
+        "monthly_amount": monthly,
+        "years": years,
+        "expected_return": body.expected_return,
+        "total_invested": round(total_invested),
+        "expected_value": round(basic_fv),
+        "wealth_gain": round(basic_fv - total_invested),
+        "step_up_percent": body.step_up_percent,
+        "step_up_corpus": round(step_up_fv),
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Portfolio History / Net-worth Timeline
+# ──────────────────────────────────────────────────────────────────────────────
+@router.get("/history/{user_id}")
+async def portfolio_history(user_id: str, db: AsyncSession = Depends(get_db)):
+    """Return portfolio value snapshots for net-worth timeline.
+
+    Since we don't store daily snapshots yet, this returns:
+    - The portfolio creation date + invested value as T0
+    - The last update date + current value as T1
+    - Per-fund breakdown with invested vs current
+    """
+    result = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == user_id)
+    )
+    portfolio = result.scalars().first()
+    if not portfolio:
+        return {"snapshots": [], "funds_timeline": []}
+
+    funds_result = await db.execute(
+        select(PortfolioFund).where(PortfolioFund.portfolio_id == portfolio.id)
+    )
+    funds = funds_result.scalars().all()
+
+    snapshots = [
+        {
+            "date": portfolio.created_at.isoformat() if portfolio.created_at else None,
+            "total_invested": portfolio.total_invested or 0,
+            "current_value": portfolio.total_invested or 0,
+        },
+        {
+            "date": (portfolio.updated_at or portfolio.created_at).isoformat()
+            if (portfolio.updated_at or portfolio.created_at)
+            else None,
+            "total_invested": portfolio.total_invested or 0,
+            "current_value": portfolio.current_value or 0,
+        },
+    ]
+
+    funds_timeline = [
+        {
+            "fund_name": f.fund_name,
+            "category": f.category,
+            "invested": f.invested or 0,
+            "current_value": f.current_value or 0,
+            "gain": round((f.current_value or 0) - (f.invested or 0), 2),
+            "gain_pct": round(
+                ((f.current_value or 0) / (f.invested or 1) - 1) * 100, 2
+            ),
+        }
+        for f in funds
+    ]
+
+    return {
+        "user_id": user_id,
+        "portfolio_id": portfolio.id,
+        "xirr": portfolio.xirr,
+        "snapshots": snapshots,
+        "funds_timeline": funds_timeline,
+    }

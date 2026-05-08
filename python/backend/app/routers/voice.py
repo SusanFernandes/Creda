@@ -302,3 +302,61 @@ async def voice_navigate(
         "expenses_logged": len(expense_ids),
         "expense_ids": expense_ids,
     }
+
+
+class NavigateTextRequest(BaseModel):
+    """
+    Text-based navigation request from clients that already have a transcript
+    (e.g. creda_next using browser SpeechRecognition — no audio blob needed).
+    """
+    transcript: str
+    language: str = "en"
+    current_page: str = "dashboard"
+
+
+@router.post("/navigate-text")
+async def voice_navigate_text(
+    body: NavigateTextRequest,
+    auth: AuthContext = Depends(get_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Text-only navigation intent endpoint for clients that transcribe audio
+    client-side (e.g. browser SpeechRecognition API).
+    Resolves intent → page URL without needing an audio upload.
+    """
+    from app.redis_client import get_last_intent, save_last_intent
+    from app.services.voice_nav_intent import resolve_voice_page_intent
+
+    last_intent = await get_last_intent(auth.user_id, "nav")
+
+    from app.services.intent_engine import classify_intent
+    intent_result = await classify_intent(
+        body.transcript, last_intent=last_intent, fast=True
+    )
+    raw_intent = intent_result.intent
+
+    intent = resolve_voice_page_intent(
+        body.transcript, raw_intent, has_logged_expenses=False
+    )
+    await save_last_intent(auth.user_id, "nav", intent)
+
+    page_url = _INTENT_TO_PAGE.get(intent, "/chat/")
+    page_label = _INTENT_LABELS.get(intent, "AI Chat")
+
+    lang = body.language
+    if lang.startswith("hi"):
+        response_text = f"ज़रूर, मैं आपको {page_label} पर ले जाता हूँ।"
+    elif lang.startswith("ta"):
+        response_text = f"நிச்சயமாக, {page_label} பக்கத்திற்கு செல்கிறேன்."
+    else:
+        response_text = f"Sure, taking you to {page_label}."
+
+    return {
+        "transcript": body.transcript,
+        "intent": intent,
+        "page_url": page_url,
+        "page_label": page_label,
+        "response_text": response_text,
+        "language": lang,
+    }
